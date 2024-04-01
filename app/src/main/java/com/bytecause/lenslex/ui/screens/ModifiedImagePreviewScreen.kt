@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.navigation.NavigationItem
-import com.bytecause.lenslex.textdetector.TextRecognizer
+import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 

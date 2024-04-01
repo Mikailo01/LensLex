@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.textdetector
+package com.bytecause.lenslex.mlkit
 
 import android.content.Context
 import android.net.Uri

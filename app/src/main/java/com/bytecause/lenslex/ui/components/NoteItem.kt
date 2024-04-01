@@ -9,18 +9,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.util.swipeToDismiss
 
 @Composable
 fun NoteItem(
     modifier: Modifier = Modifier,
     originalText: String,
-    translatedText: String
+    translatedText: String,
+    onRemove: () -> Unit
 ) {
     Column(
-        modifier.padding(8.dp)
+        modifier.padding(8.dp).swipeToDismiss { onRemove() }
     ) {
         Text(text = originalText, fontWeight = FontWeight.ExtraBold)
         Text(text = translatedText, fontStyle = FontStyle.Italic)
-        Divider(thickness = 1, color = Color.Gray)
+        Divider(thickness = 2, color = Color.Gray)
     }
 }

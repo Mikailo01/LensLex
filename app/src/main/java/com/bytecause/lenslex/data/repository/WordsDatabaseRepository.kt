@@ -4,6 +4,7 @@ import com.bytecause.lenslex.data.local.room.WordDao
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -11,11 +12,25 @@ class WordsDatabaseRepository @Inject constructor(
     private val wordDao: WordDao
 ) {
 
-    suspend fun insertWord(word: WordAndSentenceEntity) {
+    suspend fun insertOrUpdateWordAndSentenceEntity(entity: WordAndSentenceEntity) {
         withContext(Dispatchers.IO) {
-            wordDao.insertWord(word)
+            val existingEntity = wordDao.getWordAndSentenceEntityByWords(entity.words).firstOrNull()
+            if (existingEntity == null) {
+                wordDao.insertWord(entity)
+            } else if (existingEntity.translations != entity.translations) {
+                val mergedTranslations = existingEntity.translations.toMutableMap().apply {
+                    putAll(entity.translations)
+                }
+                wordDao.updateWordAndSentenceEntity(existingEntity.copy(translations = mergedTranslations))
+            }
         }
     }
 
-    fun getAllWords(): Flow<WordAndSentenceEntity?> = wordDao.getAllWords()
+    suspend fun deleteWordById(id: Long) {
+        withContext(Dispatchers.IO) {
+            wordDao.deleteWordById(id)
+        }
+    }
+
+    val getAllWords: Flow<List<WordAndSentenceEntity>> = wordDao.getAllWords()
 }

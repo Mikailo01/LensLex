@@ -7,8 +7,8 @@ class MapTypeConverter {
     fun fromString(value: String): Map<String, String> {
         // Convert the string representation from the database to a Map
         // You can use a JSON parser or any other method based on your data format
-        // For simplicity, this example uses a basic approach (comma-separated key-value pairs)
-        val entries = value.split(",")
+        // For simplicity, this example uses a basic approach (key-value pairs separated by "|")
+        val entries = value.split("|")
         val map = mutableMapOf<String, String>()
 
         for (entry in entries) {
@@ -25,7 +25,7 @@ class MapTypeConverter {
     fun toString(value: Map<String, String>): String {
         // Convert the Map to its string representation for storage in the database
         // You can use a JSON serializer or any other method based on your data format
-        // For simplicity, this example uses a basic approach (comma-separated key-value pairs)
-        return value.entries.joinToString(",") { "${it.key}=${it.value}" }
+        // For simplicity, this example uses a basic approach (key-value pairs separated by "|")
+        return value.entries.joinToString("|") { "${it.key}=${it.value}" }
     }
 }

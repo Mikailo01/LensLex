@@ -80,7 +80,7 @@ fun AppNavHost(
         }
 
         composable(route = NavigationItem.Add.route) {
-            AddScreen()
+            AddScreen(onNavigateBack = { navController.popBackStack() } )
         }
     }
 }

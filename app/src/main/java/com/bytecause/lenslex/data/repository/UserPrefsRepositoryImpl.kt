@@ -37,10 +37,10 @@ class UserPrefsRepositoryImpl @Inject constructor(
             else throw exception
         }
 
-    override suspend fun saveTranslationOption(langCode: String) {
+    override suspend fun saveTranslationOption(langName: String) {
         withContext(Dispatchers.IO) {
             userDataStorePreferences.edit { preferences ->
-                preferences[TRANSLATION_OPTION_KEY] = langCode
+                preferences[TRANSLATION_OPTION_KEY] = langName
             }
         }
     }

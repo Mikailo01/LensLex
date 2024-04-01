@@ -7,6 +7,6 @@ interface UserPrefsRepository {
     suspend fun saveUserLocale(locale: String)
     fun loadUserLocale(): Flow<String?>
 
-    suspend fun saveTranslationOption(langCode: String)
+    suspend fun saveTranslationOption(langName: String)
     fun loadTranslationOption(): Flow<String?>
 }

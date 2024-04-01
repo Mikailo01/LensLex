@@ -15,13 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.models.SupportedLanguage
 
 @Composable
 fun LanguageDialog(
     modifier: Modifier = Modifier,
-    lazyListContent: List<String>,
+    lazyListContent: List<SupportedLanguage>,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (SupportedLanguage) -> Unit,
     onDownload: () -> Unit
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = { onDismiss() }) {
@@ -43,7 +44,7 @@ fun LanguageDialog(
             }
             Divider(thickness = 1, color = Color.Gray)
             LazyColumn {
-                items(lazyListContent) { item ->
+                items(lazyListContent, key = { item -> item.langCode }) { item ->
                     LanguageItem(
                         modifier = modifier.padding(10.dp),
                         item = item,

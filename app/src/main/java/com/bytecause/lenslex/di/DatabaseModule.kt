@@ -21,7 +21,6 @@ object DatabaseModule {
         klass = AppDatabase::class.java,
         name = "app_database"
     )
-        .createFromAsset("database/continents_with_countries.db")
         .build()
 
     /*private val MIGRATION_1_2: Migration = object : Migration(1, 2) {

@@ -62,6 +62,10 @@ dependencies {
 
     // Text recognition
     implementation ("com.google.mlkit:text-recognition:16.0.0")
+    // Text translation
+    implementation ("com.google.mlkit:translate:17.0.2")
+    // Text language recognition
+    implementation ("com.google.mlkit:language-id:17.0.5")
 
     // Preferences DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")

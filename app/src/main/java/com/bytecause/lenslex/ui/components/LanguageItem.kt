@@ -13,12 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.models.SupportedLanguage
 
 @Composable
 fun LanguageItem(
     modifier: Modifier = Modifier,
-    item: String,
-    onItemClick: (String) -> Unit,
+    item: SupportedLanguage,
+    onItemClick: (SupportedLanguage) -> Unit,
     onDownloadClick: () -> Unit
 ) {
     Row(
@@ -28,7 +29,7 @@ fun LanguageItem(
             .fillMaxWidth()
             .clickable { onItemClick(item) }
     ) {
-        Text(text = item, modifier = modifier)
+        Text(text = item.langName, modifier = modifier)
         Image(
             painter = painterResource(id = R.drawable.baseline_download_24),
             contentDescription = "Download language",
