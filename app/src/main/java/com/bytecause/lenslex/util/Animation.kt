@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -39,24 +38,24 @@ fun Modifier.swipeToDismiss(
                 // Prepare for drag events and record velocity of a fling.
                 val velocityTracker = VelocityTracker()
 
+                var dragAmountX = 0f
+                var dragAmountY = 0f
+
                 // Wait for drag events.
                 awaitPointerEventScope {
                     horizontalDrag(pointerId) { change ->
-                        // Get the drag amount change to offset the item with
-                        val horizontalDragOffset = offsetX.value + change.positionChange().x
+                        val horizontalChange = change.positionChange().x
+                        dragAmountX += horizontalChange.absoluteValue
+                        dragAmountY += change.positionChange().y.absoluteValue
 
-                        // Need to call this in a launch block in order to run it separately outside of the awaitPointerEventScope
-                        launch {
-                            // Instantly set the Animable to the dragOffset to ensure its moving
-                            // as the user's finger moves
-                            offsetX.snapTo(horizontalDragOffset)
+                        // Compare if X drag is greater than Y drag to avoid interference between vertical
+                        // and horizontal gesture swipe.
+                        if (dragAmountX > dragAmountY) {
+                            val horizontalDragOffset = offsetX.value + horizontalChange
+                            launch { offsetX.snapTo(horizontalDragOffset) }
+                            velocityTracker.addPosition(change.uptimeMillis, change.position)
+                            if (horizontalChange != 0f) change.consume()
                         }
-
-                        // Record the velocity of the drag.
-                        velocityTracker.addPosition(change.uptimeMillis, change.position)
-
-                        // Consume the gesture event, not passed to external
-                        if (change.positionChange() != Offset.Zero) change.consume()
                     }
                 }
                 // Dragging finished. Calculate the velocity of the fling.

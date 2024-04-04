@@ -6,6 +6,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -26,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
@@ -49,23 +55,26 @@ import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NoteItem
+import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
-import com.bytecause.lenslex.ui.screens.viewmodel.MainViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
+import com.bytecause.lenslex.util.isScrollingUp
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.launch
 
 enum class FabNavigation { CAMERA, GALLERY, ADD }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel(),
+fun HomeScreen(
+    viewModel: HomeViewModel = hiltViewModel(),
     sharedViewModel: TextRecognitionSharedViewModel,
     onClickNavigate: (NavigationItem) -> Unit,
     onPhotoTaken: (Uri) -> Unit
@@ -78,7 +87,7 @@ fun MainScreen(
 
     val wordList by viewModel.getAllWords.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    var deletedItemsStack by remember {
+    var deletedItemsStack by rememberSaveable {
         mutableStateOf<List<WordAndSentenceEntity>>(emptyList())
     }
 
@@ -183,7 +192,11 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column {
+
+            val lazyListState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
+
+            Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = CenterHorizontally
@@ -198,19 +211,29 @@ fun MainScreen(
                         color = Color.Gray
                     )
                 }
+
                 LazyColumn(
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    state = lazyListState
                 ) {
                     items(wordList, key = { item -> item.id }) { item ->
                         item.translations[selectedLanguage.langCode]?.let {
                             NoteItem(
-                                originalText = item.words,
+                                originalText = item.word,
                                 translatedText = it
                             ) {
                                 deletedItemsStack = deletedItemsStack + item
                                 viewModel.deleteWordById(item.id)
                             }
                         }
+                    }
+                }
+            }
+
+            AnimatedVisibility(visible = !lazyListState.isScrollingUp(), enter = fadeIn(), exit = fadeOut()) {
+                ScrollToTop {
+                    coroutineScope.launch {
+                        lazyListState.scrollToItem(0)
                     }
                 }
             }
@@ -274,4 +297,9 @@ fun MainScreen(
             )
         }
     }
+}
+
+@Composable
+fun Home() {
+
 }

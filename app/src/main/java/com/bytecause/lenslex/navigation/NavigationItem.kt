@@ -3,7 +3,8 @@ package com.bytecause.lenslex.navigation
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
-enum class Screen {
+enum class Screens {
+    LOGIN,
     HOME,
     ADD,
     TEXT_RESULT,
@@ -12,17 +13,11 @@ enum class Screen {
 }
 
 sealed class NavigationItem(val route: String) {
-    data object Home : NavigationItem(Screen.HOME.name)
-    data object Add : NavigationItem(Screen.ADD.name)
-    data object TextResult : NavigationItem(Screen.TEXT_RESULT.name)/* {
-        const val processedTextTypeArg = "processedText"
-        val routeWithArgs = "$route/{$processedTextTypeArg}"
-        val arguments = listOf(
-            navArgument(processedTextTypeArg) { type = NavType.StringType }
-        )
-    }*/
-
-    data object ModifiedImagePreview : NavigationItem(Screen.MODIFIED_IMAGE_PREVIEW.name) {
+    data object Login : NavigationItem(Screens.LOGIN.name)
+    data object Home : NavigationItem(Screens.HOME.name)
+    data object Add : NavigationItem(Screens.ADD.name)
+    data object TextResult : NavigationItem(Screens.TEXT_RESULT.name)
+    data object ModifiedImagePreview : NavigationItem(Screens.MODIFIED_IMAGE_PREVIEW.name) {
         const val uriTypeArg = "modifiedImageUri"
         val routeWithArgs = "$route/{$uriTypeArg}"
         val arguments = listOf(
@@ -31,5 +26,5 @@ sealed class NavigationItem(val route: String) {
     }
 
     // Graphs
-    data object TextProcessMainGraph : NavigationItem(Screen.TEXT_PROCESS_GALLERY.name)
+    data object TextProcessMainGraph : NavigationItem(Screens.TEXT_PROCESS_GALLERY.name)
 }

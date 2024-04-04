@@ -19,7 +19,7 @@ interface WordDao {
     @Query("DELETE FROM words_and_sentences WHERE id = :id")
     suspend fun deleteWordById(id: Long)
 
-    @Query("SELECT * FROM words_and_sentences WHERE words = :words")
+    @Query("SELECT * FROM words_and_sentences WHERE word = :words")
     fun getWordAndSentenceEntityByWords(words: String): Flow<WordAndSentenceEntity?>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

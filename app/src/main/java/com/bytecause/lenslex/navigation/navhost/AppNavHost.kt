@@ -14,9 +14,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.screens.AddScreen
-import com.bytecause.lenslex.ui.screens.MainScreen
+import com.bytecause.lenslex.ui.screens.HomeScreen
+import com.bytecause.lenslex.ui.screens.LoginScreen
 import com.bytecause.lenslex.ui.screens.ModifiedImagePreviewScreen
 import com.bytecause.lenslex.ui.screens.RecognizedTextResultScreen
+import com.bytecause.lenslex.ui.screens.viewmodel.AuthViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 
 @Composable
@@ -24,6 +26,8 @@ fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val authViewModel: AuthViewModel = hiltViewModel()
+
     NavHost(
         navController = navController,
         startDestination = NavigationItem.TextProcessMainGraph.route,
@@ -32,14 +36,23 @@ fun AppNavHost(
 
         // Nested NavGraph
         navigation(
-            startDestination = NavigationItem.Home.route,
+            startDestination = if (authViewModel.isUserSignedIn()) NavigationItem.Home.route
+            else NavigationItem.Login.route,
             route = NavigationItem.TextProcessMainGraph.route
         ) {
+
+            composable(route = NavigationItem.Login.route) {
+                LoginScreen(
+                    viewModel = authViewModel
+                ) {
+                    navController.navigate(NavigationItem.Home.route)
+                }
+            }
 
             composable(route = NavigationItem.Home.route) {
                 val viewModel = it.sharedViewModel<TextRecognitionSharedViewModel>(navController)
 
-                MainScreen(
+                HomeScreen(
                     sharedViewModel = viewModel,
                     onClickNavigate = { navigationItem ->
                         navController.navigate(navigationItem.route)
@@ -80,7 +93,7 @@ fun AppNavHost(
         }
 
         composable(route = NavigationItem.Add.route) {
-            AddScreen(onNavigateBack = { navController.popBackStack() } )
+            AddScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

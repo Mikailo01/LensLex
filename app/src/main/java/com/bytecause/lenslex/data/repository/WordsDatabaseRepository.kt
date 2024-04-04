@@ -14,7 +14,7 @@ class WordsDatabaseRepository @Inject constructor(
 
     suspend fun insertOrUpdateWordAndSentenceEntity(entity: WordAndSentenceEntity) {
         withContext(Dispatchers.IO) {
-            val existingEntity = wordDao.getWordAndSentenceEntityByWords(entity.words).firstOrNull()
+            val existingEntity = wordDao.getWordAndSentenceEntityByWords(entity.word).firstOrNull()
             if (existingEntity == null) {
                 wordDao.insertWord(entity)
             } else if (existingEntity.translations != entity.translations) {

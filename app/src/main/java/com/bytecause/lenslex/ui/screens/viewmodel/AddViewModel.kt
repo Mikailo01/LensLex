@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 @HiltViewModel
 class AddViewModel @Inject constructor(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
@@ -19,13 +20,12 @@ class AddViewModel @Inject constructor(
 
     fun insertOrUpdateWordAndSentenceEntity(entity: WordAndSentenceEntity) {
         viewModelScope.launch {
+            // Remove unnecessary whitespaces.
+            val regex = Regex("\\s+")
             wordsDatabaseRepository.insertOrUpdateWordAndSentenceEntity(
-                entity/*.copy(
-                    words = entity.words.replace(
-                        " ",
-                        ""
-                    ).lowercase()
-                )*/
+                entity.copy(
+                    word = entity.word.replace(regex, " ").lowercase()
+                )
             )
         }
     }

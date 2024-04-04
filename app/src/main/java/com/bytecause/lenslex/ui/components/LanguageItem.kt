@@ -33,7 +33,9 @@ fun LanguageItem(
         Image(
             painter = painterResource(id = R.drawable.baseline_download_24),
             contentDescription = "Download language",
-            modifier = modifier.clip(CircleShape).clickable { onDownloadClick() }
+            modifier = modifier
+                .clip(CircleShape)
+                .clickable { onDownloadClick() }
         )
     }
 }

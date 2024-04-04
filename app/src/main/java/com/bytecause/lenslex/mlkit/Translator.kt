@@ -6,11 +6,18 @@ import com.google.mlkit.nl.translate.TranslatorOptions
 
 object Translator {
 
+    sealed class TranslationResult {
+        data class TranslationSuccess(val translatedText: String) : TranslationResult()
+        data object ModelDownloadFailure : TranslationResult()
+        data object TranslationFailure : TranslationResult()
+    }
+
+
     fun translate(
         text: String,
         sourceLang: String,
         targetLang: String,
-        onTranslateResult: (String) -> Unit
+        onTranslateResult: (TranslationResult) -> Unit
     ) {
         // Create an English-German translator:
         val options = TranslatorOptions.Builder()
@@ -29,14 +36,15 @@ object Translator {
                 czechEnglishTranslator.translate(text)
                     .addOnSuccessListener { translatedText ->
                         // Translation successful.
-                        onTranslateResult(translatedText)
+                        onTranslateResult(TranslationResult.TranslationSuccess(translatedText = translatedText))
+                       // onTranslateResult(translatedText)
                     }
                     .addOnFailureListener { exception ->
-                        // Error.
-                        // ...
+                        onTranslateResult(TranslationResult.TranslationFailure)
                     }
             }
             .addOnFailureListener { exception ->
+                onTranslateResult(TranslationResult.ModelDownloadFailure)
                 // Model couldn’t be downloaded or other internal error.
                 // ...
             }

@@ -9,7 +9,7 @@ import com.bytecause.nautichart.data.local.room.converter.MapTypeConverter
 @TypeConverters(MapTypeConverter::class)
 data class WordAndSentenceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val words: String = "",
+    val word: String = "",
     val languageCode: String = "",
     val translations: Map<String, String> = emptyMap()
 )

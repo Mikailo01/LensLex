@@ -33,7 +33,12 @@ abstract class BaseViewModel(
         translationLangOption
     ) { dataStoreValue, defaultValue ->
         defaultValue.takeIf { it != SupportedLanguage() }
-            ?: dataStoreValue?.let { SupportedLanguage(langCode = it, langName = Locale(it).displayName.capital()) }
+            ?: dataStoreValue?.let {
+                SupportedLanguage(
+                    langCode = it,
+                    langName = Locale(it).displayName.capital()
+                )
+            }
             ?: SupportedLanguage(
                 langCode = Locale.getDefault().language,
                 langName = Locale.getDefault().displayName.capital()

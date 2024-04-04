@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class HomeViewModel @Inject constructor(
     supportedLanguagesRepository: SupportedLanguagesRepository,
     private val userPrefsRepositoryImpl: UserPrefsRepositoryImpl,
     private val wordsDatabaseRepository: WordsDatabaseRepository
