@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,11 +36,16 @@ import com.bytecause.lenslex.models.Credentials
 import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
+import com.bytecause.lenslex.ui.theme.disabledBorderColor
+import com.bytecause.lenslex.ui.theme.focusedBorderColor
+import com.bytecause.lenslex.ui.theme.red
+import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
 
 @Composable
 fun StatefulSignUpComp(
     modifier: Modifier = Modifier,
     credentialValidationResult: CredentialValidationResult?,
+    isLoading: Boolean,
     onSignUpButtonClicked: (Credentials.SignUpCredentials) -> Unit,
     onCredentialChanged: (Credentials.SignUpCredentials) -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
@@ -138,7 +144,8 @@ fun StatefulSignUpComp(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Filled.Email,
-                    contentDescription = stringResource(id = R.string.email)
+                    contentDescription = stringResource(id = R.string.email),
+                    tint = Color.Black
                 )
             },
             singleLine = true,
@@ -151,7 +158,12 @@ fun StatefulSignUpComp(
                 if (isEmailError) {
                     Text(text = stringResource(id = R.string.email_unsupported_format_warning))
                 }
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = focusedBorderColor,
+                unfocusedBorderColor = unfocusedBorderColor,
+                disabledBorderColor = disabledBorderColor
+            )
         )
 
         OutlinedTextField(
@@ -175,7 +187,8 @@ fun StatefulSignUpComp(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Filled.Lock,
-                    contentDescription = stringResource(id = R.string.password)
+                    contentDescription = stringResource(id = R.string.password),
+                    tint = Color.Black
                 )
             },
             trailingIcon = {
@@ -205,7 +218,12 @@ fun StatefulSignUpComp(
                 if (isPasswordError && password.isBlank()) {
                     Text(text = stringResource(id = R.string.password_empty_warning))
                 }
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = focusedBorderColor,
+                unfocusedBorderColor = unfocusedBorderColor,
+                disabledBorderColor = disabledBorderColor
+            )
         )
 
         OutlinedTextField(
@@ -229,7 +247,8 @@ fun StatefulSignUpComp(
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_repeat_24),
-                    contentDescription = stringResource(id = R.string.confirm_password)
+                    contentDescription = stringResource(id = R.string.confirm_password),
+                    tint = Color.Black
                 )
             },
             trailingIcon = {
@@ -260,7 +279,12 @@ fun StatefulSignUpComp(
                     text = stringResource(id = R.string.password_mismatch),
                     color = Color.Red
                 )
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = focusedBorderColor,
+                unfocusedBorderColor = unfocusedBorderColor,
+                disabledBorderColor = disabledBorderColor
+            )
         )
 
         if (password.isNotEmpty()) {
@@ -273,7 +297,12 @@ fun StatefulSignUpComp(
         Button(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 15.dp),
+                .padding(top = 15.dp, bottom = 15.dp)
+                /*.animatedBorder(
+                    borderColors = listOf(animatePurple, animateBlue),
+                    backgroundColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    borderWidth = 4.dp)*/,
             onClick = {
                 onSignUpButtonClicked(
                     Credentials.SignUpCredentials(
@@ -284,14 +313,15 @@ fun StatefulSignUpComp(
                 )
             }
         ) {
-            Text(text = stringResource(id = R.string.sign_up))
+            if (isLoading) IndeterminateCircularIndicator(isShowed = isLoading)
+            else Text(text = stringResource(id = R.string.sign_up))
         }
 
         AnnotatedClickableText(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             normalText = R.string.sign_prompt,
             annotatedText = R.string.sign_in,
-            annotatedTextColor = Color.Red,
+            annotatedTextColor = red,
             onAnnotatedTextClick = {
                 onSignInAnnotatedStringClick()
             }

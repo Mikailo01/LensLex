@@ -4,10 +4,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Snackbar
@@ -23,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -41,6 +45,8 @@ import com.bytecause.lenslex.ui.screens.viewmodel.AuthViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
+import com.bytecause.lenslex.ui.theme.blue
+import com.bytecause.lenslex.ui.theme.purple
 import kotlinx.coroutines.launch
 
 
@@ -59,14 +65,18 @@ fun LoginScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = signUiState.isSignInSuccessful) {
-        if (signUiState.isSignInSuccessful) onUserLoggedIn()
-    }
-
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var signIn by rememberSaveable {
         mutableStateOf(true)
+    }
+
+    var isLoading by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(key1 = signUiState.isSignInSuccessful) {
+        if (signUiState.isSignInSuccessful) onUserLoggedIn()
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -80,14 +90,29 @@ fun LoginScreen(
         }
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val gradientBackground = Brush.verticalGradient(
+        0.2f to purple,
+        1.0f to blue,
+        startY = 0.0f,
+        endY = 1500f
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(gradientBackground)
+    ) {
         Column(
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier
+                .align(Alignment.Center)
+                .verticalScroll(rememberScrollState())
         ) {
             if (signIn) StatefulSignInComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
+                isLoading = isLoading,
                 onCredentialsEntered = { email, password ->
+                    isLoading = true
 
                     keyboardController?.hide()
 
@@ -119,11 +144,12 @@ fun LoginScreen(
                         )
                     )
                 },
-                onSignUpClick = { signIn = false }
+                onSignInAnnotatedStringClick = { signIn = false }
             )
             else StatefulSignUpComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
+                isLoading = isLoading,
                 onSignUpButtonClicked = { signUpCredentials ->
 
                     keyboardController?.hide()
@@ -204,6 +230,7 @@ fun LoginScreen(
 
         if (!signUiState.signInError.isNullOrEmpty()) {
             coroutineScope.launch {
+                isLoading = false
                 snackBarHostState.showSnackbar(signUiState.signInError!!)
             }
         }

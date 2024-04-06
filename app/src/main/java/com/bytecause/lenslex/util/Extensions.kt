@@ -7,6 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 fun String.capital(): String = this.replaceFirstChar { it.uppercase() }
 
@@ -26,4 +30,17 @@ fun LazyListState.isScrollingUp(): Boolean {
             }
         }
     }.value
+}
+
+fun <T> Flow<T>.mutableStateIn(
+    scope: CoroutineScope,
+    initialValue: T
+): MutableStateFlow<T> {
+    val flow = MutableStateFlow(initialValue)
+
+    scope.launch {
+        this@mutableStateIn.collect(flow)
+    }
+
+    return flow
 }

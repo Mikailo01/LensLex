@@ -10,12 +10,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -25,27 +27,28 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
-import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
 import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.models.SupportedLanguage
 import com.bytecause.lenslex.navigation.NavigationItem
@@ -77,7 +80,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     sharedViewModel: TextRecognitionSharedViewModel,
     onClickNavigate: (NavigationItem) -> Unit,
-    onPhotoTaken: (Uri) -> Unit
+    onPhotoTaken: (Uri, Uri) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -85,11 +88,9 @@ fun HomeScreen(
         SupportedLanguage()
     )
 
-    val wordList by viewModel.getAllWords.collectAsStateWithLifecycle(initialValue = emptyList())
+    val wordList by viewModel.getAllWordsFromFireStore.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    var deletedItemsStack by rememberSaveable {
-        mutableStateOf<List<WordAndSentenceEntity>>(emptyList())
-    }
+    val deletedItemsStack by viewModel.deletedItemsStack.collectAsStateWithLifecycle()
 
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
@@ -98,7 +99,14 @@ fun HomeScreen(
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
             // use the cropped image
-            result.uriContent?.let(onPhotoTaken)
+
+            val originalUri = result.originalUri
+            val modifiedUri = result.uriContent
+
+            if (originalUri != null && modifiedUri != null) {
+                onPhotoTaken(originalUri, modifiedUri)
+            }
+
         } else {
             // an error occurred cropping
         }
@@ -172,15 +180,28 @@ fun HomeScreen(
                                 .padding(end = 10.dp)
                                 .clip(CircleShape)
                                 .clickable {
-                                    viewModel.insertOrUpdateWordAndSentenceEntity(deletedItemsStack.last())
-                                    deletedItemsStack = deletedItemsStack
-                                        .toMutableList()
-                                        .filter { it.id != deletedItemsStack.last().id }
+                                    viewModel.insertWordToFireStore(deletedItemsStack.last())
+                                    viewModel.removeDeletedItemFromStack()
                                 },
                             painter = painterResource(id = R.drawable.baseline_undo_24),
                             contentDescription = "Undo remove"
                         )
                     }
+
+                    AsyncImage(
+                        model = viewModel.getSignedInUser?.profilePictureUrl.takeIf { it != "null" }
+                            ?: R.drawable.default_account_image,
+                        contentDescription = "avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable {
+                                onClickNavigate(NavigationItem.Account)
+                            }
+                    )
                 },
                 onNavigationIconClick = { /* TODO() */ }
             )
@@ -216,21 +237,25 @@ fun HomeScreen(
                     modifier = Modifier.padding(8.dp),
                     state = lazyListState
                 ) {
-                    items(wordList, key = { item -> item.id }) { item ->
+                    items(wordList, key = { item -> item.timeStamp }) { item ->
                         item.translations[selectedLanguage.langCode]?.let {
                             NoteItem(
                                 originalText = item.word,
                                 translatedText = it
                             ) {
-                                deletedItemsStack = deletedItemsStack + item
-                                viewModel.deleteWordById(item.id)
+                                viewModel.addDeletedItemToStack(item)
+                                viewModel.deleteWordFromFireStore(item.id)
                             }
                         }
                     }
                 }
             }
 
-            AnimatedVisibility(visible = !lazyListState.isScrollingUp(), enter = fadeIn(), exit = fadeOut()) {
+            AnimatedVisibility(
+                visible = !lazyListState.isScrollingUp(),
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 ScrollToTop {
                     coroutineScope.launch {
                         lazyListState.scrollToItem(0)
@@ -293,7 +318,9 @@ fun HomeScreen(
 
             IndeterminateCircularIndicator(
                 modifier = Modifier.align(Center),
-                isShowed = showProgressBar
+                size = 65.dp,
+                isShowed = showProgressBar,
+                subContent = { Text(text = "Processing") }
             )
         }
     }

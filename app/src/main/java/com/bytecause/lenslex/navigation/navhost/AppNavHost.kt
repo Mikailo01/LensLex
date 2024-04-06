@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.ui.screens.AccountScreen
 import com.bytecause.lenslex.ui.screens.AddScreen
 import com.bytecause.lenslex.ui.screens.HomeScreen
 import com.bytecause.lenslex.ui.screens.LoginScreen
@@ -57,16 +58,26 @@ fun AppNavHost(
                     onClickNavigate = { navigationItem ->
                         navController.navigate(navigationItem.route)
                     },
-                    onPhotoTaken = {
+                    onPhotoTaken = { originalUri, modifiedUri ->
                         navController.navigate(
                             "${NavigationItem.ModifiedImagePreview.route}/${
                                 Uri.encode(
-                                    it.toString()
+                                    originalUri.toString()
+                                )
+                            }/${
+                                Uri.encode(
+                                    modifiedUri.toString()
                                 )
                             }"
                         )
                     }
                 )
+            }
+
+            composable(
+                route = NavigationItem.Account.route
+            ) {
+                AccountScreen(authViewModel = authViewModel, onBackButtonClick = { navController.popBackStack() })
             }
 
             composable(
@@ -77,7 +88,8 @@ fun AppNavHost(
 
                 ModifiedImagePreviewScreen(
                     sharedViewModel = viewModel,
-                    imageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.uriTypeArg)),
+                    originalImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.originalUriTypeArg)),
+                    modifiedImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.modifiedUriTypeArg)),
                     onClickNavigate = { navController.navigate(NavigationItem.TextResult.route) }
                 )
             }

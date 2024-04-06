@@ -5,6 +5,7 @@ import androidx.navigation.navArgument
 
 enum class Screens {
     LOGIN,
+    ACCOUNT,
     HOME,
     ADD,
     TEXT_RESULT,
@@ -14,14 +15,17 @@ enum class Screens {
 
 sealed class NavigationItem(val route: String) {
     data object Login : NavigationItem(Screens.LOGIN.name)
+    data object Account : NavigationItem(Screens.ACCOUNT.name)
     data object Home : NavigationItem(Screens.HOME.name)
     data object Add : NavigationItem(Screens.ADD.name)
     data object TextResult : NavigationItem(Screens.TEXT_RESULT.name)
     data object ModifiedImagePreview : NavigationItem(Screens.MODIFIED_IMAGE_PREVIEW.name) {
-        const val uriTypeArg = "modifiedImageUri"
-        val routeWithArgs = "$route/{$uriTypeArg}"
+        const val originalUriTypeArg = "originalImageUri"
+        const val modifiedUriTypeArg = "modifiedImageUri"
+        val routeWithArgs = "$route/{$originalUriTypeArg}/{$modifiedUriTypeArg}"
         val arguments = listOf(
-            navArgument(uriTypeArg) { type = NavType.StringType }
+            navArgument(originalUriTypeArg) { type = NavType.StringType },
+            navArgument(modifiedUriTypeArg) { type = NavType.StringType }
         )
     }
 

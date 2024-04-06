@@ -28,9 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
 import com.bytecause.lenslex.mlkit.Translator
 import com.bytecause.lenslex.models.SupportedLanguage
+import com.bytecause.lenslex.models.WordsAndSentences
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.TopAppBar
@@ -101,7 +101,8 @@ fun AddScreen(
                                 readJsonAsMapFromAssets(context, "abbreviations_wordlist.json")
 
                             Translator.translate(
-                                text = jsonContent?.get(textFieldInput.lowercase()) ?: textFieldInput,
+                                text = jsonContent?.get(textFieldInput.lowercase())
+                                    ?: textFieldInput,
                                 sourceLang = "en",
                                 targetLang = selectedLanguage.langCode
                             ) { translationResult ->
@@ -116,14 +117,19 @@ fun AddScreen(
                                     }
 
                                     is Translator.TranslationResult.TranslationSuccess -> {
-                                        viewModel.insertOrUpdateWordAndSentenceEntity(
-                                            WordAndSentenceEntity(
+
+                                        viewModel.insertWord(
+                                            WordsAndSentences(
+                                                id = "${textFieldInput}_en".lowercase()
+                                                    .replace(" ", "_"),
                                                 word = textFieldInput,
                                                 languageCode = "en",
-                                                translations = mapOf(selectedLanguage.langCode to translationResult.translatedText)
+                                                translations = mapOf(selectedLanguage.langCode to translationResult.translatedText),
+                                                timeStamp = System.currentTimeMillis()
                                             )
-                                        )
-                                        onNavigateBack()
+                                        ) {
+                                            onNavigateBack()
+                                        }
                                     }
 
                                     Translator.TranslationResult.TranslationFailure -> {

@@ -23,6 +23,7 @@ import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
 import com.bytecause.lenslex.ui.theme.green
+import com.bytecause.lenslex.ui.theme.red
 
 @Composable
 fun PasswordRules(
@@ -40,7 +41,7 @@ fun PasswordRules(
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
             validColor = green,
-            errorColor = Color.Red,
+            errorColor = red
         )
 
         RuleItem(
@@ -50,7 +51,7 @@ fun PasswordRules(
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
             validColor = green,
-            errorColor = Color.Red,
+            errorColor = red
         )
 
         RuleItem(
@@ -60,7 +61,7 @@ fun PasswordRules(
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
             validColor = green,
-            errorColor = Color.Red,
+            errorColor = red
         )
 
         RuleItem(
@@ -70,7 +71,7 @@ fun PasswordRules(
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
             validColor = green,
-            errorColor = Color.Red,
+            errorColor = red
         )
     }
 }
@@ -93,7 +94,6 @@ fun RuleItem(
 
     val icon = if (isError) errorIcon else validIcon
     val colorFilter = if (isError) ColorFilter.tint(errorColor) else ColorFilter.tint(validColor)
-    val textColor = if (isError) errorColor else validColor
 
     Row(
         modifier = modifier.padding(top = 10.dp, bottom = 10.dp),
@@ -107,7 +107,6 @@ fun RuleItem(
         )
         Text(
             text = textRule,
-            color = textColor,
             fontSize = 12.sp
         )
     }

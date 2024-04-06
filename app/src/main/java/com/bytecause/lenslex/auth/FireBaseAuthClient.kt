@@ -9,11 +9,13 @@ import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.UserData
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -159,7 +161,12 @@ class FireBaseAuthClient(
                         trySend(
                             SignInResult(
                                 data = null,
-                                errorMessage = task.exception?.message.also { Log.d("auth", it.toString()) }
+                                errorMessage = task.exception?.message.also {
+                                    Log.d(
+                                        "auth",
+                                        it.toString()
+                                    )
+                                }
                             )
                         ).isSuccess
                     }
@@ -168,69 +175,28 @@ class FireBaseAuthClient(
             awaitClose { cancel() }
         }
 
-    /*fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> = callbackFlow {
-        val authResultListener = auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                val result = if (task.isSuccessful) {
-                    val user = task.result.user
-                    SignInResult(
-                        data = UserData(
-                            userId = user?.uid ?: "",
-                            userName = user?.displayName ?: "",
-                            profilePictureUrl = user?.photoUrl?.toString() ?: ""
-                        ),
-                        errorMessage = null
-                    )
-                } else {
-                    // Handle specific error cases
-                    val exception = task.exception
-                    when (exception) {
-                        is FirebaseAuthInvalidCredentialsException -> {
-                            Log.d("auth", exception.message.toString())
-                            SignInResult(
-                                data = null,
-                                errorMessage = exception.message
-                            )
-                        }
-                        else -> {
-                            SignInResult(
-                                data = null,
-                                errorMessage = exception?.message
-                            )
-                        }
-                    }
-                }
-                trySend(result).isSuccess
-            }
-            .addOnFailureListener { exception ->
-                Log.d("auth", exception.message.toString())
-                // Handle other failure cases
-                trySend(SignInResult(
-                    data = null,
-                    errorMessage = exception.message
-                ))
-            }
-
-        awaitClose {
-            close()
-        }
-    }*/
-
-    suspend fun signOut() {
-        try {
-            oneTapClient.signOut().await()
+    suspend fun signOut(): Boolean {
+        return try {
+            oneTapClient.signOut()
             auth.signOut()
+            delay(1000)
+            true
         } catch (e: Exception) {
             e.printStackTrace()
             if (e is CancellationException) throw e
+            false
         }
     }
 
-    fun getSignedInUser(): UserData? = auth.currentUser?.run {
-        UserData(
-            userId = uid,
-            userName = displayName,
-            profilePictureUrl = photoUrl?.toString()
-        )
-    }
+    /* suspend fun signOut() {
+         try {
+             oneTapClient.signOut().await()
+             auth.signOut()
+         } catch (e: Exception) {
+             e.printStackTrace()
+             if (e is CancellationException) throw e
+         }
+     }*/
+
+    fun getSignedInUser(): FirebaseUser? = auth.currentUser
 }

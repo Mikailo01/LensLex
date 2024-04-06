@@ -8,6 +8,7 @@ import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.models.Credentials
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.SignInState
+import com.bytecause.lenslex.models.UserData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +36,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    val getSignedInUser: UserData? = fireBaseAuthClient.getSignedInUser()?.run {
+        UserData(
+            userId = uid,
+            userName = displayName,
+            profilePictureUrl = photoUrl?.toString()
+        )
+    }
+
     fun isUserSignedIn(): Boolean = fireBaseAuthClient.getSignedInUser() != null
+
+    /*fun linkAnonymousUser(email: String, password: String) {
+        fireBaseAuthClient.getSignedInUser()?.linkWithCredential()
+    }*/
 
     private fun onSignInResult(result: SignInResult) {
         _signUiState.update {
@@ -87,8 +100,8 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    suspend fun signOut() {
-        fireBaseAuthClient.signOut()
+    suspend fun signOut(): Boolean {
+       return fireBaseAuthClient.signOut()
     }
 
     fun areCredentialsValid(credentials: Credentials): CredentialValidationResult {
@@ -149,7 +162,7 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun emailValidator(email: String): Boolean {
-        val regex = Regex("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}\$")
+        val regex = Regex("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}\$")
         return regex.matches(email)
     }
 

@@ -32,7 +32,17 @@ val md_theme_light_shadow = Color(0xFF000000)
 val md_theme_light_surfaceTint = Color(0xFF2059C0)
 val md_theme_light_outlineVariant = Color(0xFFC5C6D0)
 val md_theme_light_scrim = Color(0xFF000000)
-val green = Color(0xFF4CAF50)
+val green = Color(0xFF00D50A)
+val red = Color(0xFFA00000)
+val purple = Color(0xFF8E87F7)
+val blue = Color(0xFF368AF0)
+
+val animatePurple = Color(0xFF8248A7)
+val animateBlue = Color(0xFF4F83C2)
+
+val unfocusedBorderColor = Color(0xFF102B6D)
+val focusedBorderColor = Color(0xFF3058B9)
+val disabledBorderColor = Color(0xFF4D75D6)
 
 val md_theme_dark_primary = Color(0xFFB1C6FF)
 val md_theme_dark_onPrimary = Color(0xFF002C70)
