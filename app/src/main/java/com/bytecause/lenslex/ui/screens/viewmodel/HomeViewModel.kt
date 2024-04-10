@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
@@ -14,23 +15,21 @@ import com.bytecause.lenslex.util.mutableStateIn
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class HomeViewModel @Inject constructor(
-    supportedLanguagesRepository: SupportedLanguagesRepository,
+class HomeViewModel(
     private val userPrefsRepositoryImpl: UserPrefsRepositoryImpl,
     private val wordsDatabaseRepository: WordsDatabaseRepository,
-    fireBaseAuthClient: FireBaseAuthClient,
-    private val fireStore: FirebaseFirestore
+    private val fireStore: FirebaseFirestore,
+    supportedLanguagesRepository: SupportedLanguagesRepository,
+    fireBaseAuthClient: FireBaseAuthClient
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
 
     private val _deletedItemsStack = MutableStateFlow<List<WordsAndSentences>>(emptyList())
@@ -40,7 +39,7 @@ class HomeViewModel @Inject constructor(
         UserData(
             userId = uid,
             userName = displayName,
-            profilePictureUrl = photoUrl?.toString()
+            profilePictureUrl = photoUrl?.toString().also { Log.d("idk", it.toString()) }
         )
     }
 
@@ -153,8 +152,8 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /*val getAllWords: Flow<List<WordAndSentenceEntity>> =
-        wordsDatabaseRepository.getAllWords*/
+    val getAllWords: Flow<List<WordAndSentenceEntity>> =
+        wordsDatabaseRepository.getAllWords
 
     fun deleteWordById(id: Long) {
         viewModelScope.launch {

@@ -41,18 +41,19 @@ import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
 import com.bytecause.lenslex.ui.components.StatefulSignInComp
 import com.bytecause.lenslex.ui.components.StatefulSignUpComp
-import com.bytecause.lenslex.ui.screens.viewmodel.AuthViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
+import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
 import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
 import com.bytecause.lenslex.ui.theme.blue
 import com.bytecause.lenslex.ui.theme.purple
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
 fun LoginScreen(
-    viewModel: AuthViewModel,
+    viewModel: LoginViewModel = koinViewModel(),
     onUserLoggedIn: () -> Unit
 ) {
     val signUiState by viewModel.signUiState.collectAsStateWithLifecycle()
@@ -199,7 +200,7 @@ fun LoginScreen(
                 contentDescription = ""
             ) {
                 coroutineScope.launch {
-                    val signInIntentSender = viewModel.signInViaGoogle()
+                   val signInIntentSender = viewModel.signInViaGoogle()
                     launcher.launch(
                         IntentSenderRequest.Builder(
                             signInIntentSender ?: return@launch

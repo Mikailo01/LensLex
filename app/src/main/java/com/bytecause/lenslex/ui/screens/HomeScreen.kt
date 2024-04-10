@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,7 +46,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
@@ -71,13 +72,14 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 enum class FabNavigation { CAMERA, GALLERY, ADD }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: HomeViewModel = koinViewModel(),
     sharedViewModel: TextRecognitionSharedViewModel,
     onClickNavigate: (NavigationItem) -> Unit,
     onPhotoTaken: (Uri, Uri) -> Unit
@@ -305,6 +307,10 @@ fun HomeScreen(
             if (viewModel.setShowLanguageDialog) {
                 LanguageDialog(
                     lazyListContent = viewModel.supportedLanguages,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp)
+                        .padding(16.dp),
                     onDismiss = { viewModel.onDismissDialog() },
                     onConfirm = { language ->
                         viewModel.saveTranslationOption(language)

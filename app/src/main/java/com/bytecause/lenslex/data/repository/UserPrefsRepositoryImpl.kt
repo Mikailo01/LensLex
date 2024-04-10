@@ -13,10 +13,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.IOException
-import javax.inject.Inject
 
 
-class UserPrefsRepositoryImpl @Inject constructor(
+class UserPrefsRepositoryImpl(
     private val userDataStorePreferences: DataStore<Preferences>
 ) : UserPrefsRepository {
 

@@ -177,7 +177,7 @@ class FireBaseAuthClient(
 
     suspend fun signOut(): Boolean {
         return try {
-            oneTapClient.signOut()
+            //oneTapClient.signOut()
             auth.signOut()
             delay(1000)
             true
@@ -188,9 +188,9 @@ class FireBaseAuthClient(
         }
     }
 
-    /* suspend fun signOut() {
+    /*suspend fun signOut() {
          try {
-             oneTapClient.signOut().await()
+             oneTapClient.signOut()
              auth.signOut()
          } catch (e: Exception) {
              e.printStackTrace()

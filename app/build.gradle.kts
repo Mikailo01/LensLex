@@ -1,8 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id ("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
 }
 
@@ -57,7 +56,9 @@ android {
 
 dependencies {
     val roomVersion = "2.6.1"
+    val koinVersion = "3.5.3"
 
+    implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
@@ -65,17 +66,16 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Text recognition
-    implementation ("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:text-recognition:16.0.0")
     // Text translation
-    implementation ("com.google.mlkit:translate:17.0.2")
+    implementation("com.google.mlkit:translate:17.0.2")
     // Text language recognition
-    implementation ("com.google.mlkit:language-id:17.0.5")
+    implementation("com.google.mlkit:language-id:17.0.5")
 
     // Preferences DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Firebase
-    // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation("com.google.firebase:firebase-analytics")
@@ -83,6 +83,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
 
     // Room & Dao
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -92,8 +93,8 @@ dependencies {
     // Compose
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2023.08.00"))
-    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-    implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -102,12 +103,13 @@ dependencies {
     implementation("com.vanniktech:android-image-cropper:4.5.0")
 
     // Accompanist runtime permissions.
-    implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
-    // Hilt DI library
-    implementation ("com.google.dagger:hilt-android:2.51")
-    implementation ("androidx.hilt:hilt-navigation-compose:1.2.0")
-    ksp ("com.google.dagger:hilt-compiler:2.51")
+    // Koin DI library
+    implementation(platform("io.insert-koin:koin-bom:$koinVersion"))
+    implementation("io.insert-koin:koin-core")
+    implementation("io.insert-koin:koin-androidx-compose")
+    implementation("io.insert-koin:koin-android")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

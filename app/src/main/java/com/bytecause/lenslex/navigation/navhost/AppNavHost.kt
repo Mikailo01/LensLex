@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -19,15 +18,17 @@ import com.bytecause.lenslex.ui.screens.HomeScreen
 import com.bytecause.lenslex.ui.screens.LoginScreen
 import com.bytecause.lenslex.ui.screens.ModifiedImagePreviewScreen
 import com.bytecause.lenslex.ui.screens.RecognizedTextResultScreen
-import com.bytecause.lenslex.ui.screens.viewmodel.AuthViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    val authViewModel: AuthViewModel = hiltViewModel()
+    val currentUser = Firebase.auth.currentUser
 
     NavHost(
         navController = navController,
@@ -37,15 +38,13 @@ fun AppNavHost(
 
         // Nested NavGraph
         navigation(
-            startDestination = if (authViewModel.isUserSignedIn()) NavigationItem.Home.route
+            startDestination = if (currentUser != null) NavigationItem.Home.route
             else NavigationItem.Login.route,
             route = NavigationItem.TextProcessMainGraph.route
         ) {
 
             composable(route = NavigationItem.Login.route) {
-                LoginScreen(
-                    viewModel = authViewModel
-                ) {
+                LoginScreen {
                     navController.navigate(NavigationItem.Home.route)
                 }
             }
@@ -77,7 +76,7 @@ fun AppNavHost(
             composable(
                 route = NavigationItem.Account.route
             ) {
-                AccountScreen(authViewModel = authViewModel, onBackButtonClick = { navController.popBackStack() })
+                AccountScreen(onBackButtonClick = { navController.popBackStack() })
             }
 
             composable(
@@ -113,9 +112,9 @@ fun AppNavHost(
 // Helper function for creating instance of sharedViewModel with bounded lifecycle to NavGraph.
 @Composable
 inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navController: NavController): T {
-    val navGraphRoute = this.destination.parent?.route ?: return hiltViewModel()
+    val navGraphRoute = this.destination.parent?.route ?: return koinViewModel()
     val parentEntry = remember(this) {
         navController.getBackStackEntry(navGraphRoute)
     }
-    return hiltViewModel(parentEntry)
+    return koinViewModel(viewModelStoreOwner = parentEntry)
 }

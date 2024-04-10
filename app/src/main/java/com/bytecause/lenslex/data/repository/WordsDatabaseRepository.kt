@@ -6,9 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-class WordsDatabaseRepository @Inject constructor(
+class WordsDatabaseRepository(
     private val wordDao: WordDao
 ) {
 

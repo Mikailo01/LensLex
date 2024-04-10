@@ -1,9 +1,12 @@
 package com.bytecause.lenslex.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -25,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.mlkit.Translator
@@ -36,11 +38,12 @@ import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.util.Util.readJsonAsMapFromAssets
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddScreen(
-    viewModel: AddViewModel = hiltViewModel(),
+    viewModel: AddViewModel = koinViewModel(),
     onNavigateBack: () -> Unit
 ) {
     val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
@@ -118,6 +121,8 @@ fun AddScreen(
 
                                     is Translator.TranslationResult.TranslationSuccess -> {
 
+                                        Log.d("idk", "success")
+
                                         viewModel.insertWord(
                                             WordsAndSentences(
                                                 id = "${textFieldInput}_en".lowercase()
@@ -153,6 +158,10 @@ fun AddScreen(
     if (viewModel.setShowLanguageDialog) {
         LanguageDialog(
             lazyListContent = viewModel.supportedLanguages,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(500.dp)
+                .padding(16.dp),
             onDismiss = { viewModel.onDismissDialog() },
             onConfirm = {
                 viewModel.setLangOption(it)

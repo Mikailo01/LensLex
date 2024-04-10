@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
@@ -10,13 +9,10 @@ import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
 import com.bytecause.lenslex.models.WordsAndSentences
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 
-@HiltViewModel
-class AddViewModel @Inject constructor(
+class AddViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val firebase: FirebaseFirestore,
     private val authClient: FireBaseAuthClient,
@@ -46,13 +42,7 @@ class AddViewModel @Inject constructor(
                     .document(userId)
                     .collection("WordsAndSentences")
                     .add(word)
-                    .addOnSuccessListener {
-                        onSuccess()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w("Firestore", "Error adding document", e)
-                    }
-            }
+            }.invokeOnCompletion { onSuccess() }
         }
     }
 

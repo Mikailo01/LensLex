@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.mlkit
 
+import android.util.Log
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -44,6 +45,7 @@ object Translator {
                     }
             }
             .addOnFailureListener { exception ->
+                Log.d("idk", "donm't")
                 onTranslateResult(TranslationResult.ModelDownloadFailure)
                 // Model couldn’t be downloaded or other internal error.
                 // ...

@@ -8,17 +8,13 @@ import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.models.Credentials
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.SignInState
-import com.bytecause.lenslex.models.UserData
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
-@HiltViewModel
-class AuthViewModel @Inject constructor(
+class LoginViewModel(
     private val fireBaseAuthClient: FireBaseAuthClient
 ) : ViewModel() {
 
@@ -35,20 +31,6 @@ class AuthViewModel @Inject constructor(
             result
         }
     }
-
-    val getSignedInUser: UserData? = fireBaseAuthClient.getSignedInUser()?.run {
-        UserData(
-            userId = uid,
-            userName = displayName,
-            profilePictureUrl = photoUrl?.toString()
-        )
-    }
-
-    fun isUserSignedIn(): Boolean = fireBaseAuthClient.getSignedInUser() != null
-
-    /*fun linkAnonymousUser(email: String, password: String) {
-        fireBaseAuthClient.getSignedInUser()?.linkWithCredential()
-    }*/
 
     private fun onSignInResult(result: SignInResult) {
         _signUiState.update {
@@ -98,10 +80,6 @@ class AuthViewModel @Inject constructor(
         fireBaseAuthClient.signInAnonymously().firstOrNull()?.let {
             onSignInResult(it)
         }
-    }
-
-    suspend fun signOut(): Boolean {
-       return fireBaseAuthClient.signOut()
     }
 
     fun areCredentialsValid(credentials: Credentials): CredentialValidationResult {
