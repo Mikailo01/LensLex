@@ -65,6 +65,9 @@ dependencies {
     // AsyncImage loader library
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    // Blur library
+    implementation ("jp.wasabeef:blurry:4.0.1")
+
     // Text recognition
     implementation("com.google.mlkit:text-recognition:16.0.0")
     // Text translation

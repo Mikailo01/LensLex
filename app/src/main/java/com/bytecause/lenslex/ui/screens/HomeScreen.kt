@@ -191,7 +191,7 @@ fun HomeScreen(
                     }
 
                     AsyncImage(
-                        model = viewModel.getSignedInUser?.profilePictureUrl.takeIf { it != "null" }
+                        model = viewModel.getSignedInUser()?.profilePictureUrl.takeIf { it != "null" }
                             ?: R.drawable.default_account_image,
                         contentDescription = "avatar",
                         contentScale = ContentScale.Crop,
@@ -201,7 +201,7 @@ fun HomeScreen(
                             .clip(CircleShape)
                             .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             .clickable {
-                                onClickNavigate(NavigationItem.Account)
+                                onClickNavigate(NavigationItem.SettingsGraph)
                             }
                     )
                 },

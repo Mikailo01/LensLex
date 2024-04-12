@@ -4,10 +4,10 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,21 +37,24 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
-import com.bytecause.lenslex.models.UserData
+import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.Divider
@@ -59,24 +62,25 @@ import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
+import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.io.InputStream
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     viewModel: AccountViewModel = koinViewModel(),
+    onNavigate: (NavigationItem) -> Unit,
     onBackButtonClick: () -> Unit
 ) {
+    val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
+
     val coroutineScope = rememberCoroutineScope()
-
-    val signedInUser: UserData? = remember {
-        viewModel.getSignedInUser
-    }
-
     val sheetState = rememberModalBottomSheetState()
+
     var showBottomSheet by rememberSaveable {
         mutableStateOf(false)
     }
@@ -85,24 +89,22 @@ fun AccountScreen(
         mutableStateOf(false)
     }
 
+    var nameTextFieldValue by mutableStateOf(getSignedInUser?.userName?.takeIf { it.isNotBlank() }
+        ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() }
+        ?: "")
+
+    var profilePicture by mutableStateOf(getSignedInUser?.profilePictureUrl.toString())
+
     var showUrlDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
+    var isEditing by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var urlTextFieldValue by rememberSaveable {
         mutableStateOf("")
-    }
-
-    var isEditing by rememberSaveable { mutableStateOf(false) }
-    var nameTextFieldValue by rememberSaveable {
-        mutableStateOf(signedInUser?.userName?.takeIf { it.isNotBlank() }
-            ?: signedInUser?.userId?.takeIf { it.isNotBlank() }
-            ?: "Unknown")
-    }
-
-    var profilePicture by remember {
-        mutableStateOf(signedInUser?.profilePictureUrl.toString())
     }
 
     val context = LocalContext.current
@@ -110,17 +112,6 @@ fun AccountScreen(
     val intent: Intent = packageManager.getLaunchIntentForPackage(context.packageName)!!
     val componentName: ComponentName = intent.component!!
     val restartIntent: Intent = Intent.makeRestartActivityTask(componentName)
-
-    val gradientBackground = Brush.horizontalGradient(
-        0.1f to Color.Magenta,
-        0.3f to Color.Cyan,
-        0.6f to Color.Magenta,
-        0.7f to Color.Cyan,
-        0.8f to Color.Magenta,
-        0.9f to Color.Cyan,
-        startX = 0f,
-        endX = 1000f
-    )
 
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -177,8 +168,30 @@ fun AccountScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .background(gradientBackground)
-            )
+                    .blur(3.dp) // Ignored if Android API level < 31
+            ) {
+                // Blurred background
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // AsyncImage wrapped in Box
+                    Box(modifier = Modifier.weight(1f)) {
+                        AsyncImage(
+                            model = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                ImageRequest.Builder(context)
+                                    .data(profilePicture.takeIf { it != "null" }
+                                        ?: R.drawable.default_account_image)
+                                    .transformations(BlurTransformation(context, 15))
+                                    .build()
+                            } else profilePicture.takeIf { it != "null" }
+                                ?: R.drawable.default_account_image,
+                            contentDescription = "avatar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    Divider(thickness = 2, color = Color.Gray)
+                }
+            }
 
             Column(
                 modifier = Modifier
@@ -190,7 +203,7 @@ fun AccountScreen(
                 ProfilePicture(
                     profilePicture = profilePicture,
                     cornerIcon = R.drawable.baseline_camera_alt_24,
-                    modifier = Modifier.padding(top = 90.dp)
+                    modifier = Modifier.padding(top = 80.dp)
                 ) {
                     showBottomSheet = true
                 }
@@ -232,8 +245,8 @@ fun AccountScreen(
 
                 RowItem(
                     leadingIconId = R.drawable.baseline_language_24,
-                    contentDescription = "Select language",
-                    text = "Language"
+                    contentDescription = R.string.select_language,
+                    text = R.string.language
                 ) {
 
                 }
@@ -241,9 +254,19 @@ fun AccountScreen(
                 Divider(thickness = 1, color = Color.Gray)
 
                 RowItem(
+                    leadingIconId = R.drawable.baseline_manage_accounts_24,
+                    contentDescription = R.string.account_settings,
+                    text = R.string.account_settings
+                ) {
+                    onNavigate(NavigationItem.AccountSettings)
+                }
+
+                Divider(thickness = 1, color = Color.Gray)
+
+                RowItem(
                     leadingIconId = R.drawable.baseline_logout_24,
-                    contentDescription = stringResource(id = R.string.sign_out),
-                    text = stringResource(id = R.string.sign_out)
+                    contentDescription = R.string.sign_out,
+                    text = R.string.sign_out
                 ) {
                     if (viewModel.isAccountAnonymous) showConfirmationDialog = true
                     else {
@@ -267,8 +290,8 @@ fun AccountScreen(
 
                     RowItem(
                         leadingIconId = R.drawable.baseline_image_24,
-                        contentDescription = "Select picture for profile",
-                        text = "Pick picture from device's storage"
+                        contentDescription = R.string.pick_profile_picture_from_storage,
+                        text = R.string.pick_profile_picture_from_storage
                     ) {
                         showBottomSheet = false
                         singlePhotoPickerLauncher.launch(
@@ -280,8 +303,8 @@ fun AccountScreen(
 
                     RowItem(
                         leadingIconId = R.drawable.baseline_link_24,
-                        contentDescription = "Select picture for profile",
-                        text = stringResource(id = R.string.set_profile_picture_from_url)
+                        contentDescription = R.string.set_profile_picture_from_url,
+                        text = R.string.set_profile_picture_from_url
                     ) {
                         showBottomSheet = false
                         showUrlDialog = true

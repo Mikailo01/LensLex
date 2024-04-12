@@ -29,17 +29,17 @@ class HomeViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val fireStore: FirebaseFirestore,
     supportedLanguagesRepository: SupportedLanguagesRepository,
-    fireBaseAuthClient: FireBaseAuthClient
+    private val fireBaseAuthClient: FireBaseAuthClient
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
 
     private val _deletedItemsStack = MutableStateFlow<List<WordsAndSentences>>(emptyList())
     val deletedItemsStack get() = _deletedItemsStack
 
-    val getSignedInUser: UserData? = fireBaseAuthClient.getSignedInUser()?.run {
+    fun getSignedInUser(): UserData? = fireBaseAuthClient.getSignedInUser()?.run {
         UserData(
             userId = uid,
             userName = displayName,
-            profilePictureUrl = photoUrl?.toString().also { Log.d("idk", it.toString()) }
+            profilePictureUrl = photoUrl?.toString()
         )
     }
 
@@ -48,7 +48,7 @@ class HomeViewModel(
     private fun addSnapShotListener() {
         fireStoreSnapShotListener = fireStore
             .collection("users")
-            .document(getSignedInUser!!.userId)
+            .document(getSignedInUser()!!.userId)
             .collection("WordsAndSentences")
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
@@ -62,6 +62,7 @@ class HomeViewModel(
                     }
                     // Update your UI or state with the new data
                     // For example, if using MutableStateFlow:
+
                     _getAllWordsFromFireStore.value = wordsList.sortedByDescending { it.timeStamp }
                 } else {
                     _getAllWordsFromFireStore.value = emptyList()
@@ -83,10 +84,12 @@ class HomeViewModel(
 
     private val _getAllWordsFromFireStore: MutableStateFlow<List<WordsAndSentences>> =
         callbackFlow {
+            Log.d("idk", "ok")
             addSnapShotListener()
+
             fireStore
                 .collection("users")
-                .document(getSignedInUser!!.userId)
+                .document(getSignedInUser()!!.userId)
                 .collection("WordsAndSentences")
                 .get()
                 .addOnSuccessListener {
@@ -109,7 +112,7 @@ class HomeViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             fireStore
                 .collection("users")
-                .document(getSignedInUser!!.userId)
+                .document(getSignedInUser()!!.userId)
                 .collection("WordsAndSentences")
                 .document(word.id)
                 .set(word)
@@ -120,7 +123,7 @@ class HomeViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             fireStore
                 .collection("users")
-                .document(getSignedInUser!!.userId)
+                .document(getSignedInUser()!!.userId)
                 .collection("WordsAndSentences")
                 .document(documentId)
                 .delete()

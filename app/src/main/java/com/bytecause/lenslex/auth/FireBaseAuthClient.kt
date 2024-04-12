@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class FireBaseAuthClient(
     private val context: Context,
@@ -76,6 +78,31 @@ class FireBaseAuthClient(
                 data = null,
                 errorMessage = e.message
             )
+        }
+    }
+
+    suspend fun reauthenticateWithGoogleIntent(intent: Intent): SignInResult {
+        return suspendCoroutine { continuation ->
+            val credential = oneTapClient.getSignInCredentialFromIntent(intent)
+            val googleIdToken = credential.googleIdToken
+            val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
+
+            auth.currentUser?.reauthenticateAndRetrieveData(googleCredentials)
+                ?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val userData = task.result.user?.run {
+                            UserData(
+                                userId = uid,
+                                userName = displayName,
+                                profilePictureUrl = photoUrl?.toString()
+                            )
+                        }
+                        continuation.resume(SignInResult(userData, null))
+                    } else {
+                        task.exception?.printStackTrace()
+                        continuation.resume(SignInResult(null, task.exception?.message))
+                    }
+                }
         }
     }
 

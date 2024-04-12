@@ -6,16 +6,19 @@ import androidx.navigation.navArgument
 enum class Screens {
     LOGIN,
     ACCOUNT,
+    ACCOUNT_SETTINGS,
     HOME,
     ADD,
     TEXT_RESULT,
     MODIFIED_IMAGE_PREVIEW,
-    TEXT_PROCESS_GALLERY
+    TEXT_PROCESS_GALLERY_GRAPH,
+    SETTINGS_GRAPH
 }
 
 sealed class NavigationItem(val route: String) {
     data object Login : NavigationItem(Screens.LOGIN.name)
     data object Account : NavigationItem(Screens.ACCOUNT.name)
+    data object AccountSettings : NavigationItem(Screens.ACCOUNT_SETTINGS.name)
     data object Home : NavigationItem(Screens.HOME.name)
     data object Add : NavigationItem(Screens.ADD.name)
     data object TextResult : NavigationItem(Screens.TEXT_RESULT.name)
@@ -30,5 +33,6 @@ sealed class NavigationItem(val route: String) {
     }
 
     // Graphs
-    data object TextProcessMainGraph : NavigationItem(Screens.TEXT_PROCESS_GALLERY.name)
+    data object TextProcessMainGraph : NavigationItem(Screens.TEXT_PROCESS_GALLERY_GRAPH.name)
+    data object SettingsGraph : NavigationItem(Screens.SETTINGS_GRAPH.name)
 }

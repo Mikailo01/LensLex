@@ -3,6 +3,7 @@ package com.bytecause.lenslex.ui.screens
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -72,9 +73,14 @@ fun RecognizedTextResultScreen(
             )
         }
     ) { innerPaddingValues ->
-        Column(modifier = Modifier.padding(innerPaddingValues)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPaddingValues)
+        ) {
             Text(
                 modifier = Modifier
+                    .fillMaxSize()
                     .padding(10.dp)
                     .verticalScroll(rememberScrollState()),
                 text = text.value.joinToString(System.lineSeparator())

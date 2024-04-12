@@ -11,6 +11,7 @@ import com.bytecause.lenslex.data.local.room.WordDao
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
+import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
@@ -100,5 +101,9 @@ val appModule = module {
             userPrefsRepositoryImpl = get(),
             supportedLanguagesRepository = get()
         )
+    }
+
+    viewModel {
+        AccountSettingsViewModel(get())
     }
 }

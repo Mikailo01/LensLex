@@ -36,7 +36,7 @@ abstract class BaseViewModel(
             ?: dataStoreValue?.let {
                 SupportedLanguage(
                     langCode = it,
-                    langName = Locale(it).displayName.capital()
+                    langName = Locale(it).displayName.split(" ")[0].capital()
                 )
             }
             ?: SupportedLanguage(

@@ -19,11 +19,11 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
 import com.bytecause.lenslex.ui.theme.green
 import com.bytecause.lenslex.ui.theme.red
+import com.bytecause.lenslex.util.CredentialValidationResult
+import com.bytecause.lenslex.util.PasswordErrorType
+import com.bytecause.lenslex.util.PasswordValidationResult
 
 @Composable
 fun PasswordRules(

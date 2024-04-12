@@ -1,18 +1,9 @@
 package com.bytecause.lenslex.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,24 +13,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.Credentials
-import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
-import com.bytecause.lenslex.ui.theme.disabledBorderColor
-import com.bytecause.lenslex.ui.theme.focusedBorderColor
 import com.bytecause.lenslex.ui.theme.red
-import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
+import com.bytecause.lenslex.util.CredentialValidationResult
+import com.bytecause.lenslex.util.PasswordErrorType
+import com.bytecause.lenslex.util.PasswordValidationResult
 
 
 @Composable
@@ -69,20 +50,8 @@ fun StatefulSignInComp(
     }
 
     var isPasswordError by rememberSaveable {
-        mutableStateOf<PasswordErrorType?>(null)
+        mutableStateOf<List<PasswordErrorType>>(emptyList())
     }
-
-    /*LaunchedEffect(key1 = credentialValidationResult) {
-        Log.d("idk", "validate")
-        isEmailError = if (credentialValidationResult is CredentialValidationResult.Invalid) {
-            credentialValidationResult.isEmailValid != true
-        } else false
-        isPasswordError = if (credentialValidationResult is CredentialValidationResult.Invalid
-            && credentialValidationResult.passwordError is PasswordValidationResult.Invalid
-        ) {
-            credentialValidationResult.passwordError.cause.contains(PasswordErrorType.PASSWORD_EMPTY)
-        } else false
-    }*/
 
     LaunchedEffect(key1 = credentialValidationResult) {
         when (credentialValidationResult) {
@@ -92,131 +61,59 @@ fun StatefulSignInComp(
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             when {
-                                PasswordErrorType.PASSWORD_EMPTY in passwordError.cause -> PasswordErrorType.PASSWORD_EMPTY
-                                PasswordErrorType.PASSWORD_INCORRECT in passwordError.cause -> PasswordErrorType.PASSWORD_INCORRECT
-                                else -> null
+                                PasswordErrorType.PASSWORD_EMPTY in passwordError.cause -> listOf(
+                                    PasswordErrorType.PASSWORD_EMPTY
+                                )
+
+                                PasswordErrorType.PASSWORD_INCORRECT in passwordError.cause -> listOf(
+                                    PasswordErrorType.PASSWORD_INCORRECT
+                                )
+
+                                else -> emptyList()
                             }
                         }
 
-                        else -> null
+                        else -> emptyList()
                     }
             }
 
             else -> {
                 isEmailError = false
-                isPasswordError = null
+                isPasswordError = emptyList()
             }
         }
     }
-
 
     Column(
         modifier = modifier
             .padding(start = 10.dp, end = 10.dp)
     ) {
-        OutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = email,
-            onValueChange = {
-                email = it
-                onCredentialChanged(
-                    Credentials.SignInCredentials(
-                        email = email,
-                        password = password
-                    )
-                )
-            },
-            label = {
-                Text(
-                    text = stringResource(id = R.string.email),
-                    fontSize = 16.sp
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.Email,
-                    contentDescription = stringResource(id = R.string.email),
-                    tint = Color.Black
-                )
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            isError = isEmailError,
-            supportingText = {
-                if (isEmailError) Text(text = stringResource(id = R.string.email_unsupported_format_warning))
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = focusedBorderColor,
-                unfocusedBorderColor = unfocusedBorderColor,
-                disabledBorderColor = disabledBorderColor
-            )
-        )
 
-        OutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = password,
-            enabled = !(email.isBlank() || isEmailError),
-            onValueChange = {
-                password = it
+        EmailField(
+            email = email,
+            isEmailError = isEmailError,
+            onCredentialChanged = {
+                email = it
                 onCredentialChanged(
                     Credentials.SignInCredentials(
                         email, password
                     )
                 )
-            },
-            label = {
-                Text(
-                    text = stringResource(id = R.string.password),
-                    fontSize = 16.sp
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.Lock,
-                    contentDescription = stringResource(id = R.string.password),
-                    tint = Color.Black
-                )
-            },
-            trailingIcon = {
-                val iconId =
-                    if (!passwordVisible) R.drawable.baseline_visibility_off_24 else R.drawable.baseline_visibility_24
-                val contentDescription =
-                    if (!passwordVisible) R.string.password_hidden else R.string.password_shown
-                IconButton(onClick = {
-                    passwordVisible = !passwordVisible
-                }
-                ) {
-                    Image(
-                        painter = painterResource(id = iconId),
-                        contentDescription = stringResource(id = contentDescription)
-                    )
-                }
-            },
-            visualTransformation = if (passwordVisible) VisualTransformation.None
-            else PasswordVisualTransformation(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            isError = isPasswordError != null,
-            supportingText = {
-                if (isEmailError) return@OutlinedTextField
+            }
+        )
 
-                if (isPasswordError == PasswordErrorType.PASSWORD_EMPTY) {
-                    Text(text = stringResource(id = R.string.password_empty_warning))
-                } else if (isPasswordError == PasswordErrorType.PASSWORD_INCORRECT) {
-                    Text(text = "Password incorrect")
-                }
+        PasswordField(
+            password = password,
+            isPasswordError = isPasswordError,
+            isPasswordEnabled = !(email.isBlank() || isEmailError),
+            isPasswordVisible = passwordVisible,
+            onPasswordVisibilityClick = { passwordVisible = it },
+            onPasswordValueChange = {
+                password = it
             },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = focusedBorderColor,
-                unfocusedBorderColor = unfocusedBorderColor,
-                disabledBorderColor = disabledBorderColor
-            )
+            onCredentialChanged = {
+                onCredentialChanged(Credentials.SignInCredentials(email, password))
+            }
         )
 
         Button(
@@ -224,6 +121,8 @@ fun StatefulSignInComp(
                 .fillMaxWidth()
                 .padding(top = 15.dp, bottom = 15.dp),
             onClick = {
+                if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
+
                 onCredentialsEntered(
                     email,
                     password

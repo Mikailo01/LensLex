@@ -19,11 +19,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -36,17 +33,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.Credentials
+import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
 import com.bytecause.lenslex.ui.components.StatefulSignInComp
 import com.bytecause.lenslex.ui.components.StatefulSignUpComp
-import com.bytecause.lenslex.ui.screens.viewmodel.CredentialValidationResult
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordErrorType
-import com.bytecause.lenslex.ui.screens.viewmodel.PasswordValidationResult
 import com.bytecause.lenslex.ui.theme.blue
 import com.bytecause.lenslex.ui.theme.purple
+import com.bytecause.lenslex.util.CredentialValidationResult
+import com.bytecause.lenslex.util.PasswordErrorType
+import com.bytecause.lenslex.util.PasswordValidationResult
+import com.bytecause.lenslex.util.ValidationUtil.areCredentialsValid
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -67,14 +66,6 @@ fun LoginScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    var signIn by rememberSaveable {
-        mutableStateOf(true)
-    }
-
-    var isLoading by rememberSaveable {
-        mutableStateOf(false)
-    }
 
     LaunchedEffect(key1 = signUiState.isSignInSuccessful) {
         if (signUiState.isSignInSuccessful) onUserLoggedIn()
@@ -108,16 +99,16 @@ fun LoginScreen(
                 .align(Alignment.Center)
                 .verticalScroll(rememberScrollState())
         ) {
-            if (signIn) StatefulSignInComp(
+            if (viewModel.signIn) StatefulSignInComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
-                isLoading = isLoading,
+                isLoading = viewModel.isLoading,
                 onCredentialsEntered = { email, password ->
-                    isLoading = true
+                    viewModel.isLoading(true)
 
                     keyboardController?.hide()
 
-                    viewModel.saveCredentialValidationResult(viewModel.areCredentialsValid(
+                    viewModel.saveCredentialValidationResult(areCredentialsValid(
                         Credentials.SignInCredentials(
                             email = email,
                             password = password
@@ -140,22 +131,22 @@ fun LoginScreen(
                 },
                 onCredentialChanged = { credential ->
                     viewModel.saveCredentialValidationResult(
-                        viewModel.areCredentialsValid(
+                        areCredentialsValid(
                             credential
                         )
                     )
                 },
-                onSignInAnnotatedStringClick = { signIn = false }
+                onSignInAnnotatedStringClick = { viewModel.signIn(false) }
             )
             else StatefulSignUpComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
-                isLoading = isLoading,
+                isLoading = viewModel.isLoading,
                 onSignUpButtonClicked = { signUpCredentials ->
 
                     keyboardController?.hide()
 
-                    viewModel.saveCredentialValidationResult(viewModel.areCredentialsValid(
+                    viewModel.saveCredentialValidationResult(areCredentialsValid(
                         signUpCredentials
                     ).also { validationResult ->
                         if (validationResult is CredentialValidationResult.Valid) {
@@ -183,12 +174,12 @@ fun LoginScreen(
                 },
                 onCredentialChanged = { credentials ->
                     viewModel.saveCredentialValidationResult(
-                        viewModel.areCredentialsValid(
+                        areCredentialsValid(
                             credentials
                         )
                     )
                 },
-                onSignInAnnotatedStringClick = { signIn = true }
+                onSignInAnnotatedStringClick = { viewModel.signIn(true) }
             )
 
             Divider(thickness = 2, color = Color.Gray)
@@ -200,7 +191,7 @@ fun LoginScreen(
                 contentDescription = ""
             ) {
                 coroutineScope.launch {
-                   val signInIntentSender = viewModel.signInViaGoogle()
+                    val signInIntentSender = viewModel.signInViaGoogle()
                     launcher.launch(
                         IntentSenderRequest.Builder(
                             signInIntentSender ?: return@launch
@@ -231,8 +222,11 @@ fun LoginScreen(
 
         if (!signUiState.signInError.isNullOrEmpty()) {
             coroutineScope.launch {
-                isLoading = false
-                snackBarHostState.showSnackbar(signUiState.signInError!!)
+                viewModel.isLoading(false)
+                signUiState.signInError?.let {
+                    snackBarHostState.showSnackbar(it)
+                    viewModel.onSignInResult(SignInResult(null, null))
+                }
             }
         }
     }

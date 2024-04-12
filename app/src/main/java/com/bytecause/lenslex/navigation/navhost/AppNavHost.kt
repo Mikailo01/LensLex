@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.screens.AccountScreen
+import com.bytecause.lenslex.ui.screens.AccountSettingsScreen
 import com.bytecause.lenslex.ui.screens.AddScreen
 import com.bytecause.lenslex.ui.screens.HomeScreen
 import com.bytecause.lenslex.ui.screens.LoginScreen
@@ -74,12 +75,6 @@ fun AppNavHost(
             }
 
             composable(
-                route = NavigationItem.Account.route
-            ) {
-                AccountScreen(onBackButtonClick = { navController.popBackStack() })
-            }
-
-            composable(
                 route = NavigationItem.ModifiedImagePreview.routeWithArgs,
                 arguments = NavigationItem.ModifiedImagePreview.arguments
             ) {
@@ -99,6 +94,29 @@ fun AppNavHost(
                 RecognizedTextResultScreen(
                     sharedViewModel = viewModel,
                     onBackButtonClick = { navController.popBackStack() }
+                )
+            }
+        }
+
+        navigation(
+            startDestination = NavigationItem.Account.route,
+            route = NavigationItem.SettingsGraph.route
+        ) {
+
+            composable(
+                route = NavigationItem.Account.route
+            ) {
+                AccountScreen(
+                    onNavigate = { navController.navigate(it.route) },
+                    onBackButtonClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = NavigationItem.AccountSettings.route
+            ) {
+                AccountSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
         }

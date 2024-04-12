@@ -30,7 +30,9 @@ fun ConfirmationDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(15.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(15.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -44,7 +46,9 @@ fun ConfirmationDialog(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 15.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 15.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Button(onClick = { onDismiss() }) {

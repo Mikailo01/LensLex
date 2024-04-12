@@ -13,4 +13,13 @@ sealed interface Credentials {
         val password: String,
         val confirmPassword: String
     ) : Credentials
+
+    data class EmailUpdateCredential(
+        val email: String
+    ) : Credentials
+
+    data class PasswordUpdateCredential(
+        val password: String,
+        val confirmPassword: String
+    ) : Credentials
 }

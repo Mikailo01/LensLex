@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,14 +13,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun RowItem(
     modifier: Modifier = Modifier,
     @DrawableRes leadingIconId: Int,
-    contentDescription: String,
-    text: String,
+    @StringRes contentDescription: Int,
+    @StringRes text: Int,
     onClick: () -> Unit
 ) {
     Row(
@@ -33,9 +35,9 @@ fun RowItem(
     ) {
         Image(
             painter = painterResource(id = leadingIconId),
-            contentDescription = contentDescription,
+            contentDescription = stringResource(id = contentDescription),
             modifier = Modifier.padding(start = 10.dp, top = 10.dp, bottom = 10.dp)
         )
-        Text(text = text)
+        Text(text = stringResource(id = text))
     }
 }
