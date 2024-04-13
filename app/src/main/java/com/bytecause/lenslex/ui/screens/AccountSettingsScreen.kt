@@ -43,11 +43,10 @@ import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.LinkAccountItem
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.CredentialChangeResult
 import com.bytecause.lenslex.ui.screens.viewmodel.Provider
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
@@ -344,30 +343,34 @@ fun AccountSettingsScreen(
             }
 
             LaunchedEffect(
-                key1 = credentialChangeState
+                key1 = credentialChangeState != null
             ) {
-                if (credentialChangeState.success == true && credentialChangeState.exception == null) {
-                    coroutineScope.launch {
-                        snackBarHostState.showSnackbar(snackBarSuccessMessage)
+                when (credentialChangeState) {
+                    is CredentialChangeResult.Success -> {
+                        coroutineScope.launch {
+                            snackBarHostState.showSnackbar((credentialChangeState as CredentialChangeResult.Success).message)
+                        }
                     }
-                } else if (credentialChangeState.success == false && credentialChangeState.exception != null) {
-                    when (credentialChangeState.exception) {
-                        is FirebaseAuthRecentLoginRequiredException -> {
-                            if (linkedProviders?.contains(Provider.Google) == true) {
-                                coroutineScope.launch {
-                                    val reauthorizationIntentSender = viewModel.signInViaGoogle()
-                                    googleReauthorizationLauncher.launch(
-                                        IntentSenderRequest.Builder(
-                                            reauthorizationIntentSender ?: return@launch
-                                        ).build()
-                                    )
-                                }
-                            } else viewModel.showCredentialUpdateDialog(CredentialType.Reauthorization)
-                        }
 
-                        is FirebaseAuthInvalidUserException -> {
+                    is CredentialChangeResult.Failure.Error -> {
 
-                        }
+                    }
+
+                    is CredentialChangeResult.Failure.ReauthorizationRequired -> {
+                        if (linkedProviders?.contains(Provider.Google) == true) {
+                            coroutineScope.launch {
+                                val reauthorizationIntentSender = viewModel.signInViaGoogle()
+                                googleReauthorizationLauncher.launch(
+                                    IntentSenderRequest.Builder(
+                                        reauthorizationIntentSender ?: return@launch
+                                    ).build()
+                                )
+                            }
+                        } else viewModel.showCredentialUpdateDialog(CredentialType.Reauthorization)
+                    }
+
+                    else -> {
+
                     }
                 }
             }

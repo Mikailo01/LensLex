@@ -113,8 +113,11 @@ fun CredentialsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
 
+
                 when (credentialType) {
                     is CredentialType.Reauthorization -> {
+                        Text(text = "Reauthorization")
+
                         EmailField(
                             email = email,
                             isEmailError = isEmailError,
