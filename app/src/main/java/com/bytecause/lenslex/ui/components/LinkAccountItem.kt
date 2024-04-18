@@ -28,14 +28,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.R
+import com.bytecause.lenslex.ui.theme.valid
 
 
 @Composable
 fun LinkAccountItem(
-    @DrawableRes leadingIcon: Int,
+    @DrawableRes leadingIconId: Int,
     @StringRes contentDescription: Int,
-    accountProvider: String,
+    accountProviderName: String,
     isLinked: Boolean,
     modifier: Modifier = Modifier,
     onLinkButtonClick: () -> Unit
@@ -60,11 +63,11 @@ fun LinkAccountItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = leadingIcon),
+            painter = painterResource(id = leadingIconId),
             contentDescription = stringResource(id = contentDescription)
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = accountProvider, style = MaterialTheme.typography.titleMedium)
+            Text(text = accountProviderName, style = MaterialTheme.typography.titleMedium)
             Text(
                 text = if (isLinked) "Linked" else "Unlinked",
                 style = MaterialTheme.typography.labelSmall
@@ -89,7 +92,7 @@ fun LinkAccountItem(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Checked",
-                            tint = Color.Green
+                            tint = MaterialTheme.colorScheme.valid
                         )
                     } else {
                         Icon(
@@ -102,4 +105,15 @@ fun LinkAccountItem(
             }
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun LinkAccountItemPreview() {
+    LinkAccountItem(
+        leadingIconId = R.drawable.google_logo,
+        contentDescription = R.string.preview,
+        accountProviderName = stringResource(id = R.string.preview),
+        isLinked = true
+    ) { }
 }

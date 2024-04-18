@@ -1,8 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel.base
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
@@ -49,19 +46,8 @@ abstract class BaseViewModel(
         SupportedLanguage()
     )
 
-    var setShowLanguageDialog by mutableStateOf(false)
-        private set
-
-    fun onSelectLanguageClick() {
-        setShowLanguageDialog = true
-    }
-
     fun setLangOption(language: SupportedLanguage) {
         translationLangOption.value = language
-    }
-
-    fun onDismissDialog() {
-        setShowLanguageDialog = false
     }
 
     val supportedLanguages: List<SupportedLanguage> =

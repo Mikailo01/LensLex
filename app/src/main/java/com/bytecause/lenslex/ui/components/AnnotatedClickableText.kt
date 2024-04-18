@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -9,6 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import com.bytecause.lenslex.R
 
 @Composable
 fun AnnotatedClickableText(
@@ -58,4 +61,14 @@ fun AnnotatedClickableText(
                 }
         }
     )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun AnnotatedClickableTextPreview() {
+    AnnotatedClickableText(
+        normalText = R.string.sign_prompt,
+        annotatedText = R.string.sign_up,
+        annotatedTextColor = MaterialTheme.colorScheme.error
+    ) { }
 }

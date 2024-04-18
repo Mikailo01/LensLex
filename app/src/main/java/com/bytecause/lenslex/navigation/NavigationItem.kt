@@ -23,12 +23,12 @@ sealed class NavigationItem(val route: String) {
     data object Add : NavigationItem(Screens.ADD.name)
     data object TextResult : NavigationItem(Screens.TEXT_RESULT.name)
     data object ModifiedImagePreview : NavigationItem(Screens.MODIFIED_IMAGE_PREVIEW.name) {
-        const val originalUriTypeArg = "originalImageUri"
-        const val modifiedUriTypeArg = "modifiedImageUri"
-        val routeWithArgs = "$route/{$originalUriTypeArg}/{$modifiedUriTypeArg}"
+        const val ORIGINAL_URI_TYPE_ARG = "originalImageUri"
+        const val MODIFIED_URI_TYPE_ARG = "modifiedImageUri"
+        val routeWithArgs = "$route/{$ORIGINAL_URI_TYPE_ARG}/{$MODIFIED_URI_TYPE_ARG}"
         val arguments = listOf(
-            navArgument(originalUriTypeArg) { type = NavType.StringType },
-            navArgument(modifiedUriTypeArg) { type = NavType.StringType }
+            navArgument(ORIGINAL_URI_TYPE_ARG) { type = NavType.StringType },
+            navArgument(MODIFIED_URI_TYPE_ARG) { type = NavType.StringType }
         )
     }
 

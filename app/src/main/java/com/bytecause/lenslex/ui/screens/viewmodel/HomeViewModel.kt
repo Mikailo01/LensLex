@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
@@ -22,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
@@ -35,39 +35,61 @@ class HomeViewModel(
     private val _deletedItemsStack = MutableStateFlow<List<WordsAndSentences>>(emptyList())
     val deletedItemsStack get() = _deletedItemsStack
 
-    fun getSignedInUser(): UserData? = fireBaseAuthClient.getSignedInUser()?.run {
-        UserData(
-            userId = uid,
-            userName = displayName,
-            profilePictureUrl = photoUrl?.toString()
+    private val _getSignedInUser: MutableStateFlow<UserData?> =
+        MutableStateFlow(fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+            UserData(
+                userId = uid,
+                userName = displayName,
+                profilePictureUrl = photoUrl?.toString()
+            )
+        }
         )
+    val getSignedInUser: StateFlow<UserData?> = _getSignedInUser.asStateFlow()
+
+    fun reload() {
+        fireBaseAuthClient.getFirebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                _getSignedInUser.update {
+                    fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+                        UserData(
+                            userId = uid,
+                            userName = displayName,
+                            profilePictureUrl = photoUrl?.toString()
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private lateinit var fireStoreSnapShotListener: ListenerRegistration
 
     private fun addSnapShotListener() {
-        fireStoreSnapShotListener = fireStore
-            .collection("users")
-            .document(getSignedInUser()!!.userId)
-            .collection("WordsAndSentences")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val wordsList = mutableListOf<WordsAndSentences>()
-                    for (doc in snapshot.documents) {
-                        wordsList.add(mapDocumentObject(doc))
+        getSignedInUser.value?.let {
+            fireStoreSnapShotListener = fireStore
+                .collection("users")
+                .document(it.userId)
+                .collection("WordsAndSentences")
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        return@addSnapshotListener
                     }
-                    // Update your UI or state with the new data
-                    // For example, if using MutableStateFlow:
 
-                    _getAllWordsFromFireStore.value = wordsList.sortedByDescending { it.timeStamp }
-                } else {
-                    _getAllWordsFromFireStore.value = emptyList()
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val wordsList = mutableListOf<WordsAndSentences>()
+                        for (doc in snapshot.documents) {
+                            wordsList.add(mapDocumentObject(doc))
+                        }
+                        // Update your UI or state with the new data
+                        // For example, if using MutableStateFlow:
+
+                        _getAllWordsFromFireStore.value =
+                            wordsList.sortedByDescending { it.timeStamp }
+                    } else {
+                        _getAllWordsFromFireStore.value = emptyList()
+                    }
                 }
-            }
+        }
     }
 
     private fun mapDocumentObject(document: DocumentSnapshot): WordsAndSentences {
@@ -83,55 +105,61 @@ class HomeViewModel(
     }
 
     private val _getAllWordsFromFireStore: MutableStateFlow<List<WordsAndSentences>> =
-        callbackFlow {
-            Log.d("idk", "ok")
-            addSnapShotListener()
+        getSignedInUser.value?.let {
+            callbackFlow {
+                addSnapShotListener()
 
-            fireStore
-                .collection("users")
-                .document(getSignedInUser()!!.userId)
-                .collection("WordsAndSentences")
-                .get()
-                .addOnSuccessListener {
-                    trySend(
-                        it.documents.map { document ->
-                            mapDocumentObject(document)
-                        }.toMutableList().sortedByDescending { it.timeStamp }
-                    )
-                }
-            awaitClose { close() }
-        }.mutableStateIn(
-            viewModelScope,
-            emptyList()
-        )
+                fireStore
+                    .collection("users")
+                    .document(it.userId)
+                    .collection("WordsAndSentences")
+                    .get()
+                    .addOnSuccessListener { snapShot ->
+                        trySend(
+                            snapShot.documents.map { document ->
+                                mapDocumentObject(document)
+                            }.toMutableList().sortedByDescending { it.timeStamp }
+                        )
+                    }
+                awaitClose { close() }
+            }
+        }
+            ?.mutableStateIn(
+                viewModelScope,
+                emptyList()
+            ) ?: MutableStateFlow(emptyList())
 
     val getAllWordsFromFireStore: StateFlow<List<WordsAndSentences>> =
         _getAllWordsFromFireStore.asStateFlow()
 
     fun insertWordToFireStore(word: WordsAndSentences) {
-        viewModelScope.launch(Dispatchers.IO) {
-            fireStore
-                .collection("users")
-                .document(getSignedInUser()!!.userId)
-                .collection("WordsAndSentences")
-                .document(word.id)
-                .set(word)
+        getSignedInUser.value?.let {
+            viewModelScope.launch(Dispatchers.IO) {
+                fireStore
+                    .collection("users")
+                    .document(it.userId)
+                    .collection("WordsAndSentences")
+                    .document(word.id)
+                    .set(word)
+            }
         }
     }
 
     fun deleteWordFromFireStore(documentId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            fireStore
-                .collection("users")
-                .document(getSignedInUser()!!.userId)
-                .collection("WordsAndSentences")
-                .document(documentId)
-                .delete()
+        getSignedInUser.value?.let {
+            viewModelScope.launch(Dispatchers.IO) {
+                fireStore
+                    .collection("users")
+                    .document(it.userId)
+                    .collection("WordsAndSentences")
+                    .document(documentId)
+                    .delete()
+            }
         }
     }
 
     fun addDeletedItemToStack(item: WordsAndSentences) {
-        _deletedItemsStack.value = _deletedItemsStack.value + item
+        _deletedItemsStack.value += item
     }
 
     fun removeDeletedItemFromStack() {

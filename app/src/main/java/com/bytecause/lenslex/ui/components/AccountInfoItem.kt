@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 
@@ -29,15 +30,15 @@ sealed interface AccountInfoType {
 
 @Composable
 fun AccountInfoItem(
-    @DrawableRes leadingIcon: Int,
-    @StringRes contentDescription: Int,
+    @DrawableRes leadingIconId: Int,
+    @StringRes contentDescriptionId: Int,
     accountInfoType: AccountInfoType,
     userCredential: String?,
     isChangeable: Boolean,
     isAnonymous: Boolean?,
     modifier: Modifier = Modifier,
     showSnackBar: () -> Unit = {},
-    onCredentialChange: (AccountInfoType) -> Unit
+    onAccountInfoChange: (AccountInfoType) -> Unit = {}
 ) {
     Row(
         modifier = modifier.padding(10.dp),
@@ -45,8 +46,8 @@ fun AccountInfoItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = leadingIcon),
-            contentDescription = stringResource(id = contentDescription)
+            painter = painterResource(id = leadingIconId),
+            contentDescription = stringResource(id = contentDescriptionId)
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -87,11 +88,24 @@ fun AccountInfoItem(
                 modifier = Modifier
                     .clickable {
                         if (canBeChanged) {
-                            onCredentialChange(accountInfoType)
+                            onAccountInfoChange(accountInfoType)
                         } else showSnackBar()
                     }
                     .alpha(if (canBeChanged) 1f else 0.6f)
             )
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun AccountInfoItemPreview() {
+    AccountInfoItem(
+        leadingIconId = R.drawable.baseline_alternate_email_24,
+        contentDescriptionId = R.string.account_email,
+        accountInfoType = AccountInfoType.Email,
+        userCredential = stringResource(id = R.string.preview),
+        isChangeable = true,
+        isAnonymous = false
+    )
 }

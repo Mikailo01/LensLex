@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -23,8 +25,8 @@ import com.bytecause.lenslex.R
 @Composable
 fun ProfilePicture(
     profilePicture: String,
-    @DrawableRes cornerIcon: Int,
     modifier: Modifier = Modifier,
+    @DrawableRes cornerIcon: Int = R.drawable.baseline_camera_alt_24,
     cornerIconSize: Dp = 28.dp,
     onCornerIconClick: () -> Unit
 ) {
@@ -49,7 +51,7 @@ fun ProfilePicture(
             modifier = Modifier
                 .size(cornerIconSize + 8.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(MaterialTheme.colorScheme.onPrimaryContainer),
             contentAlignment = Alignment.Center
         ) {
 
@@ -59,10 +61,17 @@ fun ProfilePicture(
             ) {
                 Icon(
                     painter = painterResource(id = cornerIcon),
-                    contentDescription = "Edit Profile Picture",
-                    modifier = Modifier.size((cornerIconSize + 8.dp).times(0.6f))
+                    contentDescription = stringResource(id = R.string.edit_profile_picture),
+                    modifier = Modifier.size((cornerIconSize + 8.dp).times(0.6f)),
+                    tint = MaterialTheme.colorScheme.inversePrimary
                 )
             }
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun ProfilePicturePreview() {
+    ProfilePicture(profilePicture = "") { }
 }

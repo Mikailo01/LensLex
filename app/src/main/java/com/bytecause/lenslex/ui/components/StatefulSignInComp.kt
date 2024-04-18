@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,10 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.Credentials
-import com.bytecause.lenslex.ui.theme.red
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
@@ -28,7 +29,7 @@ fun StatefulSignInComp(
     modifier: Modifier = Modifier,
     credentialValidationResult: CredentialValidationResult?,
     isLoading: Boolean,
-    onCredentialsEntered: (String, String) -> Unit,
+    onCredentialsEntered: (Credentials.SignInCredentials) -> Unit,
     onCredentialChanged: (Credentials.SignInCredentials) -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
@@ -90,7 +91,7 @@ fun StatefulSignInComp(
     ) {
 
         EmailField(
-            email = email,
+            emailValue = email,
             isEmailError = isEmailError,
             onCredentialChanged = {
                 email = it
@@ -124,12 +125,13 @@ fun StatefulSignInComp(
                 if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
 
                 onCredentialsEntered(
-                    email,
-                    password
+                    Credentials.SignInCredentials(
+                        email, password
+                    )
                 )
             }
         ) {
-            if (isLoading) IndeterminateCircularIndicator(isShowed = isLoading)
+            if (isLoading) IndeterminateCircularIndicator(isShowed = true)
             else Text(text = stringResource(id = R.string.sign_in))
         }
 
@@ -137,10 +139,22 @@ fun StatefulSignInComp(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             normalText = R.string.sign_prompt,
             annotatedText = R.string.sign_up,
-            annotatedTextColor = red,
+            annotatedTextColor = MaterialTheme.colorScheme.error,
             onAnnotatedTextClick = {
                 onSignInAnnotatedStringClick()
             }
         )
     }
+}
+
+@Composable
+@Preview
+fun StatefulSignInCompPreview() {
+    StatefulSignInComp(
+        credentialValidationResult = null,
+        isLoading = false,
+        onCredentialsEntered = {},
+        onCredentialChanged = {},
+        onSignInAnnotatedStringClick = {}
+    )
 }

@@ -19,8 +19,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -29,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
@@ -51,36 +55,18 @@ import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
-fun LoginScreen(
-    viewModel: LoginViewModel = koinViewModel(),
-    onUserLoggedIn: () -> Unit
+fun LoginScreenContent(
+    signIn: Boolean,
+    isLoading: Boolean,
+    credentialValidationResultState: CredentialValidationResult?,
+    snackBarHostState: SnackbarHostState,
+    onCredentialChanged: (Credentials) -> Unit,
+    onSignInUsingGoogle: () -> Unit,
+    onSignInAnonymously: () -> Unit,
+    onCredentialsEntered: (Credentials) -> Unit,
+    onSignInAnnotatedStringClick: () -> Unit
 ) {
-    val signUiState by viewModel.signUiState.collectAsStateWithLifecycle()
-
-    val credentialValidationResultState by viewModel.credentialValidationResultState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
-
-    val snackBarHostState = remember { SnackbarHostState() }
-
-    val coroutineScope = rememberCoroutineScope()
-
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(key1 = signUiState.isSignInSuccessful) {
-        if (signUiState.isSignInSuccessful) onUserLoggedIn()
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult(),
-        onResult = { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
-                coroutineScope.launch {
-                    viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
-                }
-            }
-        }
-    )
 
     val gradientBackground = Brush.verticalGradient(
         0.2f to purple,
@@ -99,61 +85,185 @@ fun LoginScreen(
                 .align(Alignment.Center)
                 .verticalScroll(rememberScrollState())
         ) {
-            if (viewModel.signIn) StatefulSignInComp(
+            if (signIn) StatefulSignInComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
-                isLoading = viewModel.isLoading,
-                onCredentialsEntered = { email, password ->
-                    viewModel.isLoading(true)
+                isLoading = isLoading,
+                onCredentialsEntered = { credentials ->
 
                     keyboardController?.hide()
 
-                    viewModel.saveCredentialValidationResult(areCredentialsValid(
+                    onCredentialsEntered(
                         Credentials.SignInCredentials(
-                            email = email,
-                            password = password
+                            email = credentials.email,
+                            password = credentials.password
                         )
-                    ).also { validationResult ->
-                        if (validationResult is CredentialValidationResult.Valid) {
-
-                            coroutineScope.launch {
-                                viewModel.signInViaEmailAndPassword(
-                                    Credentials.SignInCredentials(
-                                        email = email,
-                                        password = password
-                                    )
-                                )
-                            }
-
-                        }
-                    }
                     )
                 },
                 onCredentialChanged = { credential ->
-                    viewModel.saveCredentialValidationResult(
-                        areCredentialsValid(
-                            credential
-                        )
-                    )
+                    onCredentialChanged(credential)
                 },
-                onSignInAnnotatedStringClick = { viewModel.signIn(false) }
+                onSignInAnnotatedStringClick = { onSignInAnnotatedStringClick() }
             )
             else StatefulSignUpComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
-                isLoading = viewModel.isLoading,
+                isLoading = isLoading,
                 onSignUpButtonClicked = { signUpCredentials ->
 
                     keyboardController?.hide()
+                    onCredentialsEntered(signUpCredentials)
+                },
+                onCredentialChanged = { credentials ->
+                    onCredentialChanged(credentials)
+                },
+                onSignInAnnotatedStringClick = { onSignInAnnotatedStringClick() }
+            )
 
+            Divider(thickness = 2, color = Color.Gray)
+
+            LoginOptionRow(
+                modifier = Modifier.padding(top = 10.dp),
+                optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
+                text = stringResource(id = R.string.continue_with_google),
+                contentDescription = ""
+            ) {
+
+                onSignInUsingGoogle()
+            }
+            LoginOptionRow(
+                optionImage = ImageResource.ImageVector(Icons.Filled.Person),
+                text = stringResource(id = R.string.continue_anonymously),
+                contentDescription = ""
+            ) {
+                onSignInAnonymously()
+            }
+        }
+
+        SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) { snackBarData ->
+            Snackbar(
+                snackbarData = snackBarData,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun LoginScreen(
+    viewModel: LoginViewModel = koinViewModel(),
+    onUserLoggedIn: () -> Unit
+) {
+    val signUiState by viewModel.signUiState.collectAsStateWithLifecycle()
+    val credentialValidationResultState by viewModel.credentialValidationResultState.collectAsStateWithLifecycle()
+
+    var signIn by rememberSaveable {
+        mutableStateOf(true)
+    }
+    var isLoading by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    val snackBarHostState = remember {
+        SnackbarHostState()
+    }
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+        onResult = { result ->
+            if (result.resultCode == ComponentActivity.RESULT_OK) {
+                coroutineScope.launch {
+                    viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
+                }
+            }
+        }
+    )
+
+    LaunchedEffect(key1 = signUiState) {
+        when {
+            signUiState.isSignInSuccessful -> {
+                onUserLoggedIn()
+            }
+
+            !signUiState.signInError.isNullOrEmpty() -> {
+                coroutineScope.launch {
+                    isLoading = false
+                    signUiState.signInError?.let {
+                        snackBarHostState.showSnackbar(it)
+                        viewModel.onSignInResult(SignInResult(null, null))
+                    }
+                }
+            }
+        }
+    }
+
+    LoginScreenContent(
+        signIn = signIn,
+        isLoading = isLoading,
+        credentialValidationResultState = credentialValidationResultState,
+        snackBarHostState = snackBarHostState,
+        onCredentialChanged = { credential ->
+            viewModel.saveCredentialValidationResult(
+                areCredentialsValid(
+                    credential
+                )
+            )
+        },
+        onSignInUsingGoogle = {
+            coroutineScope.launch {
+                val signInIntentSender = viewModel.signInViaGoogle()
+                launcher.launch(
+                    IntentSenderRequest.Builder(
+                        signInIntentSender ?: return@launch
+                    ).build()
+                )
+            }
+        },
+        onSignInAnonymously = {
+            coroutineScope.launch {
+                viewModel.signInAnonymously()
+            }
+        },
+        onCredentialsEntered = { credentials ->
+            when (credentials) {
+                is Credentials.SignInCredentials -> {
                     viewModel.saveCredentialValidationResult(areCredentialsValid(
-                        signUpCredentials
+                        Credentials.SignInCredentials(
+                            email = credentials.email,
+                            password = credentials.password
+                        )
                     ).also { validationResult ->
                         if (validationResult is CredentialValidationResult.Valid) {
+                            isLoading = true
+
+                            coroutineScope.launch {
+                                viewModel.signInViaEmailAndPassword(
+                                    Credentials.SignInCredentials(
+                                        email = credentials.email,
+                                        password = credentials.password
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    )
+                }
+
+                is Credentials.SignUpCredentials -> {
+                    viewModel.saveCredentialValidationResult(areCredentialsValid(
+                        credentials
+                    ).also { validationResult ->
+                        if (validationResult is CredentialValidationResult.Valid) {
+                            isLoading = true
 
                             coroutineScope.launch {
                                 viewModel.signUpViaEmailAndPassword(
-                                    signUpCredentials
+                                    credentials
                                 )
                             }
                         } else if (((validationResult as? CredentialValidationResult.Invalid)?.passwordError
@@ -171,69 +281,31 @@ fun LoginScreen(
                         }
                     }
                     )
-                },
-                onCredentialChanged = { credentials ->
-                    viewModel.saveCredentialValidationResult(
-                        areCredentialsValid(
-                            credentials
-                        )
-                    )
-                },
-                onSignInAnnotatedStringClick = { viewModel.signIn(true) }
-            )
+                }
 
-            Divider(thickness = 2, color = Color.Gray)
+                else -> {
 
-            LoginOptionRow(
-                modifier = Modifier.padding(top = 10.dp),
-                optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
-                text = stringResource(id = R.string.continue_with_google),
-                contentDescription = ""
-            ) {
-                coroutineScope.launch {
-                    val signInIntentSender = viewModel.signInViaGoogle()
-                    launcher.launch(
-                        IntentSenderRequest.Builder(
-                            signInIntentSender ?: return@launch
-                        ).build()
-                    )
                 }
             }
-            LoginOptionRow(
-                optionImage = ImageResource.ImageVector(Icons.Filled.Person),
-                text = stringResource(id = R.string.continue_anonymously),
-                contentDescription = ""
-            ) {
-                coroutineScope.launch {
-                    viewModel.signInAnonymously()
-                }
-            }
+        },
+        onSignInAnnotatedStringClick = {
+            signIn = !signIn
         }
-
-        SnackbarHost(
-            hostState = snackBarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) { snackBarData ->
-            Snackbar(
-                snackbarData = snackBarData,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        if (!signUiState.signInError.isNullOrEmpty()) {
-            coroutineScope.launch {
-                viewModel.isLoading(false)
-                signUiState.signInError?.let {
-                    snackBarHostState.showSnackbar(it)
-                    viewModel.onSignInResult(SignInResult(null, null))
-                }
-            }
-        }
-    }
+    )
 }
 
-/*@Preview
 @Composable
+@Preview
 fun LoginScreenPreview() {
-    LoginScreen()
-}*/
+    LoginScreenContent(
+        signIn = true,
+        isLoading = false,
+        credentialValidationResultState = null,
+        snackBarHostState = SnackbarHostState(),
+        onCredentialChanged = {},
+        onSignInUsingGoogle = {},
+        onSignInAnonymously = {},
+        onCredentialsEntered = {},
+        onSignInAnnotatedStringClick = {}
+    )
+}

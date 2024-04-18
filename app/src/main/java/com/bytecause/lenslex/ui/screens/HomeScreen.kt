@@ -32,10 +32,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -52,6 +55,7 @@ import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.models.SupportedLanguage
+import com.bytecause.lenslex.models.WordsAndSentences
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.Divider
@@ -69,6 +73,7 @@ import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
@@ -78,14 +83,202 @@ enum class FabNavigation { CAMERA, GALLERY, ADD }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
+fun HomeScreenContent(
+    wordList: List<WordsAndSentences>,
+    profilePictureUrl: String,
+    fabState: Boolean,
+    showProgressBar: Boolean,
+    cameraPermissionState: PermissionState?,
+    supportedLanguages: List<SupportedLanguage>,
+    selectedLanguage: SupportedLanguage,
+    showLanguageDialog: Boolean,
+    deletedItemsStack: List<WordsAndSentences>,
+    onIconStateChanged: (Boolean) -> Unit,
+    onConfirmLanguageDialog: (SupportedLanguage) -> Unit,
+    onShowLanguageDialog: (Boolean) -> Unit,
+    onClickNavigate: (NavigationItem) -> Unit,
+    onCameraIntent: (Uri) -> Unit,
+    onMultiplePhotoPickerLaunch: () -> Unit,
+    onItemRemoved: (WordsAndSentences) -> Unit,
+    onItemRestored: () -> Unit
+) {
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                titleRes = R.string.app_name,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                navigationIcon = Icons.Filled.Menu,
+                actionIcon = {
+                    if (deletedItemsStack.isNotEmpty()) {
+                        Image(
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    onItemRestored()
+                                },
+                            painter = painterResource(id = R.drawable.baseline_undo_24),
+                            contentDescription = "Undo remove"
+                        )
+                    }
+
+                    AsyncImage(
+                        model = profilePictureUrl.takeIf { it != "null" }
+                            ?: R.drawable.default_account_image,
+                        contentDescription = "avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable {
+                                onClickNavigate(NavigationItem.SettingsGraph)
+                            }
+                    )
+                },
+                onNavigationIconClick = { /* TODO() */ }
+            )
+        }
+    ) { innerPadding ->
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            val lazyListState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = CenterHorizontally
+                ) {
+                    LanguagePreferences(
+                        modifier = Modifier.padding(5.dp),
+                        text = selectedLanguage.langName,
+                        onClick = { onShowLanguageDialog(true) }
+                    )
+                    Divider(
+                        thickness = 3,
+                        color = Color.Gray
+                    )
+                }
+
+                LazyColumn(
+                    modifier = Modifier.padding(8.dp),
+                    state = lazyListState
+                ) {
+                    items(wordList, key = { item -> item.timeStamp }) { item ->
+                        item.translations[selectedLanguage.langCode]?.let {
+                            NoteItem(
+                                originalText = item.word,
+                                translatedText = it
+                            ) {
+                                onItemRemoved(item)
+                            }
+                        }
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = !lazyListState.isScrollingUp(),
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                ScrollToTop {
+                    coroutineScope.launch {
+                        lazyListState.scrollToItem(0)
+                    }
+                }
+            }
+
+            CircularFloatingActionMenu(
+                iconState = fabState,
+                fabColor = MaterialTheme.colorScheme.primary,
+                fabContentColor = MaterialTheme.colorScheme.onPrimary,
+                expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                onInnerContentClick = { fabNavigation ->
+
+                    when (fabNavigation) {
+                        FabNavigation.CAMERA -> {
+                            when (cameraPermissionState?.status) {
+                                PermissionStatus.Granted -> {
+                                    val uri = ComposeFileProvider.getImageUri(context = context)
+                                    onCameraIntent(uri)
+                                }
+
+                                PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
+                                    context = context
+                                )
+
+                                else -> {
+                                    cameraPermissionState?.launchPermissionRequest()
+                                }
+                            }
+                        }
+
+                        FabNavigation.GALLERY -> {
+                            onMultiplePhotoPickerLaunch()
+                        }
+
+                        FabNavigation.ADD -> {
+                            onClickNavigate(NavigationItem.Add)
+                        }
+                    }
+                },
+                onIconStateChange = {
+                    onIconStateChanged(it)
+                }
+            )
+
+            if (showLanguageDialog) {
+                LanguageDialog(
+                    lazyListContent = supportedLanguages,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp)
+                        .padding(16.dp),
+                    onDismiss = { onShowLanguageDialog(false) },
+                    onConfirm = { language ->
+                        onConfirmLanguageDialog(language)
+                    },
+                    onDownload = {
+                        // TODO()
+                    }
+                )
+            }
+
+            IndeterminateCircularIndicator(
+                modifier = Modifier.align(Center),
+                size = 65.dp,
+                isShowed = showProgressBar,
+                subContent = { Text(text = "Processing") }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     sharedViewModel: TextRecognitionSharedViewModel,
     onClickNavigate: (NavigationItem) -> Unit,
     onPhotoTaken: (Uri, Uri) -> Unit
 ) {
+
     val context = LocalContext.current
 
+    val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
         SupportedLanguage()
     )
@@ -97,6 +290,12 @@ fun HomeScreen(
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
     }
+
+    var showLanguageDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var fabState by rememberSaveable { mutableStateOf(false) }
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -166,173 +365,74 @@ fun HomeScreen(
         }
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                titleRes = R.string.app_name,
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                navigationIcon = Icons.Filled.Menu,
-                actionIcon = {
-                    if (deletedItemsStack.isNotEmpty()) {
-                        Image(
-                            modifier = Modifier
-                                .padding(end = 10.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    viewModel.insertWordToFireStore(deletedItemsStack.last())
-                                    viewModel.removeDeletedItemFromStack()
-                                },
-                            painter = painterResource(id = R.drawable.baseline_undo_24),
-                            contentDescription = "Undo remove"
-                        )
-                    }
-
-                    AsyncImage(
-                        model = viewModel.getSignedInUser()?.profilePictureUrl.takeIf { it != "null" }
-                            ?: R.drawable.default_account_image,
-                        contentDescription = "avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .padding(end = 10.dp)
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            .clickable {
-                                onClickNavigate(NavigationItem.SettingsGraph)
-                            }
-                    )
-                },
-                onNavigationIconClick = { /* TODO() */ }
-            )
-        }
-    ) { innerPadding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-
-            val lazyListState = rememberLazyListState()
-            val coroutineScope = rememberCoroutineScope()
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = CenterHorizontally
-                ) {
-                    LanguagePreferences(
-                        modifier = Modifier.padding(5.dp),
-                        text = selectedLanguage.langName,
-                        onClick = { viewModel.onSelectLanguageClick() }
-                    )
-                    Divider(
-                        thickness = 3,
-                        color = Color.Gray
-                    )
-                }
-
-                LazyColumn(
-                    modifier = Modifier.padding(8.dp),
-                    state = lazyListState
-                ) {
-                    items(wordList, key = { item -> item.timeStamp }) { item ->
-                        item.translations[selectedLanguage.langCode]?.let {
-                            NoteItem(
-                                originalText = item.word,
-                                translatedText = it
-                            ) {
-                                viewModel.addDeletedItemToStack(item)
-                                viewModel.deleteWordFromFireStore(item.id)
-                            }
-                        }
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = !lazyListState.isScrollingUp(),
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                ScrollToTop {
-                    coroutineScope.launch {
-                        lazyListState.scrollToItem(0)
-                    }
-                }
-            }
-
-            CircularFloatingActionMenu(
-                fabColor = MaterialTheme.colorScheme.primary,
-                fabContentColor = MaterialTheme.colorScheme.onPrimary,
-                expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                onInnerContentClick = { fabNavigation ->
-
-                    when (fabNavigation) {
-                        FabNavigation.CAMERA -> {
-                            when (cameraPermissionState.status) {
-                                PermissionStatus.Granted -> {
-                                    val uri = ComposeFileProvider.getImageUri(context = context)
-                                    imageUri = uri
-
-                                    cameraLauncher.launch(uri)
-                                }
-
-                                PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
-                                    context = context
-                                )
-
-                                else -> {
-                                    cameraPermissionState.launchPermissionRequest()
-                                }
-                            }
-                        }
-
-                        FabNavigation.GALLERY -> {
-                            multiplePhotoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }
-
-                        FabNavigation.ADD -> {
-                            onClickNavigate(NavigationItem.Add)
-                        }
-                    }
-                }
-            )
-
-            if (viewModel.setShowLanguageDialog) {
-                LanguageDialog(
-                    lazyListContent = viewModel.supportedLanguages,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(500.dp)
-                        .padding(16.dp),
-                    onDismiss = { viewModel.onDismissDialog() },
-                    onConfirm = { language ->
-                        viewModel.saveTranslationOption(language)
-                        viewModel.onDismissDialog()
-                    },
-                    onDownload = {
-                        // TODO()
-                    }
-                )
-            }
-
-            IndeterminateCircularIndicator(
-                modifier = Modifier.align(Center),
-                size = 65.dp,
-                isShowed = showProgressBar,
-                subContent = { Text(text = "Processing") }
-            )
-        }
+    LaunchedEffect(Unit) {
+        viewModel.reload()
     }
+
+    HomeScreenContent(
+        wordList = wordList,
+        profilePictureUrl = getSignedInUser?.profilePictureUrl.toString(),
+        fabState = fabState,
+        showProgressBar = showProgressBar,
+        cameraPermissionState = cameraPermissionState,
+        supportedLanguages = viewModel.supportedLanguages,
+        selectedLanguage = selectedLanguage,
+        showLanguageDialog = showLanguageDialog,
+        deletedItemsStack = deletedItemsStack,
+        onIconStateChanged = {
+            fabState = it
+        },
+        onConfirmLanguageDialog = { language ->
+            viewModel.saveTranslationOption(language)
+            showLanguageDialog = false
+        },
+        onShowLanguageDialog = {
+            showLanguageDialog = it
+        },
+        onClickNavigate = {
+            onClickNavigate(it)
+        },
+        onCameraIntent = { uri ->
+            imageUri = uri
+            cameraLauncher.launch(uri)
+        },
+        onMultiplePhotoPickerLaunch = {
+            multiplePhotoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onItemRemoved = { item ->
+            viewModel.addDeletedItemToStack(item)
+            viewModel.deleteWordFromFireStore(item.id)
+        },
+        onItemRestored = {
+            viewModel.insertWordToFireStore(deletedItemsStack.last())
+            viewModel.removeDeletedItemFromStack()
+        }
+    )
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun Home() {
-
+@Preview
+fun HomeScreenPreview() {
+    HomeScreenContent(
+        wordList = emptyList(),
+        profilePictureUrl = "",
+        fabState = true,
+        showProgressBar = false,
+        cameraPermissionState = null,
+        supportedLanguages = emptyList(),
+        selectedLanguage = SupportedLanguage("cs", "Czech"),
+        showLanguageDialog = false,
+        deletedItemsStack = emptyList(),
+        onIconStateChanged = {},
+        onConfirmLanguageDialog = {},
+        onShowLanguageDialog = {},
+        onClickNavigate = {},
+        onCameraIntent = {},
+        onMultiplePhotoPickerLaunch = {},
+        onItemRemoved = {},
+        onItemRestored = {}
+    )
 }

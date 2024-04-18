@@ -97,13 +97,13 @@ val appModule = module {
         AddViewModel(
             wordsDatabaseRepository = get(),
             firebase = get(),
-            authClient = get(),
+            fireBaseAuthClient = get(),
             userPrefsRepositoryImpl = get(),
             supportedLanguagesRepository = get()
         )
     }
 
     viewModel {
-        AccountSettingsViewModel(get())
+        AccountSettingsViewModel(get(), get())
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.theme.disabledBorderColor
@@ -22,14 +23,14 @@ import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
 
 @Composable
 fun EmailField(
-    email: String,
+    emailValue: String,
     isEmailError: Boolean,
     modifier: Modifier = Modifier,
     onCredentialChanged: (String) -> Unit
 ) {
     OutlinedTextField(
         modifier = modifier.fillMaxWidth(),
-        value = email,
+        value = emailValue,
         onValueChange = {
             onCredentialChanged(it
                 /*Credentials.SignUpCredentials(
@@ -67,4 +68,10 @@ fun EmailField(
             disabledBorderColor = disabledBorderColor
         )
     )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun EmailFieldPreview() {
+    EmailField(emailValue = "", isEmailError = false) { }
 }

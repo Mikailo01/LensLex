@@ -8,7 +8,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.R
 
 @Composable
 fun LanguagePreferences(
@@ -23,18 +26,24 @@ fun LanguagePreferences(
     ) {
         RoundedText(
             modifier = modifier.padding(start = 5.dp, end = 5.dp),
-            content = "English",
+            text = "English",
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            onClick = {  }
+            onClick = { }
         )
         Text(text = "->")
         RoundedText(
             modifier = modifier.padding(start = 5.dp, end = 5.dp),
-            content = text,
+            text = text,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             onClick = { onClick() }
         )
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun LanguagePreferencesPreview() {
+    LanguagePreferences(text = stringResource(id = R.string.preview)) { }
 }

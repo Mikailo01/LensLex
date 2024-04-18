@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class AddViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val firebase: FirebaseFirestore,
-    private val authClient: FireBaseAuthClient,
+    private val fireBaseAuthClient: FireBaseAuthClient,
     userPrefsRepositoryImpl: UserPrefsRepositoryImpl,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
@@ -35,7 +35,7 @@ class AddViewModel(
     }*/
 
     fun insertWord(word: WordsAndSentences, onSuccess: () -> Unit) {
-        authClient.getSignedInUser()?.uid?.let { userId ->
+        fireBaseAuthClient.getFirebaseAuth.currentUser?.uid?.let { userId ->
             viewModelScope.launch {
                 firebase
                     .collection("users")

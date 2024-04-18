@@ -9,25 +9,23 @@ import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.UserData
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class FireBaseAuthClient(
     private val context: Context,
     private val oneTapClient: SignInClient
 ) {
-    private val auth = Firebase.auth
+    val getFirebaseAuth: FirebaseAuth = Firebase.auth
 
     suspend fun signInViaGoogle(): IntentSender? {
         val result = try {
@@ -60,7 +58,7 @@ class FireBaseAuthClient(
         val googleIdToken = credential.googleIdToken
         val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
         return try {
-            val user = auth.signInWithCredential(googleCredentials).await().user
+            val user = getFirebaseAuth.signInWithCredential(googleCredentials).await().user
             SignInResult(
                 data = user?.run {
                     UserData(
@@ -81,33 +79,14 @@ class FireBaseAuthClient(
         }
     }
 
-    suspend fun reauthenticateWithGoogleIntent(intent: Intent): SignInResult {
-        return suspendCoroutine { continuation ->
-            val credential = oneTapClient.getSignInCredentialFromIntent(intent)
-            val googleIdToken = credential.googleIdToken
-            val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
-
-            auth.currentUser?.reauthenticateAndRetrieveData(googleCredentials)
-                ?.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val userData = task.result.user?.run {
-                            UserData(
-                                userId = uid,
-                                userName = displayName,
-                                profilePictureUrl = photoUrl?.toString()
-                            )
-                        }
-                        continuation.resume(SignInResult(userData, null))
-                    } else {
-                        task.exception?.printStackTrace()
-                        continuation.resume(SignInResult(null, task.exception?.message))
-                    }
-                }
-        }
+    fun getGoogleCredentials(intent: Intent): AuthCredential {
+        val credential = oneTapClient.getSignInCredentialFromIntent(intent)
+        val googleIdToken = credential.googleIdToken
+        return GoogleAuthProvider.getCredential(googleIdToken, null)
     }
 
     fun signInAnonymously(): Flow<SignInResult> = callbackFlow {
-        auth.signInAnonymously().addOnCompleteListener { task ->
+        getFirebaseAuth.signInAnonymously().addOnCompleteListener { task ->
 
             if (task.isSuccessful) {
                 trySend(
@@ -137,7 +116,7 @@ class FireBaseAuthClient(
 
     fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            auth.createUserWithEmailAndPassword(email, password)
+            getFirebaseAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {
@@ -168,7 +147,7 @@ class FireBaseAuthClient(
 
     fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            auth.signInWithEmailAndPassword(email, password)
+            getFirebaseAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {
@@ -202,28 +181,12 @@ class FireBaseAuthClient(
             awaitClose { cancel() }
         }
 
-    suspend fun signOut(): Boolean {
-        return try {
-            //oneTapClient.signOut()
-            auth.signOut()
-            delay(1000)
-            true
+    fun signOut() {
+        try {
+            FirebaseAuth.getInstance().signOut()
         } catch (e: Exception) {
             e.printStackTrace()
             if (e is CancellationException) throw e
-            false
         }
     }
-
-    /*suspend fun signOut() {
-         try {
-             oneTapClient.signOut()
-             auth.signOut()
-         } catch (e: Exception) {
-             e.printStackTrace()
-             if (e is CancellationException) throw e
-         }
-     }*/
-
-    fun getSignedInUser(): FirebaseUser? = auth.currentUser
 }

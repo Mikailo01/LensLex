@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.theme.disabledBorderColor
@@ -91,9 +92,23 @@ fun PasswordField(
             if (isPasswordError.contains(PasswordErrorType.PASSWORD_EMPTY)) {
                 Text(text = stringResource(id = R.string.password_empty_warning))
             } else if (isPasswordError.contains(PasswordErrorType.PASSWORD_INCORRECT)
-                && !isPasswordError.contains(PasswordErrorType.PASSWORD_MISMATCH)) {
-                Text(text = "Password incorrect")
+                && !isPasswordError.contains(PasswordErrorType.PASSWORD_MISMATCH)
+            ) {
+                Text(text = stringResource(id = R.string.password_incorrect))
             }
         }
     )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun PasswordFieldPreview() {
+    PasswordField(
+        password = "",
+        isPasswordError = emptyList(),
+        isPasswordEnabled = true,
+        isPasswordVisible = false,
+        onPasswordVisibilityClick = {},
+        onPasswordValueChange = {}
+    ) { }
 }

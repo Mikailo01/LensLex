@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 
@@ -41,10 +43,10 @@ fun BottomAppBar(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Share,
-                        contentDescription = "Share result",
+                        contentDescription = stringResource(id = R.string.share_result),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
-                    Text(text = "Share")
+                    Text(text = stringResource(id = R.string.share))
                 }
             }
             Box(
@@ -61,13 +63,19 @@ fun BottomAppBar(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_content_copy_24),
-                        contentDescription = "Copy content",
+                        contentDescription = stringResource(id = R.string.copy_content),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
-                    Text(text = "Copy")
+                    Text(text = stringResource(id = R.string.copy))
                 }
             }
         },
         modifier = modifier
     )
+}
+
+@Composable
+@Preview
+fun BottomAppBarPreview() {
+    BottomAppBar { }
 }

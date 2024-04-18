@@ -1,13 +1,11 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,14 +28,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -64,21 +65,288 @@ import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.io.InputStream
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountScreen(
-    viewModel: AccountViewModel = koinViewModel(),
+fun AccountScreenContent(
+    profilePicture: String,
+    isEditing: Boolean,
+    nameTextFieldValue: String,
+    urlTextFieldValue: String,
+    isAnonymous: Boolean,
+    showConfirmationDialog: Boolean,
+    showBottomSheet: Boolean,
+    showUrlDialog: Boolean,
+    bottomSheetState: SheetState,
+    onUpdateName: () -> Unit,
+    onUpdateProfilePicture: () -> Unit,
+    onEditChange: () -> Unit,
+    onShowConfirmationDialog: (Boolean) -> Unit,
+    onShowBottomSheet: (Boolean) -> Unit,
+    onShowUrlDialog: (Boolean) -> Unit,
+    onSignOut: () -> Unit,
+    onSinglePicturePickerLaunch: () -> Unit,
+    onNameTextFieldValueChange: (String) -> Unit,
+    onUrlTextFieldValueChange: (String) -> Unit,
     onNavigate: (NavigationItem) -> Unit,
     onBackButtonClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                titleRes = R.string.account,
+                navigationIcon = Icons.Filled.ArrowBack,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                onBackButtonClick()
+            }
+        }
+    ) { innerPaddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPaddingValues),
+            contentAlignment = Alignment.TopCenter
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .blur(3.dp), // Ignored if Android API level < 31
+            ) {
+                // Blurred background
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // AsyncImage wrapped in Box
+                    Box(modifier = Modifier.weight(1f)) {
+                        AsyncImage(
+                            model = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                ImageRequest.Builder(context)
+                                    .data(profilePicture.takeIf { it != "null" }
+                                        ?: R.drawable.default_account_image)
+                                    .transformations(BlurTransformation(context, 15))
+                                    .build()
+                            } else profilePicture.takeIf { it != "null" }
+                                ?: R.drawable.default_account_image,
+                            contentDescription = "avatar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(innerPaddingValues)
+                    .padding(top = 120.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Divider(thickness = 1, color = Color.Gray)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 50.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!isEditing) {
+                        Text(
+                            text = nameTextFieldValue,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        TextField(
+                            value = nameTextFieldValue, onValueChange = {
+
+                                onNameTextFieldValueChange(it)
+
+                                //nameTextFieldValue = it
+                            },
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            onUpdateName()
+                            //viewModel.updateName(nameTextFieldValue)
+                            onEditChange()
+                            //isEditing = !isEditing
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isEditing) Icons.Filled.Check else Icons.Filled.Create,
+                            contentDescription = ""
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Divider(thickness = 2, color = MaterialTheme.colorScheme.primary)
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+
+                    RowItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIconId = R.drawable.baseline_language_24,
+                        contentDescription = R.string.select_language,
+                        text = R.string.language
+                    ) {
+
+                    }
+
+                    Divider(thickness = 1, color = Color.Gray)
+
+                    RowItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIconId = R.drawable.baseline_manage_accounts_24,
+                        contentDescription = R.string.account_settings,
+                        text = R.string.account_settings
+                    ) {
+                        onNavigate(NavigationItem.AccountSettings)
+                    }
+
+                    Divider(thickness = 1, color = Color.Gray)
+
+                    RowItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIconId = R.drawable.baseline_logout_24,
+                        contentDescription = R.string.sign_out,
+                        text = R.string.sign_out
+                    ) {
+                        if (isAnonymous) onShowConfirmationDialog(true)
+                        else onSignOut()
+                        /* if (viewModel.isAccountAnonymous) showConfirmationDialog = true
+                         else {
+                             viewModel.signOut()
+                         }*/
+                    }
+                }
+            }
+
+            ProfilePicture(
+                profilePicture = profilePicture,
+                modifier = Modifier.padding(top = 130.dp)
+            ) {
+                // showBottomSheet = true
+                onShowBottomSheet(true)
+            }
+
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { onShowBottomSheet(false) },
+                    sheetState = bottomSheetState,
+                ) {
+
+                    RowItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIconId = R.drawable.baseline_image_24,
+                        contentDescription = R.string.pick_profile_picture_from_storage,
+                        text = R.string.pick_profile_picture_from_storage
+                    ) {
+                        // showBottomSheet = false
+                        onShowBottomSheet(false)
+                        /* singlePhotoPickerLauncher.launch(
+                             PickVisualMediaRequest(
+                                 ActivityResultContracts.PickVisualMedia.ImageOnly
+                             )
+                         )*/
+                        onSinglePicturePickerLaunch()
+                    }
+
+                    RowItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIconId = R.drawable.baseline_link_24,
+                        contentDescription = R.string.set_profile_picture_from_url,
+                        text = R.string.set_profile_picture_from_url
+                    ) {
+                        onShowBottomSheet(false)
+                        //showBottomSheet = false
+                        onShowUrlDialog(true)
+                    }
+                }
+            }
+        }
+
+        if (showUrlDialog) {
+            Dialog(
+                title = stringResource(id = R.string.type_picture_url),
+                onDismiss = { onShowUrlDialog(false) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSize()
+                    .padding(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = urlTextFieldValue,
+                    onValueChange = { onUrlTextFieldValueChange(it) },
+                    supportingText = { Text(text = "URL") },
+                    modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
+                )
+                Button(
+                    onClick = {
+                        if (urlTextFieldValue.isNotBlank()) {
+                            //viewModel.updateProfilePicture(Uri.parse(urlTextFieldValue))
+                            onUpdateProfilePicture()
+                            //profilePicture = urlTextFieldValue
+                        }
+                        onShowUrlDialog(false)
+                        // showUrlDialog = false
+                    }, modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    Text(text = stringResource(id = R.string.done))
+                }
+            }
+        }
+
+        if (showConfirmationDialog) {
+            ConfirmationDialog(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSize(),
+                onDismiss = { onShowConfirmationDialog(false) },
+                onConfirm = {
+                    onShowConfirmationDialog(false)
+                    //showConfirmationDialog = false
+                    onSignOut()
+                }
+            ) {
+                Text(
+                    text = stringResource(id = R.string.signed_using_anonymous_account_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AccountScreen(
+    viewModel: AccountViewModel = koinViewModel(),
+    onNavigate: (NavigationItem) -> Unit,
+    onBackButtonClick: () -> Unit,
+    onUserLoggedOut: () -> Unit
+) {
+
     val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
 
-    val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
     var showBottomSheet by rememberSaveable {
@@ -89,11 +357,14 @@ fun AccountScreen(
         mutableStateOf(false)
     }
 
-    var nameTextFieldValue by mutableStateOf(getSignedInUser?.userName?.takeIf { it.isNotBlank() }
-        ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() }
-        ?: "")
+    var nameTextFieldValue by rememberSaveable {
+        mutableStateOf(getSignedInUser?.userName?.takeIf { it.isNotBlank() }
+            ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() } ?: "")
+    }
 
-    var profilePicture by mutableStateOf(getSignedInUser?.profilePictureUrl.toString())
+    var profilePicture by rememberSaveable {
+        mutableStateOf(getSignedInUser?.profilePictureUrl.toString())
+    }
 
     var showUrlDialog by rememberSaveable {
         mutableStateOf(false)
@@ -108,10 +379,6 @@ fun AccountScreen(
     }
 
     val context = LocalContext.current
-    val packageManager: PackageManager = context.packageManager
-    val intent: Intent = packageManager.getLaunchIntentForPackage(context.packageName)!!
-    val componentName: ComponentName = intent.component!!
-    val restartIntent: Intent = Intent.makeRestartActivityTask(componentName)
 
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -145,221 +412,84 @@ fun AccountScreen(
         }
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                titleRes = R.string.account,
-                navigationIcon = Icons.Filled.ArrowBack,
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                onBackButtonClick()
-            }
-        }
-    ) { innerPaddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPaddingValues)
-        ) {
+    // Refresh user's firebase data
+    LaunchedEffect(Unit) {
+        viewModel.reload()
+    }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .blur(3.dp) // Ignored if Android API level < 31
-            ) {
-                // Blurred background
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // AsyncImage wrapped in Box
-                    Box(modifier = Modifier.weight(1f)) {
-                        AsyncImage(
-                            model = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                                ImageRequest.Builder(context)
-                                    .data(profilePicture.takeIf { it != "null" }
-                                        ?: R.drawable.default_account_image)
-                                    .transformations(BlurTransformation(context, 15))
-                                    .build()
-                            } else profilePicture.takeIf { it != "null" }
-                                ?: R.drawable.default_account_image,
-                            contentDescription = "avatar",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    Divider(thickness = 2, color = Color.Gray)
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPaddingValues),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                ProfilePicture(
-                    profilePicture = profilePicture,
-                    cornerIcon = R.drawable.baseline_camera_alt_24,
-                    modifier = Modifier.padding(top = 80.dp)
-                ) {
-                    showBottomSheet = true
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (!isEditing) {
-                        Text(
-                            text = nameTextFieldValue,
-                            fontWeight = FontWeight.Bold
-                        )
-                    } else {
-                        TextField(
-                            value = nameTextFieldValue, onValueChange = {
-                                nameTextFieldValue = it
-                            },
-                            modifier = Modifier.padding(top = 10.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.updateName(nameTextFieldValue)
-                            isEditing = !isEditing
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (isEditing) Icons.Filled.Check else Icons.Filled.Create,
-                            contentDescription = ""
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                Divider(thickness = 2, color = MaterialTheme.colorScheme.primary)
-
-                RowItem(
-                    leadingIconId = R.drawable.baseline_language_24,
-                    contentDescription = R.string.select_language,
-                    text = R.string.language
-                ) {
-
-                }
-
-                Divider(thickness = 1, color = Color.Gray)
-
-                RowItem(
-                    leadingIconId = R.drawable.baseline_manage_accounts_24,
-                    contentDescription = R.string.account_settings,
-                    text = R.string.account_settings
-                ) {
-                    onNavigate(NavigationItem.AccountSettings)
-                }
-
-                Divider(thickness = 1, color = Color.Gray)
-
-                RowItem(
-                    leadingIconId = R.drawable.baseline_logout_24,
-                    contentDescription = R.string.sign_out,
-                    text = R.string.sign_out
-                ) {
-                    if (viewModel.isAccountAnonymous) showConfirmationDialog = true
-                    else {
-                        coroutineScope.launch {
-                            if (viewModel.signOut()) {
-                                context.startActivity(restartIntent)
-                                Runtime
-                                    .getRuntime()
-                                    .exit(0)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (showBottomSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showBottomSheet = false },
-                    sheetState = sheetState,
-                ) {
-
-                    RowItem(
-                        leadingIconId = R.drawable.baseline_image_24,
-                        contentDescription = R.string.pick_profile_picture_from_storage,
-                        text = R.string.pick_profile_picture_from_storage
-                    ) {
-                        showBottomSheet = false
-                        singlePhotoPickerLauncher.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    }
-
-                    RowItem(
-                        leadingIconId = R.drawable.baseline_link_24,
-                        contentDescription = R.string.set_profile_picture_from_url,
-                        text = R.string.set_profile_picture_from_url
-                    ) {
-                        showBottomSheet = false
-                        showUrlDialog = true
-                    }
-                }
-            }
-        }
-
-        if (showUrlDialog) {
-            Dialog(
-                title = "Type picture URL",
-                onDismiss = { showUrlDialog = false },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentSize()
-                    .padding(16.dp)
-            ) {
-                OutlinedTextField(
-                    value = urlTextFieldValue,
-                    onValueChange = { urlTextFieldValue = it },
-                    supportingText = { Text(text = "URL") },
-                    modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
-                )
-                Button(
-                    onClick = {
-                        if (urlTextFieldValue.isNotBlank()) {
-                            viewModel.updateProfilePicture(Uri.parse(urlTextFieldValue))
-                            profilePicture = urlTextFieldValue
-                        }
-                        showUrlDialog = false
-                    }, modifier = Modifier.padding(bottom = 10.dp)
-                ) {
-                    Text(text = stringResource(id = R.string.done))
-                }
-            }
-        }
-
-        if (showConfirmationDialog) {
-            ConfirmationDialog(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentSize(),
-                onDismiss = { showConfirmationDialog = false }
-            ) {
-                showConfirmationDialog = false
-
-                coroutineScope.launch {
-                    if (viewModel.signOut()) {
-                        context.startActivity(restartIntent)
-                        Runtime
-                            .getRuntime()
-                            .exit(0)
-                    }
-                }
-            }
+    LaunchedEffect(getSignedInUser) {
+        if (getSignedInUser == null) onUserLoggedOut()
+        else {
+            nameTextFieldValue = getSignedInUser?.userName?.takeIf { it.isNotBlank() }
+                ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() } ?: ""
+            profilePicture = getSignedInUser?.profilePictureUrl.toString()
         }
     }
+
+    AccountScreenContent(
+        profilePicture = profilePicture,
+        isEditing = isEditing,
+        nameTextFieldValue = nameTextFieldValue,
+        urlTextFieldValue = urlTextFieldValue,
+        isAnonymous = viewModel.isAccountAnonymous,
+        showConfirmationDialog = showConfirmationDialog,
+        showBottomSheet = showBottomSheet,
+        showUrlDialog = showUrlDialog,
+        bottomSheetState = sheetState,
+        onUpdateName = {
+            viewModel.updateName(nameTextFieldValue)
+
+        },
+        onUpdateProfilePicture = {
+            viewModel.updateProfilePicture(Uri.parse(urlTextFieldValue))
+            profilePicture = urlTextFieldValue
+        },
+        onEditChange = { isEditing = !isEditing },
+        onShowConfirmationDialog = { showConfirmationDialog = it },
+        onShowBottomSheet = { showBottomSheet = it },
+        onShowUrlDialog = { showUrlDialog = it },
+        onSignOut = {
+            viewModel.signOut()
+            onUserLoggedOut()
+        },
+        onSinglePicturePickerLaunch = {
+            singlePhotoPickerLauncher.launch(
+                PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        },
+        onNameTextFieldValueChange = { nameTextFieldValue = it },
+        onUrlTextFieldValueChange = { urlTextFieldValue = it },
+        onNavigate = { onNavigate(it) },
+        onBackButtonClick = { onBackButtonClick() })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Preview
+fun AccountScreenPreview() {
+    AccountScreenContent(
+        profilePicture = "",
+        isEditing = false,
+        nameTextFieldValue = "Mikailo",
+        urlTextFieldValue = "",
+        isAnonymous = false,
+        showConfirmationDialog = false,
+        showBottomSheet = false,
+        showUrlDialog = false,
+        bottomSheetState = SheetState(false, SheetValue.Hidden),
+        onUpdateName = {},
+        onUpdateProfilePicture = {},
+        onEditChange = {},
+        onShowConfirmationDialog = {},
+        onShowBottomSheet = {},
+        onShowUrlDialog = {},
+        onSignOut = {},
+        onSinglePicturePickerLaunch = {},
+        onNameTextFieldValueChange = {},
+        onUrlTextFieldValueChange = {},
+        onNavigate = {},
+        onBackButtonClick = {}
+    )
 }

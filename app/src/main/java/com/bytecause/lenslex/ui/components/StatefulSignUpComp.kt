@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,10 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.Credentials
-import com.bytecause.lenslex.ui.theme.red
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
@@ -68,32 +69,18 @@ fun StatefulSignUpComp(
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             passwordError.cause
-                            /* passwordError.cause.all {
-                                 it == PasswordErrorType.PASSWORD_MISMATCH || it == PasswordErrorType.PASSWORD_INCORRECT
-                             }*/
                         }
 
-                        else -> emptyList() //false
+                        else -> emptyList()
                     }
             }
 
             else -> {
                 isEmailError = false
-                isPasswordError = emptyList() //false
+                isPasswordError = emptyList()
             }
         }
     }
-
-    /*EmailField(
-        email = email,
-        isEmailError = isEmailError,
-        onCredentialChanged = {
-            email = it
-            Credentials.SignUpCredentials(
-                email, password, confirmPassword
-            )
-        }
-    )*/
 
     Column(
         modifier = modifier
@@ -101,7 +88,7 @@ fun StatefulSignUpComp(
     ) {
 
         EmailField(
-            email = email,
+            emailValue = email,
             isEmailError = isEmailError,
             onCredentialChanged = {
                 email = it
@@ -135,12 +122,7 @@ fun StatefulSignUpComp(
         Button(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 15.dp)
-            /*.animatedBorder(
-            borderColors = listOf(animatePurple, animateBlue),
-            backgroundColor = Color.White,
-            shape = RoundedCornerShape(16.dp),
-            borderWidth = 4.dp)*/,
+                .padding(top = 15.dp, bottom = 15.dp),
             onClick = {
                 if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
 
@@ -153,7 +135,7 @@ fun StatefulSignUpComp(
                 )
             }
         ) {
-            if (isLoading) IndeterminateCircularIndicator(isShowed = isLoading)
+            if (isLoading) IndeterminateCircularIndicator(isShowed = true)
             else Text(text = stringResource(id = R.string.sign_up))
         }
 
@@ -161,10 +143,22 @@ fun StatefulSignUpComp(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             normalText = R.string.sign_prompt,
             annotatedText = R.string.sign_in,
-            annotatedTextColor = red,
+            annotatedTextColor = MaterialTheme.colorScheme.error,
             onAnnotatedTextClick = {
                 onSignInAnnotatedStringClick()
             }
         )
     }
+}
+
+@Composable
+@Preview
+fun StatefulSignUpCompPreview() {
+    StatefulSignUpComp(
+        credentialValidationResult = null,
+        isLoading = false,
+        onSignUpButtonClicked = {},
+        onCredentialChanged = {},
+        onSignInAnnotatedStringClick = {}
+    )
 }

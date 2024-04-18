@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.SupportedLanguage
 
@@ -38,4 +40,13 @@ fun LanguageItem(
                 .clickable { onDownloadClick() }
         )
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun LanguageItemPreview() {
+    LanguageItem(
+        item = SupportedLanguage(langName = stringResource(id = R.string.preview)),
+        onItemClick = {}
+    ) { }
 }

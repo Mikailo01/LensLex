@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
@@ -123,4 +124,20 @@ fun PasswordFields(
             )
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun PasswordFieldsPreview() {
+    PasswordFields(
+        credentialValidationResult = null,
+        password = "",
+        confirmPassword = "",
+        isPasswordEnabled = true,
+        isPasswordVisible = false,
+        isPasswordError = emptyList(),
+        onPasswordValueChange = {},
+        onConfirmPasswordValueChange = {},
+        onPasswordVisibilityClick = {}
+    ) { }
 }

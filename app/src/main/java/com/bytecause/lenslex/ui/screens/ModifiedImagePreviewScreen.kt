@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
@@ -39,11 +40,11 @@ import com.canhub.cropper.CropImageOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModifiedImagePreviewScreen(
-    sharedViewModel: TextRecognitionSharedViewModel,
+fun ModifiedImagePreviewScreenContent(
     originalImageUri: Uri,
     modifiedImageUri: Uri,
-    onClickNavigate: (NavigationItem) -> Unit
+    onClickNavigate: (NavigationItem) -> Unit,
+    onProcessedTextUpdate: (List<String>) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -105,7 +106,7 @@ fun ModifiedImagePreviewScreen(
                         ).show()
                         return@runTextRecognition
                     }
-                    sharedViewModel.updateProcessedTextState(it)
+                    onProcessedTextUpdate(it)
                     onClickNavigate(NavigationItem.TextResult)
                 }
             }
@@ -119,4 +120,35 @@ fun ModifiedImagePreviewScreen(
             subContent = { Text(text = "Processing") }
         )
     }
+}
+
+@Composable
+fun ModifiedImagePreviewScreen(
+    sharedViewModel: TextRecognitionSharedViewModel,
+    originalImageUri: Uri,
+    modifiedImageUri: Uri,
+    onClickNavigate: (NavigationItem) -> Unit
+) {
+
+    ModifiedImagePreviewScreenContent(
+        originalImageUri = originalImageUri,
+        modifiedImageUri = modifiedImageUri,
+        onClickNavigate = {
+            onClickNavigate(it)
+        },
+        onProcessedTextUpdate = {
+            sharedViewModel.updateProcessedTextState(it)
+        }
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun ModifiedImageScreenPreview() {
+    ModifiedImagePreviewScreenContent(
+        originalImageUri = Uri.EMPTY,
+        modifiedImageUri = Uri.EMPTY,
+        onClickNavigate = {},
+        onProcessedTextUpdate = {}
+    )
 }

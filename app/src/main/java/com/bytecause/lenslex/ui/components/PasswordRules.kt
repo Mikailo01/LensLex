@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,11 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.theme.green
-import com.bytecause.lenslex.ui.theme.red
+import com.bytecause.lenslex.ui.theme.valid
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
@@ -40,8 +41,8 @@ fun PasswordRules(
             textRule = passwordRules[0],
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
-            validColor = green,
-            errorColor = red
+            validColor = MaterialTheme.colorScheme.valid,
+            errorColor = MaterialTheme.colorScheme.error
         )
 
         RuleItem(
@@ -50,8 +51,8 @@ fun PasswordRules(
             textRule = passwordRules[1],
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
-            validColor = green,
-            errorColor = red
+            validColor = MaterialTheme.colorScheme.valid,
+            errorColor = MaterialTheme.colorScheme.error
         )
 
         RuleItem(
@@ -60,8 +61,8 @@ fun PasswordRules(
             textRule = passwordRules[2],
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
-            validColor = green,
-            errorColor = red
+            validColor = MaterialTheme.colorScheme.valid,
+            errorColor = MaterialTheme.colorScheme.error
         )
 
         RuleItem(
@@ -70,8 +71,8 @@ fun PasswordRules(
             textRule = passwordRules[3],
             errorIcon = Icons.Filled.Close,
             validIcon = Icons.Filled.Check,
-            validColor = green,
-            errorColor = red
+            validColor = MaterialTheme.colorScheme.valid,
+            errorColor = MaterialTheme.colorScheme.error
         )
     }
 }
@@ -110,4 +111,10 @@ fun RuleItem(
             fontSize = 12.sp
         )
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun PasswordRulesPreview() {
+    PasswordRules(credentialValidationResult = null)
 }

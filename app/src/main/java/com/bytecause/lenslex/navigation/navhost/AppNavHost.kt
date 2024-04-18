@@ -33,22 +33,26 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = NavigationItem.TextProcessMainGraph.route,
+        startDestination = if (currentUser != null) NavigationItem.TextProcessMainGraph.route
+        else NavigationItem.Login.route,
         modifier = modifier
     ) {
 
-        // Nested NavGraph
-        navigation(
-            startDestination = if (currentUser != null) NavigationItem.Home.route
-            else NavigationItem.Login.route,
-            route = NavigationItem.TextProcessMainGraph.route
-        ) {
-
-            composable(route = NavigationItem.Login.route) {
-                LoginScreen {
-                    navController.navigate(NavigationItem.Home.route)
+        composable(route = NavigationItem.Login.route) {
+            LoginScreen {
+                navController.navigate(NavigationItem.Home.route) {
+                    popUpTo(NavigationItem.Login.route) {
+                        inclusive = true
+                    }
                 }
             }
+        }
+
+        // Nested NavGraph
+        navigation(
+            startDestination = NavigationItem.Home.route,
+            route = NavigationItem.TextProcessMainGraph.route
+        ) {
 
             composable(route = NavigationItem.Home.route) {
                 val viewModel = it.sharedViewModel<TextRecognitionSharedViewModel>(navController)
@@ -82,8 +86,8 @@ fun AppNavHost(
 
                 ModifiedImagePreviewScreen(
                     sharedViewModel = viewModel,
-                    originalImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.originalUriTypeArg)),
-                    modifiedImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.modifiedUriTypeArg)),
+                    originalImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.ORIGINAL_URI_TYPE_ARG)),
+                    modifiedImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.MODIFIED_URI_TYPE_ARG)),
                     onClickNavigate = { navController.navigate(NavigationItem.TextResult.route) }
                 )
             }
@@ -108,7 +112,14 @@ fun AppNavHost(
             ) {
                 AccountScreen(
                     onNavigate = { navController.navigate(it.route) },
-                    onBackButtonClick = { navController.popBackStack() }
+                    onBackButtonClick = { navController.popBackStack() },
+                    onUserLoggedOut = {
+                        navController.navigate(NavigationItem.Login.route) {
+                            popUpTo(NavigationItem.Home.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             }
 
@@ -117,6 +128,13 @@ fun AppNavHost(
             ) {
                 AccountSettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
+                    onUserLoggedOut = {
+                        navController.navigate(NavigationItem.Login.route) {
+                            popUpTo(NavigationItem.Home.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             }
         }

@@ -1,42 +1,65 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.models.UserData
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class AccountViewModel(
     private val fireBaseAuthClient: FireBaseAuthClient
 ) : ViewModel() {
 
-    val isAccountAnonymous: Boolean = fireBaseAuthClient.getSignedInUser()?.isAnonymous == true
+    private val firebaseAuth = fireBaseAuthClient.getFirebaseAuth
 
-    val getSignedInUser = MutableStateFlow(fireBaseAuthClient.getSignedInUser()?.run {
-        Log.d("idk", "user")
+    val isAccountAnonymous: Boolean = firebaseAuth.currentUser?.isAnonymous == true
+
+    private val _getSignedInUser = MutableStateFlow(firebaseAuth.currentUser?.run {
         UserData(
             userId = uid,
             userName = displayName,
             profilePictureUrl = photoUrl?.toString()
         )
     }
-    ).stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        null
     )
+
+    fun reload() {
+        firebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                _getSignedInUser.update {
+                    firebaseAuth.currentUser?.run {
+                        UserData(
+                            userId = uid,
+                            userName = displayName,
+                            profilePictureUrl = photoUrl?.toString()
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val getSignedInUser: StateFlow<UserData?> = _getSignedInUser.asStateFlow()
+
+    private val authStateListener = FirebaseAuth.AuthStateListener {
+        if (it.currentUser == null) _getSignedInUser.value = null
+    }
+
+    init {
+        firebaseAuth.addAuthStateListener(authStateListener)
+    }
 
     fun updateName(name: String) {
         val changeRequest = UserProfileChangeRequest.Builder()
             .setDisplayName(name)
             .build()
 
-        fireBaseAuthClient.getSignedInUser()?.updateProfile(changeRequest)
+        fireBaseAuthClient.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
     }
 
     fun updateProfilePicture(uri: Uri) {
@@ -44,13 +67,8 @@ class AccountViewModel(
             .setPhotoUri(uri)
             .build()
 
-        fireBaseAuthClient.getSignedInUser()?.updateProfile(changeRequest)
+        fireBaseAuthClient.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
     }
 
-    suspend fun signOut(): Boolean = fireBaseAuthClient.signOut()
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.d("idk", "cleared")
-    }
+    fun signOut() = fireBaseAuthClient.signOut()
 }

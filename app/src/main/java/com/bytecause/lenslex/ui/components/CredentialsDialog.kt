@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.Credentials
@@ -85,9 +86,9 @@ fun CredentialsDialog(
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             passwordError.cause
-                           /* passwordError.cause.all {
-                                it == PasswordErrorType.PASSWORD_MISMATCH || it == PasswordErrorType.PASSWORD_INCORRECT
-                            }*/
+                            /* passwordError.cause.all {
+                                 it == PasswordErrorType.PASSWORD_MISMATCH || it == PasswordErrorType.PASSWORD_INCORRECT
+                             }*/
                         }
 
                         else -> emptyList()
@@ -119,7 +120,7 @@ fun CredentialsDialog(
                         Text(text = "Reauthorization")
 
                         EmailField(
-                            email = email,
+                            emailValue = email,
                             isEmailError = isEmailError,
                             onCredentialChanged = {
                                 email = it
@@ -149,7 +150,7 @@ fun CredentialsDialog(
 
                     is CredentialType.AccountLink -> {
                         EmailField(
-                            email = email,
+                            emailValue = email,
                             isEmailError = isEmailError,
                             onCredentialChanged = {
                                 email = it
@@ -199,7 +200,7 @@ fun CredentialsDialog(
 
                     is CredentialType.Email -> {
                         EmailField(
-                            email = email,
+                            emailValue = email,
                             isEmailError = isEmailError,
                             onCredentialChanged = {
                                 email = it
@@ -275,3 +276,57 @@ sealed interface CredentialType {
     data object Password : CredentialType
 }
 
+@Composable
+@Preview(showBackground = true)
+fun CredentialsEmailDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Email,
+        onDismiss = { },
+        onEnteredCredential = {}
+    ) { }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsPasswordDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Password,
+        onDismiss = { },
+        onEnteredCredential = {}
+    ) { }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsUsernameDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Username,
+        onDismiss = { },
+        onEnteredCredential = {}
+    ) { }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsReauthorizationDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Reauthorization,
+        onDismiss = { },
+        onEnteredCredential = {}
+    ) { }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsAccountLinkDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.AccountLink,
+        onDismiss = { },
+        onEnteredCredential = {}
+    ) { }
+}

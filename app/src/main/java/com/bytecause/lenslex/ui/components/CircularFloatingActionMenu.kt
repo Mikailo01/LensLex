@@ -20,21 +20,16 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -43,13 +38,13 @@ import com.bytecause.lenslex.ui.screens.FabNavigation
 
 @Composable
 fun CircularFloatingActionMenu(
+    iconState: Boolean,
     fabColor: Color,
     fabContentColor: Color,
     expandedFabBackgroundColor: Color,
     onInnerContentClick: (FabNavigation) -> Unit,
+    onIconStateChange: (Boolean) -> Unit
 ) {
-    var iconState by rememberSaveable { mutableStateOf(false) }
-
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = iconState, modifier = Modifier
@@ -78,8 +73,8 @@ fun CircularFloatingActionMenu(
                     ) {
                         val (camera, gallery, add) = createRefs()
 
-                        CameraMiniFab(
-                            icon = painterResource(id = R.drawable.baseline_camera_alt_24),
+                        MiniFab(
+                            image = ImageResource.Painter(painterResource(id = R.drawable.baseline_camera_alt_24)),
                             text = stringResource(id = R.string.camera),
                             contentColor = fabContentColor,
                             modifier = Modifier
@@ -90,12 +85,12 @@ fun CircularFloatingActionMenu(
                                 .padding(top = 10.dp, end = 10.dp),
                             navigation = FabNavigation.CAMERA,
                             onClick = {
-                                iconState = false
+                                onIconStateChange(false)
                                 onInnerContentClick(it)
                             }
                         )
                         MiniFab(
-                            icon = painterResource(id = R.drawable.baseline_image_24),
+                            image = ImageResource.Painter(painterResource(id = R.drawable.baseline_image_24)),
                             text = stringResource(id = R.string.gallery),
                             contentColor = fabContentColor,
                             modifier = Modifier
@@ -106,12 +101,12 @@ fun CircularFloatingActionMenu(
                                 .padding(top = 50.dp, start = 35.dp),
                             navigation = FabNavigation.GALLERY,
                             onClick = {
-                                iconState = false
+                                onIconStateChange(false)
                                 onInnerContentClick(it)
                             }
                         )
                         MiniFab(
-                            icon = Icons.Filled.AddCircle,
+                            image = ImageResource.ImageVector(Icons.Filled.AddCircle),
                             text = stringResource(id = R.string.add),
                             contentColor = fabContentColor,
                             modifier = Modifier
@@ -122,7 +117,7 @@ fun CircularFloatingActionMenu(
                                 .padding(top = 10.dp, start = 5.dp),
                             navigation = FabNavigation.ADD,
                             onClick = {
-                                iconState = false
+                                onIconStateChange(false)
                                 onInnerContentClick(it)
                             }
                         )
@@ -137,7 +132,7 @@ fun CircularFloatingActionMenu(
                 .padding(20.dp)
         ) {
             FloatingActionButton(onClick = {
-                iconState = !iconState
+                onIconStateChange(!iconState)
             }, containerColor = fabColor) {
                 Icon(
                     imageVector =
@@ -159,71 +154,7 @@ fun CircularFloatingActionMenu(
 @Composable
 fun MiniFab(
     modifier: Modifier = Modifier,
-    icon: ImageVector,
-    contentColor: Color,
-    text: String,
-    navigation: FabNavigation,
-    onClick: (FabNavigation) -> Unit
-) {
-    Box(modifier = modifier.clip(CircleShape)) {
-        Column(
-            modifier = Modifier
-                .clickable { onClick(navigation) }
-                .padding(5.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = "",
-                tint = contentColor,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-            Text(
-                text = text, style = TextStyle(
-                    color = contentColor,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun MiniFab(
-    modifier: Modifier = Modifier,
-    icon: Painter,
-    contentColor: Color,
-    text: String,
-    navigation: FabNavigation,
-    onClick: (FabNavigation) -> Unit
-) {
-    Box(modifier = modifier.clip(CircleShape)) {
-        Column(
-            modifier = Modifier
-                .clickable { onClick(navigation) }
-                .padding(5.dp)
-        ) {
-            Icon(
-                painter = icon,
-                contentDescription = "",
-                tint = contentColor,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-            Text(
-                text = text, style = TextStyle(
-                    color = contentColor,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun CameraMiniFab(
-    modifier: Modifier = Modifier,
-    icon: Painter,
+    image: ImageResource,
     contentColor: Color,
     text: String,
     navigation: FabNavigation,
@@ -240,12 +171,25 @@ fun CameraMiniFab(
                 }
                 .padding(5.dp)
         ) {
-            Icon(
-                painter = icon,
-                contentDescription = "",
-                tint = contentColor,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            when (image) {
+                is ImageResource.Painter -> {
+                    Icon(
+                        painter = image.painter,
+                        contentDescription = "",
+                        tint = contentColor,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+
+                is ImageResource.ImageVector -> {
+                    Icon(
+                        imageVector = image.imageVector,
+                        contentDescription = "",
+                        tint = contentColor,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+            }
             Text(
                 text = text, style = TextStyle(
                     color = contentColor,
@@ -255,4 +199,28 @@ fun CameraMiniFab(
             )
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun MiniFabPreview() {
+    MiniFab(
+        image = ImageResource.ImageVector(Icons.Filled.AddCircle),
+        contentColor = Color.Black,
+        text = stringResource(id = R.string.preview),
+        navigation = FabNavigation.ADD
+    ) { }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CircularFloatingActionMenuPreview() {
+    CircularFloatingActionMenu(
+        iconState = true,
+        fabColor = Color.Magenta,
+        fabContentColor = Color.Black,
+        expandedFabBackgroundColor = Color.Cyan,
+        onInnerContentClick = {},
+        onIconStateChange = {}
+    )
 }

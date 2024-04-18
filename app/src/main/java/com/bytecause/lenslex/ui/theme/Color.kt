@@ -1,5 +1,8 @@
 package com.bytecause.lenslex.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 val md_theme_light_primary = Color(0xFF2059C0)
@@ -14,8 +17,9 @@ val md_theme_light_tertiary = Color(0xFF725572)
 val md_theme_light_onTertiary = Color(0xFFFFFFFF)
 val md_theme_light_tertiaryContainer = Color(0xFFFDD7FA)
 val md_theme_light_onTertiaryContainer = Color(0xFF2A122C)
+val md_theme_light_success = Color(0xFF009E09)
 val md_theme_light_error = Color(0xFFBA1A1A)
-val md_theme_light_errorContainer = Color(0xFFFFDAD6)
+val md_theme_light_errorContainer = Color(0xFFFF5847)
 val md_theme_light_onError = Color(0xFFFFFFFF)
 val md_theme_light_onErrorContainer = Color(0xFF410002)
 val md_theme_light_background = Color(0xFFFEFBFF)
@@ -32,8 +36,6 @@ val md_theme_light_shadow = Color(0xFF000000)
 val md_theme_light_surfaceTint = Color(0xFF2059C0)
 val md_theme_light_outlineVariant = Color(0xFFC5C6D0)
 val md_theme_light_scrim = Color(0xFF000000)
-val green = Color(0xFF00D50A)
-val red = Color(0xFFA00000)
 val purple = Color(0xFF8E87F7)
 val blue = Color(0xFF368AF0)
 
@@ -56,6 +58,7 @@ val md_theme_dark_tertiary = Color(0xFFE0BBDD)
 val md_theme_dark_onTertiary = Color(0xFF412742)
 val md_theme_dark_tertiaryContainer = Color(0xFF593D59)
 val md_theme_dark_onTertiaryContainer = Color(0xFFFDD7FA)
+val md_theme_dark_success = Color(0xFF00D50A)
 val md_theme_dark_error = Color(0xFFFFB4AB)
 val md_theme_dark_errorContainer = Color(0xFF93000A)
 val md_theme_dark_onError = Color(0xFF690005)
@@ -95,3 +98,8 @@ val dark_CustomColor2 = Color(0xFFB6C4FF)
 val dark_onCustomColor2 = Color(0xFF072978)
 val dark_CustomColor2Container = Color(0xFF274190)
 val dark_onCustomColor2Container = Color(0xFFDCE1FF)
+
+
+val ColorScheme.valid: Color
+    @Composable
+    get() = if(isSystemInDarkTheme()) md_theme_dark_success else md_theme_light_success

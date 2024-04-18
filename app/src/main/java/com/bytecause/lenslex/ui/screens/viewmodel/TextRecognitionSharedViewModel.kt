@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,10 +15,5 @@ class TextRecognitionSharedViewModel : ViewModel() {
         _processedTextState.update {
             text
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.d("viewModel", "onCleared")
     }
 }

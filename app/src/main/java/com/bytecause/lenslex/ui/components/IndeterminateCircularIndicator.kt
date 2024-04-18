@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -23,11 +24,19 @@ fun IndeterminateCircularIndicator(
     Box(modifier = modifier) {
         Column(modifier = modifier) {
             CircularProgressIndicator(
-                modifier = Modifier.size(size).align(Alignment.CenterHorizontally),
+                modifier = Modifier
+                    .size(size)
+                    .align(Alignment.CenterHorizontally),
                 color = MaterialTheme.colorScheme.secondary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
             subContent()
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun IndeterminateCircularIndicatorPreview() {
+    IndeterminateCircularIndicator(isShowed = true, size = 100.dp)
 }

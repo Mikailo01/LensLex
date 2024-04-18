@@ -14,14 +14,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.bytecause.lenslex.ui.theme.red
+import com.bytecause.lenslex.R
 
 @Composable
 fun ConfirmationDialog(
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    content: @Composable () -> Unit
 ) {
 
     androidx.compose.ui.window.Dialog(onDismissRequest = { onDismiss() }) {
@@ -33,16 +37,17 @@ fun ConfirmationDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(15.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Are you sure?",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(bottom = 10.dp)
+                    text = stringResource(id = R.string.are_you_sure),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                    fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "You are signed in using anonymous account, after log out all data will be deleted."
-                )
+
+                content()
             }
 
             Row(
@@ -52,16 +57,24 @@ fun ConfirmationDialog(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Button(onClick = { onDismiss() }) {
-                    Text(text = "Cancel")
+                    Text(text = stringResource(id = R.string.cancel))
                 }
 
                 Button(
                     onClick = { onConfirm() },
-                    colors = ButtonDefaults.buttonColors(containerColor = red)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text(text = "Confirm")
+                    Text(text = stringResource(id = R.string.confirm))
                 }
             }
         }
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun ConfirmationDialogPreview() {
+    ConfirmationDialog(onDismiss = { }, onConfirm = { }) {
+        Text(text = stringResource(id = R.string.preview))
     }
 }

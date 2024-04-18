@@ -42,17 +42,18 @@ import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddScreen(
-    viewModel: AddViewModel = koinViewModel(),
+fun AddScreenContent(
+    supportedLanguages: List<SupportedLanguage>,
+    textFieldInput: String,
+    selectedLanguage: SupportedLanguage,
+    showLanguageDialog: Boolean,
+    onTextFieldValueChange: (String) -> Unit,
+    onSelectLanguageClick: () -> Unit,
+    onInsertWord: (String) -> Unit,
+    onDismissDialog: () -> Unit,
+    onConfirmDialog: (SupportedLanguage) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
-        initialValue = SupportedLanguage()
-    )
-
-    var textFieldInput by rememberSaveable {
-        mutableStateOf("")
-    }
 
     val context = LocalContext.current
 
@@ -82,13 +83,13 @@ fun AddScreen(
                         .padding(5.dp),
                     text = selectedLanguage.langName,
                     onClick = {
-                        viewModel.onSelectLanguageClick()
+                        onSelectLanguageClick()
                     }
                 )
                 TextField(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     value = textFieldInput,
-                    onValueChange = { textFieldInput = it },
+                    onValueChange = { onTextFieldValueChange(it) },
                     supportingText = {
                         Text(text = "Word")
                     }
@@ -123,18 +124,7 @@ fun AddScreen(
 
                                         Log.d("idk", "success")
 
-                                        viewModel.insertWord(
-                                            WordsAndSentences(
-                                                id = "${textFieldInput}_en".lowercase()
-                                                    .replace(" ", "_"),
-                                                word = textFieldInput,
-                                                languageCode = "en",
-                                                translations = mapOf(selectedLanguage.langCode to translationResult.translatedText),
-                                                timeStamp = System.currentTimeMillis()
-                                            )
-                                        ) {
-                                            onNavigateBack()
-                                        }
+                                        onInsertWord(translationResult.translatedText)
                                     }
 
                                     Translator.TranslationResult.TranslationFailure -> {
@@ -155,17 +145,16 @@ fun AddScreen(
         }
     }
 
-    if (viewModel.setShowLanguageDialog) {
+    if (showLanguageDialog) {
         LanguageDialog(
-            lazyListContent = viewModel.supportedLanguages,
+            lazyListContent = supportedLanguages,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(500.dp)
                 .padding(16.dp),
-            onDismiss = { viewModel.onDismissDialog() },
+            onDismiss = { onDismissDialog() },
             onConfirm = {
-                viewModel.setLangOption(it)
-                viewModel.onDismissDialog()
+                onConfirmDialog(it)
             },
             onDownload = {
                 // TODO()
@@ -174,10 +163,75 @@ fun AddScreen(
     }
 }
 
+@Composable
+fun AddScreen(
+    viewModel: AddViewModel = koinViewModel(),
+    onNavigateBack: () -> Unit
+) {
+    val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
+        initialValue = SupportedLanguage()
+    )
+
+    var textFieldInput by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var showLanguageDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    AddScreenContent(
+        supportedLanguages = viewModel.supportedLanguages,
+        textFieldInput = textFieldInput,
+        selectedLanguage = selectedLanguage,
+        showLanguageDialog = showLanguageDialog,
+        onTextFieldValueChange = {
+            textFieldInput = it
+        },
+        onSelectLanguageClick = {
+            showLanguageDialog = true
+        },
+        onInsertWord = { translatedText ->
+            viewModel.insertWord(
+                WordsAndSentences(
+                    id = "${textFieldInput}_en".lowercase()
+                        .replace(" ", "_"),
+                    word = textFieldInput,
+                    languageCode = "en",
+                    translations = mapOf(selectedLanguage.langCode to translatedText),
+                    timeStamp = System.currentTimeMillis()
+                )
+            ) {
+                onNavigateBack()
+            }
+        },
+        onDismissDialog = {
+            showLanguageDialog = false
+        },
+        onConfirmDialog = {
+            viewModel.setLangOption(it)
+            showLanguageDialog = false
+        },
+        onNavigateBack = {
+            onNavigateBack()
+        }
+    )
+
+}
+
 @Preview
 @Composable
 fun AddScreenPreview() {
-    AddScreen {
-
-    }
+    AddScreenContent(
+        supportedLanguages = emptyList(),
+        textFieldInput = "",
+        selectedLanguage = SupportedLanguage("cs", "Czech"),
+        showLanguageDialog = false,
+        onTextFieldValueChange = {},
+        onSelectLanguageClick = {},
+        onInsertWord = {},
+        onDismissDialog = {},
+        onConfirmDialog = {},
+        onNavigateBack = {}
+    )
 }

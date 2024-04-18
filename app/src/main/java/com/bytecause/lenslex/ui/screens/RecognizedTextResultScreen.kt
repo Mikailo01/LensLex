@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
@@ -30,16 +32,15 @@ import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecognizedTextResultScreen(
-    sharedViewModel: TextRecognitionSharedViewModel,
+fun RecognizedTextResultScreenContent(
+    text: String,
     onBackButtonClick: () -> Unit
 ) {
-    val text = sharedViewModel.processedTextState.collectAsStateWithLifecycle()
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
 
     val sendIntent: Intent = Intent().apply {
         action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_TEXT, text.value.joinToString())
+        putExtra(Intent.EXTRA_TEXT, text)
         type = "text/plain"
     }
     val shareIntent = Intent.createChooser(sendIntent, null)
@@ -66,7 +67,7 @@ fun RecognizedTextResultScreen(
                         }
 
                         BottomAppBarItems.COPY -> {
-                            clipboardManager.setText(AnnotatedString(text.value.joinToString()))
+                            clipboardManager.setText(AnnotatedString(text))
                         }
                     }
                 }
@@ -83,8 +84,31 @@ fun RecognizedTextResultScreen(
                     .fillMaxSize()
                     .padding(10.dp)
                     .verticalScroll(rememberScrollState()),
-                text = text.value.joinToString(System.lineSeparator())
+                text = text
             )
         }
     }
+}
+
+@Composable
+fun RecognizedTextResultScreen(
+    sharedViewModel: TextRecognitionSharedViewModel,
+    onBackButtonClick: () -> Unit
+) {
+    val text = sharedViewModel.processedTextState.collectAsStateWithLifecycle()
+
+    RecognizedTextResultScreenContent(
+        text = text.value.joinToString(System.lineSeparator()),
+        onBackButtonClick = { onBackButtonClick() }
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun RecognizedTextResultScreenPreview() {
+
+    RecognizedTextResultScreenContent(
+        text = stringResource(id = R.string.dummy_text),
+        onBackButtonClick = { }
+    )
 }
