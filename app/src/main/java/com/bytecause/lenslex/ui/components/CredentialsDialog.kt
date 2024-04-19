@@ -35,7 +35,7 @@ fun CredentialsDialog(
     credentialType: CredentialType,
     onDismiss: () -> Unit,
     onEnteredCredential: (Credentials) -> Unit,
-    onCredentialChanged: (Credentials) -> Unit
+    onCredentialChanged: (Credentials.Sensitive) -> Unit
 ) {
 
     var username by rememberSaveable {
@@ -86,9 +86,6 @@ fun CredentialsDialog(
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             passwordError.cause
-                            /* passwordError.cause.all {
-                                 it == PasswordErrorType.PASSWORD_MISMATCH || it == PasswordErrorType.PASSWORD_INCORRECT
-                             }*/
                         }
 
                         else -> emptyList()
@@ -117,7 +114,7 @@ fun CredentialsDialog(
 
                 when (credentialType) {
                     is CredentialType.Reauthorization -> {
-                        Text(text = "Reauthorization")
+                        Text(text = stringResource(id = R.string.reauthorization))
 
                         EmailField(
                             emailValue = email,
@@ -125,7 +122,7 @@ fun CredentialsDialog(
                             onCredentialChanged = {
                                 email = it
                                 onCredentialChanged(
-                                    Credentials.SignInCredentials(email, password)
+                                    Credentials.Sensitive.SignInCredentials(email, password)
                                 )
                             }
                         )
@@ -141,7 +138,7 @@ fun CredentialsDialog(
                             },
                             onCredentialChanged = {
                                 onCredentialChanged(
-                                    Credentials.SignInCredentials(email, password)
+                                    Credentials.Sensitive.SignInCredentials(email, password)
                                 )
                             }
                         )
@@ -155,7 +152,7 @@ fun CredentialsDialog(
                             onCredentialChanged = {
                                 email = it
                                 onCredentialChanged(
-                                    Credentials.EmailUpdateCredential(
+                                    Credentials.Sensitive.EmailUpdateCredential(
                                         it
                                     )
                                 )
@@ -173,7 +170,7 @@ fun CredentialsDialog(
                             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
                             onCredentialChanged = {
                                 onCredentialChanged(
-                                    Credentials.PasswordUpdateCredential(
+                                    Credentials.Sensitive.PasswordUpdateCredential(
                                         password, confirmPassword
                                     )
                                 )
@@ -205,7 +202,7 @@ fun CredentialsDialog(
                             onCredentialChanged = {
                                 email = it
                                 onCredentialChanged(
-                                    Credentials.EmailUpdateCredential(
+                                    Credentials.Sensitive.EmailUpdateCredential(
                                         it
                                     )
                                 )
@@ -226,7 +223,7 @@ fun CredentialsDialog(
                             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
                             onCredentialChanged = {
                                 onCredentialChanged(
-                                    Credentials.PasswordUpdateCredential(
+                                    Credentials.Sensitive.PasswordUpdateCredential(
                                         password, confirmPassword
                                     )
                                 )
@@ -239,24 +236,23 @@ fun CredentialsDialog(
                     onEnteredCredential(
                         when (credentialType) {
                             is CredentialType.Reauthorization -> {
-                                Credentials.SignInCredentials(email, password)
+                                Credentials.Sensitive.SignInCredentials(email, password)
                             }
 
                             is CredentialType.AccountLink -> {
-                                Credentials.SignInCredentials(email, password)
+                                Credentials.Sensitive.SignInCredentials(email, password)
                             }
 
                             is CredentialType.Username -> {
-                                //  Credentials.UsernameUpdate(username)
-                                Credentials.EmailUpdateCredential(username)
+                                Credentials.Insensitive.UsernameUpdate(username)
                             }
 
                             is CredentialType.Email -> {
-                                Credentials.EmailUpdateCredential(email)
+                                Credentials.Sensitive.EmailUpdateCredential(email)
                             }
 
                             is CredentialType.Password -> {
-                                Credentials.PasswordUpdateCredential(password, confirmPassword)
+                                Credentials.Sensitive.PasswordUpdateCredential(password, confirmPassword)
                             }
                         }
                     )

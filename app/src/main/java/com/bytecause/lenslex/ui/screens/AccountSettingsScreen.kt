@@ -82,7 +82,7 @@ fun AccountSettingsScreenContent(
     showConfirmationDialog: Boolean,
     onShowSnackBar: (String) -> Unit,
     onLinkButtonClick: (Provider) -> Unit,
-    onDialogCredentialChanged: (Credentials) -> Unit,
+    onDialogCredentialChanged: (Credentials.Sensitive) -> Unit,
     onAccountInfoChange: (CredentialType) -> Unit,
     onEnteredCredential: (Credentials) -> Unit,
     onCredentialsDialogDismiss: (CredentialType) -> Unit,
@@ -506,7 +506,7 @@ fun AccountSettingsScreen(
         onAccountInfoChange = {
             when (it) {
                 is CredentialType.Username -> {
-
+                    viewModel.showCredentialUpdateDialog(CredentialType.Username)
                 }
 
                 is CredentialType.Email -> {
@@ -525,7 +525,7 @@ fun AccountSettingsScreen(
                 when (it) {
                     is CredentialType.Reauthorization -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            val credentials = credential as Credentials.SignInCredentials
+                            val credentials = credential as Credentials.Sensitive.SignInCredentials
                             viewModel.reauthenticateUsingEmailAndPassword(
                                 credentials.email,
                                 credentials.password
@@ -535,24 +535,24 @@ fun AccountSettingsScreen(
 
                     is CredentialType.AccountLink -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.linkProvider(credential, Provider.Email)
+                            viewModel.linkProvider(credential as Credentials.Sensitive, Provider.Email)
                         }
                     }
 
                     is CredentialType.Username -> {
-                        //viewModel.updateUserName((credential as Credentials.EmailUpdateCredential).email)
+                        viewModel.updateUserName((credential as Credentials.Insensitive.UsernameUpdate).username)
                         viewModel.showCredentialUpdateDialog(null)
                     }
 
                     is CredentialType.Email -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updateEmail((credential as Credentials.EmailUpdateCredential).email)
+                            viewModel.updateEmail((credential as Credentials.Sensitive.EmailUpdateCredential).email)
                         }
                     }
 
                     is CredentialType.Password -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updatePassword((credential as Credentials.PasswordUpdateCredential).password)
+                            viewModel.updatePassword((credential as Credentials.Sensitive.PasswordUpdateCredential).password)
                         }
                     }
                 }

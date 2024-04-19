@@ -9,9 +9,9 @@ object ValidationUtil {
         return regex.matches(email)
     }
 
-    fun areCredentialsValid(credentials: Credentials): CredentialValidationResult {
+    fun areCredentialsValid(credentials: Credentials.Sensitive): CredentialValidationResult {
         return when (credentials) {
-            is Credentials.SignInCredentials -> {
+            is Credentials.Sensitive.SignInCredentials -> {
 
                 val isEmailValid: Boolean = emailValidator(credentials.email)
                 val isPasswordValid = passwordValidator(password = credentials.password)
@@ -23,7 +23,7 @@ object ValidationUtil {
                 )
             }
 
-            is Credentials.SignUpCredentials -> {
+            is Credentials.Sensitive.SignUpCredentials -> {
 
                 val isEmailValid: Boolean = emailValidator(credentials.email)
                 val passwordValidationResult =
@@ -58,7 +58,7 @@ object ValidationUtil {
                 }
             }
 
-            is Credentials.PasswordUpdateCredential -> {
+            is Credentials.Sensitive.PasswordUpdateCredential -> {
                 val passwordValidationResult =
                     passwordValidator(credentials.password, credentials.confirmPassword)
 
@@ -77,7 +77,7 @@ object ValidationUtil {
                 }
             }
 
-            is Credentials.EmailUpdateCredential -> {
+            is Credentials.Sensitive.EmailUpdateCredential -> {
                 return when (emailValidator(credentials.email)) {
                     true -> {
                         CredentialValidationResult.Valid

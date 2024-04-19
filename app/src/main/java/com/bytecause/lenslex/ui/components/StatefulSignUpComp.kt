@@ -28,8 +28,8 @@ fun StatefulSignUpComp(
     modifier: Modifier = Modifier,
     credentialValidationResult: CredentialValidationResult?,
     isLoading: Boolean,
-    onSignUpButtonClicked: (Credentials.SignUpCredentials) -> Unit,
-    onCredentialChanged: (Credentials.SignUpCredentials) -> Unit,
+    onSignUpButtonClicked: (Credentials.Sensitive.SignUpCredentials) -> Unit,
+    onCredentialChanged: (Credentials.Sensitive.SignUpCredentials) -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
 
@@ -93,7 +93,7 @@ fun StatefulSignUpComp(
             onCredentialChanged = {
                 email = it
                 onCredentialChanged(
-                    Credentials.SignUpCredentials(
+                    Credentials.Sensitive.SignUpCredentials(
                         email, password, confirmPassword
                     )
                 )
@@ -112,7 +112,7 @@ fun StatefulSignUpComp(
             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
             onCredentialChanged = {
                 onCredentialChanged(
-                    Credentials.SignUpCredentials(
+                    Credentials.Sensitive.SignUpCredentials(
                         email, password, confirmPassword
                     )
                 )
@@ -127,7 +127,7 @@ fun StatefulSignUpComp(
                 if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
 
                 onSignUpButtonClicked(
-                    Credentials.SignUpCredentials(
+                    Credentials.Sensitive.SignUpCredentials(
                         email = email,
                         password = password,
                         confirmPassword = confirmPassword

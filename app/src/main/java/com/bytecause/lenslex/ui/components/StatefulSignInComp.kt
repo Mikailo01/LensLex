@@ -29,8 +29,8 @@ fun StatefulSignInComp(
     modifier: Modifier = Modifier,
     credentialValidationResult: CredentialValidationResult?,
     isLoading: Boolean,
-    onCredentialsEntered: (Credentials.SignInCredentials) -> Unit,
-    onCredentialChanged: (Credentials.SignInCredentials) -> Unit,
+    onCredentialsEntered: (Credentials.Sensitive.SignInCredentials) -> Unit,
+    onCredentialChanged: (Credentials.Sensitive.SignInCredentials) -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
 
@@ -96,7 +96,7 @@ fun StatefulSignInComp(
             onCredentialChanged = {
                 email = it
                 onCredentialChanged(
-                    Credentials.SignInCredentials(
+                    Credentials.Sensitive.SignInCredentials(
                         email, password
                     )
                 )
@@ -113,7 +113,7 @@ fun StatefulSignInComp(
                 password = it
             },
             onCredentialChanged = {
-                onCredentialChanged(Credentials.SignInCredentials(email, password))
+                onCredentialChanged(Credentials.Sensitive.SignInCredentials(email, password))
             }
         )
 
@@ -125,7 +125,7 @@ fun StatefulSignInComp(
                 if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
 
                 onCredentialsEntered(
-                    Credentials.SignInCredentials(
+                    Credentials.Sensitive.SignInCredentials(
                         email, password
                     )
                 )

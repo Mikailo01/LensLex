@@ -60,10 +60,10 @@ fun LoginScreenContent(
     isLoading: Boolean,
     credentialValidationResultState: CredentialValidationResult?,
     snackBarHostState: SnackbarHostState,
-    onCredentialChanged: (Credentials) -> Unit,
+    onCredentialChanged: (Credentials.Sensitive) -> Unit,
     onSignInUsingGoogle: () -> Unit,
     onSignInAnonymously: () -> Unit,
-    onCredentialsEntered: (Credentials) -> Unit,
+    onCredentialsEntered: (Credentials.Sensitive) -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -94,7 +94,7 @@ fun LoginScreenContent(
                     keyboardController?.hide()
 
                     onCredentialsEntered(
-                        Credentials.SignInCredentials(
+                        Credentials.Sensitive.SignInCredentials(
                             email = credentials.email,
                             password = credentials.password
                         )
@@ -231,9 +231,9 @@ fun LoginScreen(
         },
         onCredentialsEntered = { credentials ->
             when (credentials) {
-                is Credentials.SignInCredentials -> {
+                is Credentials.Sensitive.SignInCredentials -> {
                     viewModel.saveCredentialValidationResult(areCredentialsValid(
-                        Credentials.SignInCredentials(
+                        Credentials.Sensitive.SignInCredentials(
                             email = credentials.email,
                             password = credentials.password
                         )
@@ -243,7 +243,7 @@ fun LoginScreen(
 
                             coroutineScope.launch {
                                 viewModel.signInViaEmailAndPassword(
-                                    Credentials.SignInCredentials(
+                                    Credentials.Sensitive.SignInCredentials(
                                         email = credentials.email,
                                         password = credentials.password
                                     )
@@ -254,7 +254,7 @@ fun LoginScreen(
                     )
                 }
 
-                is Credentials.SignUpCredentials -> {
+                is Credentials.Sensitive.SignUpCredentials -> {
                     viewModel.saveCredentialValidationResult(areCredentialsValid(
                         credentials
                     ).also { validationResult ->

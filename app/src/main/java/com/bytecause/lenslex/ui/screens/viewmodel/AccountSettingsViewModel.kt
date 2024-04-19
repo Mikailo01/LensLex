@@ -181,14 +181,14 @@ class AccountSettingsViewModel(
         }
     }
 
-    fun linkProvider(credentials: Credentials?, provider: Provider) {
+    fun linkProvider(credentials: Credentials.Sensitive?, provider: Provider) {
         when (provider) {
             Provider.Google -> {
                 // fireBaseAuthClient.getSignedInUser()?.linkWithCredential()
             }
 
             Provider.Email -> {
-                val credential = (credentials as Credentials.SignInCredentials)
+                val credential = (credentials as Credentials.Sensitive.SignInCredentials)
                 val emailCredentials =
                     EmailAuthProvider.getCredential(credential.email, credential.password)
                 fireBaseAuthClient.getFirebaseAuth.currentUser?.linkWithCredential(emailCredentials)
@@ -226,7 +226,7 @@ class AccountSettingsViewModel(
     private fun reload() {
         fireBaseAuthClient.getFirebaseAuth.currentUser?.reload()
 
-        _getUserAccountDetails.value =  fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+        _getUserAccountDetails.value = fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
             UserAccountDetails(
                 uid = uid,
                 creationTimeStamp = metadata?.creationTimestamp,
@@ -265,6 +265,10 @@ class AccountSettingsViewModel(
         fireBaseAuthClient.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    updateCredentialChangeState(
+                        CredentialChangeResult.Success(R.string.username_changed_message)
+                    )
+
                     _getUserAccountDetails.value =
                         _getUserAccountDetails.value?.copy(userName = userName)
                 } else {
@@ -368,7 +372,7 @@ class AccountSettingsViewModel(
     }
 
     fun deleteAccount() {
-        val uid =  fireBaseAuthClient.getFirebaseAuth.currentUser?.uid
+        val uid = fireBaseAuthClient.getFirebaseAuth.currentUser?.uid
         uid?.let { userId ->
             viewModelScope.launch {
                 firebase

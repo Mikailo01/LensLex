@@ -52,7 +52,7 @@ class LoginViewModel(
     suspend fun signInViaGoogle(): IntentSender? =
         fireBaseAuthClient.signInViaGoogle().also { Log.d("idk", "fine") }
 
-    suspend fun signInViaEmailAndPassword(credentials: Credentials.SignInCredentials) {
+    suspend fun signInViaEmailAndPassword(credentials: Credentials.Sensitive.SignInCredentials) {
         if (!emailValidator(credentials.email) || credentials.password.isBlank()) return
 
         fireBaseAuthClient.signInViaEmailAndPassword(credentials.email, credentials.password)
@@ -61,9 +61,9 @@ class LoginViewModel(
             }
     }
 
-    suspend fun signUpViaEmailAndPassword(credentials: Credentials.SignUpCredentials): CredentialValidationResult {
+    suspend fun signUpViaEmailAndPassword(credentials: Credentials.Sensitive.SignUpCredentials): CredentialValidationResult {
         val validationResult = areCredentialsValid(
-            Credentials.SignUpCredentials(
+            Credentials.Sensitive.SignUpCredentials(
                 email = credentials.email,
                 password = credentials.password,
                 confirmPassword = credentials.confirmPassword
