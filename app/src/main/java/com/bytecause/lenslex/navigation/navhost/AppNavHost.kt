@@ -97,7 +97,7 @@ fun AppNavHost(
 
                 RecognizedTextResultScreen(
                     sharedViewModel = viewModel,
-                    onBackButtonClick = { navController.popBackStack() }
+                    onBackButtonClick = { navController.popBackStackOnce() }
                 )
             }
         }
@@ -112,7 +112,7 @@ fun AppNavHost(
             ) {
                 AccountScreen(
                     onNavigate = { navController.navigate(it.route) },
-                    onBackButtonClick = { navController.popBackStack() },
+                    onBackButtonClick = { navController.popBackStackOnce() },
                     onUserLoggedOut = {
                         navController.navigate(NavigationItem.Login.route) {
                             popUpTo(NavigationItem.Home.route) {
@@ -127,7 +127,7 @@ fun AppNavHost(
                 route = NavigationItem.AccountSettings.route
             ) {
                 AccountSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackStackOnce() },
                     onUserLoggedOut = {
                         navController.navigate(NavigationItem.Login.route) {
                             popUpTo(NavigationItem.Home.route) {
@@ -140,7 +140,7 @@ fun AppNavHost(
         }
 
         composable(route = NavigationItem.Add.route) {
-            AddScreen(onNavigateBack = { navController.popBackStack() })
+            AddScreen(onNavigateBack = { navController.popBackStackOnce() })
         }
     }
 }
@@ -153,4 +153,11 @@ inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navControll
         navController.getBackStackEntry(navGraphRoute)
     }
     return koinViewModel(viewModelStoreOwner = parentEntry)
+}
+
+// This prevents issues when the user tap on back button multiple times in row
+fun NavHostController.popBackStackOnce() = run {
+    previousBackStackEntry?.destination?.route?.let { route ->
+        popBackStack(route, false)
+    }
 }

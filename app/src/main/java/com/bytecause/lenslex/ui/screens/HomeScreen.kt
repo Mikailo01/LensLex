@@ -24,8 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -99,6 +97,8 @@ fun HomeScreenContent(
     onClickNavigate: (NavigationItem) -> Unit,
     onCameraIntent: (Uri) -> Unit,
     onMultiplePhotoPickerLaunch: () -> Unit,
+    onDownloadLanguage: (String) -> Unit,
+    onRemoveLanguage: (String) -> Unit,
     onItemRemoved: (WordsAndSentences) -> Unit,
     onItemRestored: () -> Unit
 ) {
@@ -112,7 +112,6 @@ fun HomeScreenContent(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
-                navigationIcon = Icons.Filled.Menu,
                 actionIcon = {
                     if (deletedItemsStack.isNotEmpty()) {
                         Image(
@@ -141,8 +140,7 @@ fun HomeScreenContent(
                                 onClickNavigate(NavigationItem.SettingsGraph)
                             }
                     )
-                },
-                onNavigationIconClick = { /* TODO() */ }
+                }
             )
         }
     ) { innerPadding ->
@@ -251,8 +249,11 @@ fun HomeScreenContent(
                     onConfirm = { language ->
                         onConfirmLanguageDialog(language)
                     },
-                    onDownload = {
-                        // TODO()
+                    onDownload = { langCode ->
+                        onDownloadLanguage(langCode)
+                    },
+                    onRemove = { langCode ->
+                        onRemoveLanguage(langCode)
                     }
                 )
             }
@@ -278,6 +279,7 @@ fun HomeScreen(
 
     val context = LocalContext.current
 
+    val supportedLanguages by viewModel.supportedLanguages.collectAsStateWithLifecycle()
     val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
         SupportedLanguage()
@@ -375,7 +377,7 @@ fun HomeScreen(
         fabState = fabState,
         showProgressBar = showProgressBar,
         cameraPermissionState = cameraPermissionState,
-        supportedLanguages = viewModel.supportedLanguages,
+        supportedLanguages = supportedLanguages,
         selectedLanguage = selectedLanguage,
         showLanguageDialog = showLanguageDialog,
         deletedItemsStack = deletedItemsStack,
@@ -400,6 +402,12 @@ fun HomeScreen(
             multiplePhotoPickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
+        },
+        onDownloadLanguage = { langCode ->
+            viewModel.downloadModel(langCode)
+        },
+        onRemoveLanguage = { langCode ->
+            viewModel.removeModel(langCode)
         },
         onItemRemoved = { item ->
             viewModel.addDeletedItemToStack(item)
@@ -432,6 +440,8 @@ fun HomeScreenPreview() {
         onClickNavigate = {},
         onCameraIntent = {},
         onMultiplePhotoPickerLaunch = {},
+        onDownloadLanguage = {},
+        onRemoveLanguage = {},
         onItemRemoved = {},
         onItemRestored = {}
     )

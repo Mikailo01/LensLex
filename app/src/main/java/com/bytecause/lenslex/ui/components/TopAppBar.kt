@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.components
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,20 +24,22 @@ fun TopAppBar(
     @StringRes titleRes: Int,
     modifier: Modifier = Modifier,
     colors: TopAppBarColors = TopAppBarDefaults.centerAlignedTopAppBarColors(),
-    navigationIcon: ImageVector,
+    navigationIcon: ImageVector? = null,
     actionIcon: @Composable () -> Unit = {},
-    onNavigationIconClick: () -> Unit
+    onNavigationIconClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
         title = { Text(text = stringResource(id = titleRes)) },
         colors = colors,
         modifier = modifier,
         navigationIcon = {
-            IconButton(onClick = { onNavigationIconClick() }) {
-                Icon(
-                    imageVector = navigationIcon,
-                    contentDescription = "Localized description"
-                )
+            if (navigationIcon != null) {
+                IconButton(onClick = { onNavigationIconClick() }) {
+                    Icon(
+                        imageVector = navigationIcon,
+                        contentDescription = "Localized description"
+                    )
+                }
             }
         },
         actions = {
@@ -49,5 +52,5 @@ fun TopAppBar(
 @Composable
 @Preview
 fun TopAppBarPreview() {
-    TopAppBar(titleRes = R.string.preview, navigationIcon = Icons.Filled.ArrowBack) { }
+    TopAppBar(titleRes = R.string.preview, navigationIcon = Icons.AutoMirrored.Filled.ArrowBack) { }
 }

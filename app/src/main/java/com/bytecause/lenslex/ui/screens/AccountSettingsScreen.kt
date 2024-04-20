@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.ui.screens
 
-import androidx.activity.ComponentActivity
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -99,7 +100,7 @@ fun AccountSettingsScreenContent(
         topBar = {
             TopAppBar(
                 titleRes = R.string.account_settings,
-                navigationIcon = Icons.Filled.ArrowBack,
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -332,8 +333,6 @@ fun AccountSettingsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val snackBarHostState = remember { SnackbarHostState() }
-    val snackBarAnonymousAccountMessage =
-        stringResource(id = R.string.email_and_password_cant_be_changed)
 
     var showConfirmationDialog by rememberSaveable {
         mutableStateOf(false)
@@ -344,7 +343,7 @@ fun AccountSettingsScreen(
     val googleLinkLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 coroutineScope.launch {
                     viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
                 }
@@ -355,7 +354,7 @@ fun AccountSettingsScreen(
     val googleReauthorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 coroutineScope.launch {
                     if (credentialChangeState is CredentialChangeResult.Failure.ReauthorizationRequired) {
                         val savedFailureState =
@@ -474,10 +473,7 @@ fun AccountSettingsScreen(
                 is Provider.Email -> {
                     if (linkedProviders?.contains(Provider.Email) == true) {
                         viewModel.unlinkProvider(Provider.Email)
-                    } else {
-                        //viewModel.linkProvider(Provider.Firebase)
-                        viewModel.showCredentialUpdateDialog(CredentialType.AccountLink)
-                    }
+                    } else viewModel.showCredentialUpdateDialog(CredentialType.AccountLink)
                 }
 
                 is Provider.Google -> {
@@ -535,12 +531,19 @@ fun AccountSettingsScreen(
 
                     is CredentialType.AccountLink -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.linkProvider(credential as Credentials.Sensitive, Provider.Email)
+                            viewModel.linkProvider(
+                                credential as Credentials.Sensitive,
+                                Provider.Email
+                            )
                         }
                     }
 
                     is CredentialType.Username -> {
-                        viewModel.updateUserName((credential as Credentials.Insensitive.UsernameUpdate).username)
+                        (credential as Credentials.Insensitive.UsernameUpdate)
+                            .takeIf { user -> user.username.isNotBlank() }
+                            ?.let { user ->
+                                viewModel.updateUserName(user.username)
+                            }
                         viewModel.showCredentialUpdateDialog(null)
                     }
 

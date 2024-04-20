@@ -248,10 +248,18 @@ fun CredentialsDialog(
                             }
 
                             is CredentialType.Email -> {
+                                if (email.isBlank()) {
+                                    isEmailError = true
+                                    return@OutlinedButton
+                                }
                                 Credentials.Sensitive.EmailUpdateCredential(email)
                             }
 
                             is CredentialType.Password -> {
+                                if (password.isBlank()) {
+                                    isPasswordError = listOf(PasswordErrorType.PASSWORD_EMPTY)
+                                    return@OutlinedButton
+                                }
                                 Credentials.Sensitive.PasswordUpdateCredential(password, confirmPassword)
                             }
                         }

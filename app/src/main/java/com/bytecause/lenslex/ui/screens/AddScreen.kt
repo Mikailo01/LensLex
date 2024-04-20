@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +19,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,16 +53,21 @@ fun AddScreenContent(
     onInsertWord: (String) -> Unit,
     onDismissDialog: () -> Unit,
     onConfirmDialog: (SupportedLanguage) -> Unit,
+    onDownloadLanguage: (String) -> Unit,
+    onRemoveLanguage: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
 
     val context = LocalContext.current
+    var isJobRunning by remember {
+        mutableStateOf(false)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 titleRes = R.string.add_word,
-                navigationIcon = Icons.Filled.ArrowBack,
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -99,6 +105,8 @@ fun AddScreenContent(
                     Button(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         onClick = {
+                            if (isJobRunning) return@Button
+                            isJobRunning = true
 
                             // Returns Map with abbreviation words.
                             val jsonContent =
@@ -118,12 +126,10 @@ fun AddScreenContent(
                                             "Model download failed.",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                        isJobRunning = false
                                     }
 
                                     is Translator.TranslationResult.TranslationSuccess -> {
-
-                                        Log.d("idk", "success")
-
                                         onInsertWord(translationResult.translatedText)
                                     }
 
@@ -134,6 +140,7 @@ fun AddScreenContent(
                                             Toast.LENGTH_SHORT
                                         )
                                             .show()
+                                        isJobRunning = false
                                     }
                                 }
                             }
@@ -156,8 +163,11 @@ fun AddScreenContent(
             onConfirm = {
                 onConfirmDialog(it)
             },
-            onDownload = {
-                // TODO()
+            onDownload = { langCode ->
+                onDownloadLanguage(langCode)
+            },
+            onRemove = { langCode ->
+                onRemoveLanguage(langCode)
             }
         )
     }
@@ -171,6 +181,7 @@ fun AddScreen(
     val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
         initialValue = SupportedLanguage()
     )
+    val supportedLanguages by viewModel.supportedLanguages.collectAsStateWithLifecycle()
 
     var textFieldInput by rememberSaveable {
         mutableStateOf("")
@@ -181,7 +192,7 @@ fun AddScreen(
     }
 
     AddScreenContent(
-        supportedLanguages = viewModel.supportedLanguages,
+        supportedLanguages = supportedLanguages,
         textFieldInput = textFieldInput,
         selectedLanguage = selectedLanguage,
         showLanguageDialog = showLanguageDialog,
@@ -212,6 +223,12 @@ fun AddScreen(
             viewModel.setLangOption(it)
             showLanguageDialog = false
         },
+        onDownloadLanguage = { langCode ->
+            viewModel.downloadModel(langCode)
+        },
+        onRemoveLanguage = { langCode ->
+            viewModel.removeModel(langCode)
+        },
         onNavigateBack = {
             onNavigateBack()
         }
@@ -232,6 +249,8 @@ fun AddScreenPreview() {
         onInsertWord = {},
         onDismissDialog = {},
         onConfirmDialog = {},
+        onDownloadLanguage = {},
+        onRemoveLanguage = {},
         onNavigateBack = {}
     )
 }

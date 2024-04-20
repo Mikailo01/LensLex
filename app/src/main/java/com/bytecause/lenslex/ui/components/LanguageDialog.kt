@@ -17,7 +17,8 @@ fun LanguageDialog(
     lazyListContent: List<SupportedLanguage>,
     onDismiss: () -> Unit,
     onConfirm: (SupportedLanguage) -> Unit,
-    onDownload: () -> Unit
+    onDownload: (String) -> Unit,
+    onRemove: (String) -> Unit
 ) {
     Dialog(
         title = stringResource(id = R.string.choose_language),
@@ -32,8 +33,11 @@ fun LanguageDialog(
                     onItemClick = {
                         onConfirm(it)
                     },
-                    onDownloadClick = {
-                        onDownload()
+                    onDownloadClick = { langCode ->
+                        onDownload(langCode)
+                    },
+                    onRemoveClick = { langCode ->
+                        onRemove(langCode)
                     }
                 )
             }
@@ -50,5 +54,8 @@ fun LanguageDialogPreview() {
             SupportedLanguage(langCode = "en", langName = "English")
         ),
         onDismiss = {},
-        onConfirm = {}) {}
+        onConfirm = {},
+        onDownload = {},
+        onRemove = {}
+    )
 }

@@ -80,8 +80,6 @@ class HomeViewModel(
                         for (doc in snapshot.documents) {
                             wordsList.add(mapDocumentObject(doc))
                         }
-                        // Update your UI or state with the new data
-                        // For example, if using MutableStateFlow:
 
                         _getAllWordsFromFireStore.value =
                             wordsList.sortedByDescending { it.timeStamp }

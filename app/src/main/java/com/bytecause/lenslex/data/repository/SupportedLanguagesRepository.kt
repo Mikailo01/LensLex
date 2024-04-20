@@ -8,6 +8,9 @@ class SupportedLanguagesRepository {
 
     val supportedLanguageCodes: List<SupportedLanguage> =
         SupportedLanguagesLocalDataSource.supportedLanguageCodes.map { langCode ->
-            SupportedLanguage(langCode = langCode, langName = Locale(langCode).displayLanguage)
+            SupportedLanguage(
+                langCode = langCode,
+                langName = Locale(langCode).displayLanguage
+            )
         }.sortedBy { it.langName }
 }

@@ -120,7 +120,7 @@ private fun passwordValidator(
     return if (errors.isEmpty()) {
         PasswordValidationResult.Valid
     } else {
-        errors.add(PasswordErrorType.PASSWORD_INCORRECT)
+        if (errors.all { it != PasswordErrorType.PASSWORD_MISMATCH }) errors.add(PasswordErrorType.PASSWORD_INCORRECT)
         PasswordValidationResult.Invalid(errors)
     }
 }

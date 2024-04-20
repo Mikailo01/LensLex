@@ -36,7 +36,7 @@ fun PasswordFields(
     confirmPassword: String,
     isPasswordEnabled: Boolean,
     isPasswordVisible: Boolean,
-   // isPasswordError: Boolean,
+    // isPasswordError: Boolean,
     isPasswordError: List<PasswordErrorType?>,
     modifier: Modifier = Modifier,
     onPasswordValueChange: (String) -> Unit,
@@ -63,7 +63,7 @@ fun PasswordFields(
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = confirmPassword,
-            enabled = password.isNotBlank(),
+            enabled = password.isNotBlank() && isPasswordError.all { it == PasswordErrorType.PASSWORD_MISMATCH },
             onValueChange = {
                 onConfirmPasswordValueChange(it)
                 onCredentialChanged()
@@ -105,10 +105,14 @@ fun PasswordFields(
             ),
             isError = isPasswordError.isNotEmpty(),
             supportingText = {
-                if (isPasswordError.isNotEmpty() && password.isNotBlank()) Text(
-                    text = stringResource(id = R.string.password_mismatch),
-                    color = Color.Red
-                )
+                if (isPasswordError.isNotEmpty() && password.isNotBlank()
+                    && isPasswordError.all { it == PasswordErrorType.PASSWORD_MISMATCH }
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.password_mismatch),
+                        color = Color.Red
+                    )
+                }
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = focusedBorderColor,

@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.ui.screens
 
-import androidx.activity.ComponentActivity
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -176,7 +176,7 @@ fun LoginScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 coroutineScope.launch {
                     viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
                 }

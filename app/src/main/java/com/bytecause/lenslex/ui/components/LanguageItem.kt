@@ -5,7 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.models.SupportedLanguage
 
@@ -22,7 +26,8 @@ fun LanguageItem(
     modifier: Modifier = Modifier,
     item: SupportedLanguage,
     onItemClick: (SupportedLanguage) -> Unit,
-    onDownloadClick: () -> Unit
+    onDownloadClick: (String) -> Unit,
+    onRemoveClick: (String) -> Unit
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -32,13 +37,38 @@ fun LanguageItem(
             .clickable { onItemClick(item) }
     ) {
         Text(text = item.langName, modifier = modifier)
-        Image(
-            painter = painterResource(id = R.drawable.baseline_download_24),
-            contentDescription = "Download language",
-            modifier = modifier
-                .clip(CircleShape)
-                .clickable { onDownloadClick() }
-        )
+
+        when {
+            item.isDownloaded -> {
+                Image(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Delete language",
+                    modifier = modifier
+                        .padding(end = 10.dp)
+                        .clip(CircleShape)
+                        .clickable { onRemoveClick(item.langCode) }
+                )
+            }
+
+            item.isDownloading -> {
+                IndeterminateCircularIndicator(
+                    modifier = modifier.padding(end = 1.dp),
+                    size = 20.dp,
+                    isShowed = true
+                )
+            }
+
+            else -> {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_download_24),
+                    contentDescription = "Download language",
+                    modifier = modifier
+                        .padding(end = 10.dp)
+                        .clip(CircleShape)
+                        .clickable { onDownloadClick(item.langCode) }
+                )
+            }
+        }
     }
 }
 
@@ -47,6 +77,8 @@ fun LanguageItem(
 fun LanguageItemPreview() {
     LanguageItem(
         item = SupportedLanguage(langName = stringResource(id = R.string.preview)),
-        onItemClick = {}
-    ) { }
+        onItemClick = {},
+        onDownloadClick = {},
+        onRemoveClick = {}
+    )
 }
