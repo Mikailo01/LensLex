@@ -119,7 +119,7 @@ fun CredentialsDialog(
                         EmailField(
                             emailValue = email,
                             isEmailError = isEmailError,
-                            onCredentialChanged = {
+                            onEmailValueChanged = {
                                 email = it
                                 onCredentialChanged(
                                     Credentials.Sensitive.SignInCredentials(email, password)
@@ -129,7 +129,7 @@ fun CredentialsDialog(
 
                         PasswordField(
                             password = password,
-                            isPasswordError = isPasswordError,
+                            passwordErrors = isPasswordError,
                             isPasswordEnabled = !isEmailError,
                             isPasswordVisible = isPasswordVisible,
                             onPasswordVisibilityClick = { isPasswordVisible = it },
@@ -149,10 +149,10 @@ fun CredentialsDialog(
                         EmailField(
                             emailValue = email,
                             isEmailError = isEmailError,
-                            onCredentialChanged = {
+                            onEmailValueChanged = {
                                 email = it
                                 onCredentialChanged(
-                                    Credentials.Sensitive.EmailUpdateCredential(
+                                    Credentials.Sensitive.EmailCredential(
                                         it
                                     )
                                 )
@@ -164,13 +164,13 @@ fun CredentialsDialog(
                             confirmPassword = confirmPassword,
                             isPasswordEnabled = !(email.isBlank() || isEmailError),
                             isPasswordVisible = isPasswordVisible,
-                            isPasswordError = isPasswordError,
+                            passwordErrors = isPasswordError,
                             onPasswordValueChange = { password = it },
                             onConfirmPasswordValueChange = { confirmPassword = it },
                             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
                             onCredentialChanged = {
                                 onCredentialChanged(
-                                    Credentials.Sensitive.PasswordUpdateCredential(
+                                    Credentials.Sensitive.PasswordCredential(
                                         password, confirmPassword
                                     )
                                 )
@@ -199,10 +199,10 @@ fun CredentialsDialog(
                         EmailField(
                             emailValue = email,
                             isEmailError = isEmailError,
-                            onCredentialChanged = {
+                            onEmailValueChanged = {
                                 email = it
                                 onCredentialChanged(
-                                    Credentials.Sensitive.EmailUpdateCredential(
+                                    Credentials.Sensitive.EmailCredential(
                                         it
                                     )
                                 )
@@ -217,13 +217,13 @@ fun CredentialsDialog(
                             confirmPassword = confirmPassword,
                             isPasswordEnabled = true,
                             isPasswordVisible = isPasswordVisible,
-                            isPasswordError = isPasswordError,
+                            passwordErrors = isPasswordError,
                             onPasswordValueChange = { password = it },
                             onConfirmPasswordValueChange = { confirmPassword = it },
                             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
                             onCredentialChanged = {
                                 onCredentialChanged(
-                                    Credentials.Sensitive.PasswordUpdateCredential(
+                                    Credentials.Sensitive.PasswordCredential(
                                         password, confirmPassword
                                     )
                                 )
@@ -252,7 +252,7 @@ fun CredentialsDialog(
                                     isEmailError = true
                                     return@OutlinedButton
                                 }
-                                Credentials.Sensitive.EmailUpdateCredential(email)
+                                Credentials.Sensitive.EmailCredential(email)
                             }
 
                             is CredentialType.Password -> {
@@ -260,7 +260,7 @@ fun CredentialsDialog(
                                     isPasswordError = listOf(PasswordErrorType.PASSWORD_EMPTY)
                                     return@OutlinedButton
                                 }
-                                Credentials.Sensitive.PasswordUpdateCredential(password, confirmPassword)
+                                Credentials.Sensitive.PasswordCredential(password, confirmPassword)
                             }
                         }
                     )

@@ -17,8 +17,6 @@ import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
-import com.google.android.gms.auth.api.identity.Identity
-import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -40,11 +38,7 @@ val appModule = module {
     }
 
     single<FireBaseAuthClient> {
-        FireBaseAuthClient(get(), get())
-    }
-
-    single<SignInClient> {
-        Identity.getSignInClient(androidContext())
+        FireBaseAuthClient()
     }
 
     // Database

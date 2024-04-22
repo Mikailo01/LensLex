@@ -1,9 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +23,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,10 +94,7 @@ fun AccountSettingsScreenContent(
         topBar = {
             TopAppBar(
                 titleRes = R.string.account_settings,
-                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack
             ) {
                 onNavigateBack()
             }
@@ -340,36 +331,6 @@ fun AccountSettingsScreen(
 
     val context = LocalContext.current
 
-    val googleLinkLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                coroutineScope.launch {
-                    viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
-                }
-            }
-        }
-    )
-
-    val googleReauthorizationLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                coroutineScope.launch {
-                    if (credentialChangeState is CredentialChangeResult.Failure.ReauthorizationRequired) {
-                        val savedFailureState =
-                            (credentialChangeState as CredentialChangeResult.Failure.ReauthorizationRequired)
-                        viewModel.reauthenticateWithGoogleIntent(
-                            intent = result.data ?: return@launch,
-                            email = savedFailureState.email,
-                            password = savedFailureState.password
-                        )
-                    }
-                }
-            }
-        }
-    )
-
     LaunchedEffect(key1 = userDetails) {
         if (userDetails == null) onUserLoggedOut()
     }
@@ -390,16 +351,12 @@ fun AccountSettingsScreen(
 
             is CredentialChangeResult.Failure.ReauthorizationRequired -> {
                 if (linkedProviders?.contains(Provider.Google) == true) {
-                    coroutineScope.launch {
-                        val reauthorizationIntentSender = viewModel.signInViaGoogle()
-                        googleReauthorizationLauncher.launch(
-                            IntentSenderRequest.Builder(
-                                reauthorizationIntentSender ?: return@launch
-                            ).build()
-                        )
-                    }.invokeOnCompletion {
-                        viewModel.resetCredentialChangeState()
-                    }
+
+                    viewModel.reauthenticateWithGoogle(
+                        context,
+                        credentialChangeState as CredentialChangeResult.Failure.ReauthorizationRequired
+                    )
+
                 } else viewModel.showCredentialUpdateDialog(CredentialType.Reauthorization)
             }
 
@@ -480,14 +437,7 @@ fun AccountSettingsScreen(
                     if (linkedProviders?.contains(Provider.Google) == true) {
                         viewModel.unlinkProvider(Provider.Google)
                     } else {
-                        coroutineScope.launch {
-                            val signInIntentSender = viewModel.signInViaGoogle()
-                            googleLinkLauncher.launch(
-                                IntentSenderRequest.Builder(
-                                    signInIntentSender ?: return@launch
-                                ).build()
-                            )
-                        }
+                        viewModel.linkGoogleProvider(context)
                     }
                 }
             }
@@ -522,18 +472,14 @@ fun AccountSettingsScreen(
                     is CredentialType.Reauthorization -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
                             val credentials = credential as Credentials.Sensitive.SignInCredentials
-                            viewModel.reauthenticateUsingEmailAndPassword(
-                                credentials.email,
-                                credentials.password
-                            )
+                            viewModel.reauthenticateUsingEmailAndPassword(credentials)
                         }
                     }
 
                     is CredentialType.AccountLink -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.linkProvider(
-                                credential as Credentials.Sensitive,
-                                Provider.Email
+                            viewModel.linkEmailProvider(
+                                credential as Credentials.Sensitive
                             )
                         }
                     }
@@ -549,13 +495,13 @@ fun AccountSettingsScreen(
 
                     is CredentialType.Email -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updateEmail((credential as Credentials.Sensitive.EmailUpdateCredential).email)
+                            viewModel.updateEmail((credential as Credentials.Sensitive.EmailCredential).email)
                         }
                     }
 
                     is CredentialType.Password -> {
                         if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updatePassword((credential as Credentials.Sensitive.PasswordUpdateCredential).password)
+                            viewModel.updatePassword((credential as Credentials.Sensitive.PasswordCredential).password)
                         }
                     }
                 }

@@ -1,8 +1,18 @@
 package com.bytecause.lenslex.util
 
 import com.bytecause.lenslex.models.Credentials
+import java.security.MessageDigest
+import java.util.UUID
 
 object ValidationUtil {
+
+    fun generateNonce(): String {
+        val rawNonce = UUID.randomUUID().toString()
+        val bytes = rawNonce.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
 
     fun emailValidator(email: String): Boolean {
         val regex = Regex("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}\$")
@@ -58,7 +68,7 @@ object ValidationUtil {
                 }
             }
 
-            is Credentials.Sensitive.PasswordUpdateCredential -> {
+            is Credentials.Sensitive.PasswordCredential -> {
                 val passwordValidationResult =
                     passwordValidator(credentials.password, credentials.confirmPassword)
 
@@ -77,7 +87,7 @@ object ValidationUtil {
                 }
             }
 
-            is Credentials.Sensitive.EmailUpdateCredential -> {
+            is Credentials.Sensitive.EmailCredential -> {
                 return when (emailValidator(credentials.email)) {
                     true -> {
                         CredentialValidationResult.Valid

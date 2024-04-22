@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,8 +30,12 @@ fun StatefulSignInComp(
     modifier: Modifier = Modifier,
     credentialValidationResult: CredentialValidationResult?,
     isLoading: Boolean,
-    onCredentialsEntered: (Credentials.Sensitive.SignInCredentials) -> Unit,
-    onCredentialChanged: (Credentials.Sensitive.SignInCredentials) -> Unit,
+    forgetPassword: Boolean,
+    isSendEmailButtonEnabled: Boolean,
+    onCredentialsEntered: (Credentials.Sensitive) -> Unit,
+    onCredentialChanged: (Credentials.Sensitive) -> Unit,
+    onForgetPasswordClick: () -> Unit,
+    onSignInClick: () -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
 
@@ -50,7 +55,7 @@ fun StatefulSignInComp(
         mutableStateOf(false)
     }
 
-    var isPasswordError by rememberSaveable {
+    var passwordErrors by rememberSaveable {
         mutableStateOf<List<PasswordErrorType>>(emptyList())
     }
 
@@ -58,7 +63,7 @@ fun StatefulSignInComp(
         when (credentialValidationResult) {
             is CredentialValidationResult.Invalid -> {
                 isEmailError = credentialValidationResult.isEmailValid != true
-                isPasswordError =
+                passwordErrors =
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             when {
@@ -80,7 +85,7 @@ fun StatefulSignInComp(
 
             else -> {
                 isEmailError = false
-                isPasswordError = emptyList()
+                passwordErrors = emptyList()
             }
         }
     }
@@ -90,49 +95,84 @@ fun StatefulSignInComp(
             .padding(start = 10.dp, end = 10.dp)
     ) {
 
-        EmailField(
-            emailValue = email,
-            isEmailError = isEmailError,
-            onCredentialChanged = {
-                email = it
-                onCredentialChanged(
-                    Credentials.Sensitive.SignInCredentials(
-                        email, password
+        if (!forgetPassword) {
+            EmailField(
+                emailValue = email,
+                isEmailError = isEmailError,
+                onEmailValueChanged = {
+                    email = it
+                    onCredentialChanged(
+                        Credentials.Sensitive.SignInCredentials(
+                            email, password
+                        )
                     )
-                )
-            }
-        )
+                }
+            )
 
-        PasswordField(
-            password = password,
-            isPasswordError = isPasswordError,
-            isPasswordEnabled = !(email.isBlank() || isEmailError),
-            isPasswordVisible = passwordVisible,
-            onPasswordVisibilityClick = { passwordVisible = it },
-            onPasswordValueChange = {
-                password = it
-            },
-            onCredentialChanged = {
-                onCredentialChanged(Credentials.Sensitive.SignInCredentials(email, password))
-            }
-        )
+            PasswordField(
+                password = password,
+                passwordErrors = passwordErrors,
+                isPasswordEnabled = !(email.isBlank() || isEmailError),
+                isPasswordVisible = passwordVisible,
+                onPasswordVisibilityClick = { passwordVisible = it },
+                onPasswordValueChange = {
+                    password = it
+                },
+                onCredentialChanged = {
+                    onCredentialChanged(Credentials.Sensitive.SignInCredentials(email, password))
+                }
+            )
 
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 15.dp),
-            onClick = {
-                if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
+            Text(
+                text = "Forget password?",
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable { onForgetPasswordClick() }
+            )
 
-                onCredentialsEntered(
-                    Credentials.Sensitive.SignInCredentials(
-                        email, password
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 15.dp, bottom = 15.dp),
+                onClick = {
+                    if (credentialValidationResult is CredentialValidationResult.Invalid) return@Button
+
+                    onCredentialsEntered(
+                        Credentials.Sensitive.SignInCredentials(
+                            email, password
+                        )
                     )
-                )
+                }
+            ) {
+                if (isLoading) IndeterminateCircularIndicator(isShowed = true)
+                else Text(text = stringResource(id = R.string.sign_in))
             }
-        ) {
-            if (isLoading) IndeterminateCircularIndicator(isShowed = true)
-            else Text(text = stringResource(id = R.string.sign_in))
+        } else {
+            ForgetPasswordComp(
+                email = email,
+                isEmailError = isEmailError,
+                isSendEmailButtonEnabled = isSendEmailButtonEnabled,
+                credentialValidationResult = credentialValidationResult,
+                onSignInClick = {
+                    onSignInClick()
+                },
+                onEmailValueChanged = {
+                    email = it
+                    onCredentialChanged(
+                        Credentials.Sensitive.EmailCredential(it)
+                    )
+                },
+                onCredentialsEntered = {
+                    if (credentialValidationResult is CredentialValidationResult.Invalid) return@ForgetPasswordComp
+
+                    onCredentialsEntered(
+                        Credentials.Sensitive.EmailCredential(
+                            email
+                        )
+                    )
+                }
+            )
         }
 
         AnnotatedClickableText(
@@ -153,8 +193,12 @@ fun StatefulSignInCompPreview() {
     StatefulSignInComp(
         credentialValidationResult = null,
         isLoading = false,
+        forgetPassword = false,
+        isSendEmailButtonEnabled = true,
         onCredentialsEntered = {},
         onCredentialChanged = {},
+        onForgetPasswordClick = {},
+        onSignInClick = {},
         onSignInAnnotatedStringClick = {}
     )
 }

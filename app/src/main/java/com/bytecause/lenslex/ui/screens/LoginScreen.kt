@@ -1,9 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,13 +53,17 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun LoginScreenContent(
     signIn: Boolean,
+    forgetPassword: Boolean,
     isLoading: Boolean,
+    isSendEmailButtonEnabled: Boolean,
     credentialValidationResultState: CredentialValidationResult?,
     snackBarHostState: SnackbarHostState,
     onCredentialChanged: (Credentials.Sensitive) -> Unit,
     onSignInUsingGoogle: () -> Unit,
     onSignInAnonymously: () -> Unit,
-    onCredentialsEntered: (Credentials.Sensitive) -> Unit,
+    onCredentialsEntered: (Credentials.Sensitive?) -> Unit,
+    onForgetPasswordClick: () -> Unit,
+    onSignInClick: () -> Unit,
     onSignInAnnotatedStringClick: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -85,27 +85,46 @@ fun LoginScreenContent(
                 .align(Alignment.Center)
                 .verticalScroll(rememberScrollState())
         ) {
-            if (signIn) StatefulSignInComp(
-                modifier = Modifier.padding(15.dp),
-                credentialValidationResult = credentialValidationResultState,
-                isLoading = isLoading,
-                onCredentialsEntered = { credentials ->
+            if (signIn) {
+                StatefulSignInComp(
+                    modifier = Modifier.padding(15.dp),
+                    credentialValidationResult = credentialValidationResultState,
+                    isLoading = isLoading,
+                    forgetPassword = forgetPassword,
+                    isSendEmailButtonEnabled = isSendEmailButtonEnabled,
+                    onCredentialsEntered = { credentials ->
 
-                    keyboardController?.hide()
+                        keyboardController?.hide()
 
-                    onCredentialsEntered(
-                        Credentials.Sensitive.SignInCredentials(
-                            email = credentials.email,
-                            password = credentials.password
+                        onCredentialsEntered(
+                            when (credentials) {
+                                is Credentials.Sensitive.SignInCredentials -> {
+                                    Credentials.Sensitive.SignInCredentials(
+                                        email = credentials.email,
+                                        password = credentials.password
+                                    )
+                                }
+
+                                is Credentials.Sensitive.EmailCredential -> {
+                                    Credentials.Sensitive.EmailCredential(credentials.email)
+                                }
+
+                                else -> {
+                                    null
+                                }
+                            }
                         )
-                    )
-                },
-                onCredentialChanged = { credential ->
-                    onCredentialChanged(credential)
-                },
-                onSignInAnnotatedStringClick = { onSignInAnnotatedStringClick() }
-            )
-            else StatefulSignUpComp(
+                    },
+                    onCredentialChanged = { credential ->
+                        onCredentialChanged(credential)
+                    },
+                    onForgetPasswordClick = { onForgetPasswordClick() },
+                    onSignInClick = {
+                        onSignInClick()
+                    },
+                    onSignInAnnotatedStringClick = { onSignInAnnotatedStringClick() }
+                )
+            } else StatefulSignUpComp(
                 modifier = Modifier.padding(15.dp),
                 credentialValidationResult = credentialValidationResultState,
                 isLoading = isLoading,
@@ -163,6 +182,12 @@ fun LoginScreen(
     var signIn by rememberSaveable {
         mutableStateOf(true)
     }
+    var forgetPassword by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var isSendEmailButtonEnabled by rememberSaveable {
+        mutableStateOf(true)
+    }
     var isLoading by rememberSaveable {
         mutableStateOf(false)
     }
@@ -172,17 +197,6 @@ fun LoginScreen(
         SnackbarHostState()
     }
     val context = LocalContext.current
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                coroutineScope.launch {
-                    viewModel.signInWithGoogleIntent(intent = result.data ?: return@launch)
-                }
-            }
-        }
-    )
 
     LaunchedEffect(key1 = signUiState) {
         when {
@@ -204,7 +218,9 @@ fun LoginScreen(
 
     LoginScreenContent(
         signIn = signIn,
+        forgetPassword = forgetPassword,
         isLoading = isLoading,
+        isSendEmailButtonEnabled = isSendEmailButtonEnabled,
         credentialValidationResultState = credentialValidationResultState,
         snackBarHostState = snackBarHostState,
         onCredentialChanged = { credential ->
@@ -215,14 +231,7 @@ fun LoginScreen(
             )
         },
         onSignInUsingGoogle = {
-            coroutineScope.launch {
-                val signInIntentSender = viewModel.signInViaGoogle()
-                launcher.launch(
-                    IntentSenderRequest.Builder(
-                        signInIntentSender ?: return@launch
-                    ).build()
-                )
-            }
+            viewModel.signInUsingGoogleCredential(context)
         },
         onSignInAnonymously = {
             coroutineScope.launch {
@@ -232,12 +241,7 @@ fun LoginScreen(
         onCredentialsEntered = { credentials ->
             when (credentials) {
                 is Credentials.Sensitive.SignInCredentials -> {
-                    viewModel.saveCredentialValidationResult(areCredentialsValid(
-                        Credentials.Sensitive.SignInCredentials(
-                            email = credentials.email,
-                            password = credentials.password
-                        )
-                    ).also { validationResult ->
+                    viewModel.saveCredentialValidationResult(areCredentialsValid(credentials).also { validationResult ->
                         if (validationResult is CredentialValidationResult.Valid) {
                             isLoading = true
 
@@ -254,32 +258,41 @@ fun LoginScreen(
                     )
                 }
 
-                is Credentials.Sensitive.SignUpCredentials -> {
-                    viewModel.saveCredentialValidationResult(areCredentialsValid(
-                        credentials
-                    ).also { validationResult ->
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            isLoading = true
-
-                            coroutineScope.launch {
-                                viewModel.signUpViaEmailAndPassword(
-                                    credentials
-                                )
+                is Credentials.Sensitive.EmailCredential -> {
+                    viewModel.saveCredentialValidationResult(
+                        areCredentialsValid(credentials).also { validationResult ->
+                            if (validationResult is CredentialValidationResult.Valid) {
+                                isSendEmailButtonEnabled = false
+                                viewModel.sendPasswordResetEmail(credentials.email)
                             }
-                        } else if (((validationResult as? CredentialValidationResult.Invalid)?.passwordError
-                                    as? PasswordValidationResult.Invalid)?.cause?.contains(
-                                PasswordErrorType.PASSWORD_EMPTY
-                            ) == true
-                        ) {
-                            coroutineScope.launch {
-                                snackBarHostState.showSnackbar(
-                                    message = context.resources.getString(
-                                        R.string.fill_all_fields
+                        })
+                }
+
+                is Credentials.Sensitive.SignUpCredentials -> {
+                    viewModel.saveCredentialValidationResult(
+                        areCredentialsValid(credentials).also { validationResult ->
+                            if (validationResult is CredentialValidationResult.Valid) {
+                                isLoading = true
+
+                                coroutineScope.launch {
+                                    viewModel.signUpViaEmailAndPassword(
+                                        credentials
                                     )
-                                )
+                                }
+                            } else if (((validationResult as? CredentialValidationResult.Invalid)?.passwordError
+                                        as? PasswordValidationResult.Invalid)?.cause?.contains(
+                                    PasswordErrorType.PASSWORD_EMPTY
+                                ) == true
+                            ) {
+                                coroutineScope.launch {
+                                    snackBarHostState.showSnackbar(
+                                        message = context.resources.getString(
+                                            R.string.fill_all_fields
+                                        )
+                                    )
+                                }
                             }
                         }
-                    }
                     )
                 }
 
@@ -288,6 +301,10 @@ fun LoginScreen(
                 }
             }
         },
+        onForgetPasswordClick = {
+            forgetPassword = !forgetPassword
+        },
+        onSignInClick = { forgetPassword = !forgetPassword },
         onSignInAnnotatedStringClick = {
             signIn = !signIn
         }
@@ -299,13 +316,17 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     LoginScreenContent(
         signIn = true,
+        forgetPassword = false,
         isLoading = false,
+        isSendEmailButtonEnabled = true,
         credentialValidationResultState = null,
         snackBarHostState = SnackbarHostState(),
         onCredentialChanged = {},
         onSignInUsingGoogle = {},
         onSignInAnonymously = {},
         onCredentialsEntered = {},
+        onForgetPasswordClick = {},
+        onSignInClick = {},
         onSignInAnnotatedStringClick = {}
     )
 }

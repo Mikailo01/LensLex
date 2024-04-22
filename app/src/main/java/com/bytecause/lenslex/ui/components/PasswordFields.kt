@@ -36,8 +36,7 @@ fun PasswordFields(
     confirmPassword: String,
     isPasswordEnabled: Boolean,
     isPasswordVisible: Boolean,
-    // isPasswordError: Boolean,
-    isPasswordError: List<PasswordErrorType?>,
+    passwordErrors: List<PasswordErrorType?>,
     modifier: Modifier = Modifier,
     onPasswordValueChange: (String) -> Unit,
     onConfirmPasswordValueChange: (String) -> Unit,
@@ -48,7 +47,7 @@ fun PasswordFields(
     Column(modifier = modifier) {
         PasswordField(
             password = password,
-            isPasswordError = isPasswordError,
+            passwordErrors = passwordErrors,
             isPasswordEnabled = isPasswordEnabled,
             isPasswordVisible = isPasswordVisible,
             onPasswordVisibilityClick = onPasswordVisibilityClick,
@@ -63,7 +62,7 @@ fun PasswordFields(
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = confirmPassword,
-            enabled = password.isNotBlank() && isPasswordError.all { it == PasswordErrorType.PASSWORD_MISMATCH },
+            enabled = password.isNotBlank() && passwordErrors.all { it == PasswordErrorType.PASSWORD_MISMATCH },
             onValueChange = {
                 onConfirmPasswordValueChange(it)
                 onCredentialChanged()
@@ -103,10 +102,10 @@ fun PasswordFields(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
             ),
-            isError = isPasswordError.isNotEmpty(),
+            isError = passwordErrors.isNotEmpty(),
             supportingText = {
-                if (isPasswordError.isNotEmpty() && password.isNotBlank()
-                    && isPasswordError.all { it == PasswordErrorType.PASSWORD_MISMATCH }
+                if (passwordErrors.isNotEmpty() && password.isNotBlank()
+                    && passwordErrors.all { it == PasswordErrorType.PASSWORD_MISMATCH }
                 ) {
                     Text(
                         text = stringResource(id = R.string.password_mismatch),
@@ -139,7 +138,7 @@ fun PasswordFieldsPreview() {
         confirmPassword = "",
         isPasswordEnabled = true,
         isPasswordVisible = false,
-        isPasswordError = emptyList(),
+        passwordErrors = emptyList(),
         onPasswordValueChange = {},
         onConfirmPasswordValueChange = {},
         onPasswordVisibilityClick = {}

@@ -30,7 +30,7 @@ import com.bytecause.lenslex.util.PasswordErrorType
 @Composable
 fun PasswordField(
     password: String,
-    isPasswordError: List<PasswordErrorType?>,
+    passwordErrors: List<PasswordErrorType?>,
     isPasswordEnabled: Boolean,
     isPasswordVisible: Boolean,
     onPasswordVisibilityClick: (Boolean) -> Unit,
@@ -80,7 +80,7 @@ fun PasswordField(
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Done
         ),
-        isError = isPasswordError.isNotEmpty(),
+        isError = passwordErrors.isNotEmpty(),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = focusedBorderColor,
             unfocusedBorderColor = unfocusedBorderColor,
@@ -89,10 +89,10 @@ fun PasswordField(
         supportingText = {
             if (!isPasswordEnabled) return@OutlinedTextField
 
-            if (isPasswordError.contains(PasswordErrorType.PASSWORD_EMPTY)) {
+            if (passwordErrors.contains(PasswordErrorType.PASSWORD_EMPTY)) {
                 Text(text = stringResource(id = R.string.password_empty_warning))
-            } else if (isPasswordError.contains(PasswordErrorType.PASSWORD_INCORRECT)
-                && !isPasswordError.contains(PasswordErrorType.PASSWORD_MISMATCH)
+            } else if (passwordErrors.contains(PasswordErrorType.PASSWORD_INCORRECT)
+                && !passwordErrors.contains(PasswordErrorType.PASSWORD_MISMATCH)
             ) {
                 Text(text = stringResource(id = R.string.password_incorrect))
             }
@@ -105,7 +105,7 @@ fun PasswordField(
 fun PasswordFieldPreview() {
     PasswordField(
         password = "",
-        isPasswordError = emptyList(),
+        passwordErrors = emptyList(),
         isPasswordEnabled = true,
         isPasswordVisible = false,
         onPasswordVisibilityClick = {},

@@ -1,9 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.content.Intent
-import android.content.IntentSender
-import android.util.Log
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.models.Credentials
 import com.bytecause.lenslex.models.SignInResult
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val fireBaseAuthClient: FireBaseAuthClient
@@ -44,13 +44,27 @@ class LoginViewModel(
         }
     }
 
-    suspend fun signInWithGoogleIntent(intent: Intent) {
-        val signInResult = fireBaseAuthClient.signInWithGoogleIntent(intent)
-        onSignInResult(signInResult)
+    fun sendPasswordResetEmail(email: String) {
+        fireBaseAuthClient.getFirebaseAuth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+
+                } else {
+                    onSignInResult(
+                        SignInResult(
+                            data = null,
+                            errorMessage = task.exception?.message
+                        )
+                    )
+                }
+            }
     }
 
-    suspend fun signInViaGoogle(): IntentSender? =
-        fireBaseAuthClient.signInViaGoogle().also { Log.d("idk", "fine") }
+    fun signInUsingGoogleCredential(context: Context) {
+        viewModelScope.launch {
+            onSignInResult(fireBaseAuthClient.signInUsingGoogleCredential(context))
+        }
+    }
 
     suspend fun signInViaEmailAndPassword(credentials: Credentials.Sensitive.SignInCredentials) {
         if (!emailValidator(credentials.email) || credentials.password.isBlank()) return

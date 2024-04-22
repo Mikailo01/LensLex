@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.Button
@@ -32,7 +32,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +45,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -100,10 +100,7 @@ fun AccountScreenContent(
         topBar = {
             TopAppBar(
                 titleRes = R.string.account,
-                navigationIcon = Icons.Filled.ArrowBack,
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
             ) {
                 onBackButtonClick()
             }
@@ -478,7 +475,7 @@ fun AccountScreenPreview() {
         showConfirmationDialog = false,
         showBottomSheet = false,
         showUrlDialog = false,
-        bottomSheetState = SheetState(false, SheetValue.Hidden),
+        bottomSheetState = SheetState(false, LocalDensity.current, SheetValue.Hidden),
         onUpdateName = {},
         onUpdateProfilePicture = {},
         onEditChange = {},

@@ -26,17 +26,13 @@ fun EmailField(
     emailValue: String,
     isEmailError: Boolean,
     modifier: Modifier = Modifier,
-    onCredentialChanged: (String) -> Unit
+    onEmailValueChanged: (String) -> Unit
 ) {
     OutlinedTextField(
         modifier = modifier.fillMaxWidth(),
         value = emailValue,
         onValueChange = {
-            onCredentialChanged(it
-                /*Credentials.SignUpCredentials(
-                    email, password, confirmPassword
-                )*/
-            )
+            onEmailValueChanged(it)
         },
         label = {
             Text(

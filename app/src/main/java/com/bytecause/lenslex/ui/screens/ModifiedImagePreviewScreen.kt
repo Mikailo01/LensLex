@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -74,9 +74,10 @@ fun ModifiedImagePreviewScreenContent(
 
         TopAppBar(
             titleRes = R.string.preview,
-            navigationIcon = Icons.Filled.ArrowBack,
+            navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.Gray.copy(alpha = 0.1f)
+                containerColor = Color.Gray.copy(alpha = 0.1f),
+                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         ) {
             val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())

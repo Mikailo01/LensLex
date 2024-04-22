@@ -15,11 +15,11 @@ sealed interface Credentials {
             val confirmPassword: String
         ) : Sensitive
 
-        data class EmailUpdateCredential(
+        data class EmailCredential(
             val email: String
         ) : Sensitive
 
-        data class PasswordUpdateCredential(
+        data class PasswordCredential(
             val password: String,
             val confirmPassword: String
         ) : Sensitive

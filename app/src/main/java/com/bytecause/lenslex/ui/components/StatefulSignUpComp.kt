@@ -53,7 +53,7 @@ fun StatefulSignUpComp(
         mutableStateOf(false)
     }
 
-    var isPasswordError by rememberSaveable {
+    var passwordErrors by rememberSaveable {
         mutableStateOf<List<PasswordErrorType?>>(emptyList())
     }
 
@@ -65,7 +65,7 @@ fun StatefulSignUpComp(
         when (credentialValidationResult) {
             is CredentialValidationResult.Invalid -> {
                 isEmailError = credentialValidationResult.isEmailValid != true
-                isPasswordError =
+                passwordErrors =
                     when (val passwordError = credentialValidationResult.passwordError) {
                         is PasswordValidationResult.Invalid -> {
                             passwordError.cause
@@ -77,7 +77,7 @@ fun StatefulSignUpComp(
 
             else -> {
                 isEmailError = false
-                isPasswordError = emptyList()
+                passwordErrors = emptyList()
             }
         }
     }
@@ -90,7 +90,7 @@ fun StatefulSignUpComp(
         EmailField(
             emailValue = email,
             isEmailError = isEmailError,
-            onCredentialChanged = {
+            onEmailValueChanged = {
                 email = it
                 onCredentialChanged(
                     Credentials.Sensitive.SignUpCredentials(
@@ -106,7 +106,7 @@ fun StatefulSignUpComp(
             confirmPassword = confirmPassword,
             isPasswordEnabled = !(email.isBlank() || isEmailError),
             isPasswordVisible = isPasswordVisible,
-            isPasswordError = isPasswordError,
+            passwordErrors = passwordErrors,
             onPasswordValueChange = { password = it },
             onConfirmPasswordValueChange = { confirmPassword = it },
             onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
