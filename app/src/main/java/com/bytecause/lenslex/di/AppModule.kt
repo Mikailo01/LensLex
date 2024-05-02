@@ -5,21 +5,28 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
-import com.bytecause.lenslex.auth.FireBaseAuthClient
+import com.bytecause.lenslex.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.local.room.AppDatabase
 import com.bytecause.lenslex.data.local.room.WordDao
+import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
+import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
+import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
+import com.bytecause.lenslex.data.repository.VerifyOobRepository
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -37,8 +44,8 @@ val appModule = module {
         Firebase.firestore
     }
 
-    single<FireBaseAuthClient> {
-        FireBaseAuthClient()
+    single<FirebaseAuthClient> {
+        FirebaseAuthClient()
     }
 
     // Database
@@ -58,10 +65,22 @@ val appModule = module {
         SupportedLanguagesRepository()
     }
 
-    single { WordsDatabaseRepository(get()) }
+    single<WordsDatabaseRepository> { WordsDatabaseRepository(get()) }
 
-    single {
-        UserPrefsRepositoryImpl(androidContext().userDataStore)
+    single<UserPrefsRepositoryImpl> {
+        UserPrefsRepositoryImpl(androidContext().userDataStore, Dispatchers.IO)
+    }
+
+    single<VerifyOobCodeRestApiService> {
+        VerifyOobCodeRestApiBuilder().getVerifyOobCodeRestApiService()
+    }
+
+    single<VerifyOobRepository> {
+        VerifyOobRepository(get(), Dispatchers.IO)
+    }
+
+    single<AuthRepository> {
+        AuthRepository(get<FirebaseAuthClient>(), Dispatchers.IO)
     }
 
     // ViewModels
@@ -71,12 +90,20 @@ val appModule = module {
             wordsDatabaseRepository = get(),
             fireStore = get(),
             supportedLanguagesRepository = get(),
-            fireBaseAuthClient = get()
+            auth = get()
         )
     }
 
     viewModel {
-        LoginViewModel(get())
+        UpdatePasswordViewModel(get(), get())
+    }
+
+    viewModel {
+        LoginViewModel(get(), get())
+    }
+
+    viewModel {
+        SendEmailResetViewModel(get())
     }
 
     viewModel {
@@ -91,7 +118,7 @@ val appModule = module {
         AddViewModel(
             wordsDatabaseRepository = get(),
             firebase = get(),
-            fireBaseAuthClient = get(),
+            auth = get(),
             userPrefsRepositoryImpl = get(),
             supportedLanguagesRepository = get()
         )

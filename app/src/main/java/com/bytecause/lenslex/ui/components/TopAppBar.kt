@@ -40,7 +40,8 @@ fun TopAppBar(
                 IconButton(onClick = { onNavigationIconClick() }) {
                     Icon(
                         imageVector = navigationIcon,
-                        contentDescription = "Localized description"
+                        contentDescription = "Localized description",
+                        tint = colors.titleContentColor
                     )
                 }
             }

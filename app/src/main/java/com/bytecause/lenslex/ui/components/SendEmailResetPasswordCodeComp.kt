@@ -10,12 +10,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.R
 import com.bytecause.lenslex.util.CredentialValidationResult
 
 
 @Composable
-fun ForgetPasswordComp(
+fun SendEmailResetPasswordCodeComp(
     email: String,
     isEmailError: Boolean,
     isSendEmailButtonEnabled: Boolean,
@@ -26,7 +29,9 @@ fun ForgetPasswordComp(
     onCredentialsEntered: () -> Unit
 ) {
 
-    Column {
+    Column(
+        modifier
+    ) {
         EmailField(
             emailValue = email,
             isEmailError = isEmailError,
@@ -36,7 +41,7 @@ fun ForgetPasswordComp(
         )
 
         Text(
-            text = "Sign in",
+            text = stringResource(id = R.string.sign_in),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .align(Alignment.End)
@@ -54,7 +59,21 @@ fun ForgetPasswordComp(
                 onCredentialsEntered()
             }
         ) {
-            Text(text = "Send")
+            Text(text = stringResource(id = R.string.send))
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun SendEmailResetPasswordCodeCompPreview() {
+    SendEmailResetPasswordCodeComp(
+        email = "",
+        isEmailError = false,
+        isSendEmailButtonEnabled = true,
+        credentialValidationResult = null,
+        onSignInClick = {},
+        onEmailValueChanged = {},
+        onCredentialsEntered = {}
+    )
 }

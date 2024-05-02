@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -41,14 +42,67 @@ import com.canhub.cropper.CropImageOptions
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModifiedImagePreviewScreenContent(
+    uri: Uri,
+    isProcessing: Boolean,
+    onLaunchCropLauncher: () -> Unit,
+    onProcessImageClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim)
+    ) {
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                titleRes = R.string.preview,
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.Gray.copy(alpha = 0.2f),
+                    titleContentColor = MaterialTheme.colorScheme.inversePrimary
+                )
+            ) {
+                onLaunchCropLauncher()
+            }
+
+            AsyncImage(
+                model = uri,
+                contentDescription = stringResource(id = R.string.modified_image_preview),
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+        }
+
+        Button(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp),
+            onClick = {
+                onProcessImageClick()
+            }
+        ) {
+            Text(text = stringResource(id = R.string.process))
+        }
+        IndeterminateCircularIndicator(
+            modifier = Modifier.align(Alignment.Center),
+            size = 65.dp,
+            isShowed = isProcessing,
+            subContent = { Text(text = stringResource(id = R.string.processing)) }
+        )
+    }
+}
+
+@Composable
+fun ModifiedImagePreviewScreen(
+    sharedViewModel: TextRecognitionSharedViewModel,
     originalImageUri: Uri,
     modifiedImageUri: Uri,
-    onClickNavigate: (NavigationItem) -> Unit,
-    onProcessedTextUpdate: (List<String>) -> Unit
+    onNavigateBack: () -> Unit,
+    onClickNavigate: (NavigationItem) -> Unit
 ) {
     val context = LocalContext.current
 
-    var isProgressBarShown by remember {
+    var isProcessing by remember {
         mutableStateOf(false)
     }
 
@@ -63,82 +117,34 @@ fun ModifiedImagePreviewScreenContent(
             }
         } else {
             // an error occurred cropping
+            onNavigateBack()
         }
     }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim)
-    ) {
-
-        TopAppBar(
-            titleRes = R.string.preview,
-            navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.Gray.copy(alpha = 0.1f),
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        ) {
-            val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())
-            imageCropLauncher.launch(cropOptions)
-        }
-
-        AsyncImage(
-            model = uri,
-            contentDescription = stringResource(id = R.string.modified_image_preview),
-            modifier = Modifier
-                .fillMaxSize()
-                .align(Alignment.Center)
-        )
-        Button(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 10.dp),
-            onClick = {
-                isProgressBarShown = true
-                TextRecognizer(context).runTextRecognition(listOf(uri)) {
-                    isProgressBarShown = false
-                    if (it.isEmpty()) {
-                        Toast.makeText(
-                            context,
-                            "This image doesn't contain any text.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@runTextRecognition
-                    }
-                    onProcessedTextUpdate(it)
-                    onClickNavigate(NavigationItem.TextResult)
-                }
-            }
-        ) {
-            Text(text = "Process")
-        }
-        IndeterminateCircularIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            size = 65.dp,
-            isShowed = isProgressBarShown,
-            subContent = { Text(text = "Processing") }
-        )
-    }
-}
-
-@Composable
-fun ModifiedImagePreviewScreen(
-    sharedViewModel: TextRecognitionSharedViewModel,
-    originalImageUri: Uri,
-    modifiedImageUri: Uri,
-    onClickNavigate: (NavigationItem) -> Unit
-) {
 
     ModifiedImagePreviewScreenContent(
-        originalImageUri = originalImageUri,
-        modifiedImageUri = modifiedImageUri,
-        onClickNavigate = {
-            onClickNavigate(it)
+        uri = uri,
+        isProcessing = isProcessing,
+        onLaunchCropLauncher = {
+            val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())
+            imageCropLauncher.launch(cropOptions)
         },
-        onProcessedTextUpdate = {
-            sharedViewModel.updateProcessedTextState(it)
+        onProcessImageClick = {
+            isProcessing = true
+            TextRecognizer(context).runTextRecognition(listOf(uri)) {
+                isProcessing = false
+
+                if (it.isEmpty()) {
+                    Toast.makeText(
+                        context,
+                        "This image doesn't contain any text.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@runTextRecognition
+                }
+
+                sharedViewModel.updateProcessedTextState(it)
+                onClickNavigate(NavigationItem.TextResult)
+            }
         }
     )
 }
@@ -147,9 +153,9 @@ fun ModifiedImagePreviewScreen(
 @Preview(showBackground = true)
 fun ModifiedImageScreenPreview() {
     ModifiedImagePreviewScreenContent(
-        originalImageUri = Uri.EMPTY,
-        modifiedImageUri = Uri.EMPTY,
-        onClickNavigate = {},
-        onProcessedTextUpdate = {}
+        uri = Uri.EMPTY,
+        isProcessing = false,
+        onLaunchCropLauncher = {},
+        onProcessImageClick = {}
     )
 }

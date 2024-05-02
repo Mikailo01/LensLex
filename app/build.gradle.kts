@@ -22,6 +22,11 @@ android {
         }
     }
 
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -46,17 +51,20 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.12"
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    ndkVersion = rootProject.extra["ndkVersion"] as String
+    buildToolsVersion = "34.0.0"
 }
 
 dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
+    implementation("androidx.compose.material3:material3-android:1.2.1")
     val roomVersion = "2.6.1"
     val koinVersion = "3.5.3"
 
@@ -64,11 +72,15 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
+    // Retrofit2 library
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
     // AsyncImage loader library
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Blur library
-    implementation ("jp.wasabeef:blurry:4.0.1")
+    implementation("jp.wasabeef:blurry:4.0.1")
 
     // Text recognition
     implementation("com.google.mlkit:text-recognition:16.0.0")
@@ -77,11 +89,13 @@ dependencies {
     // Text language recognition
     implementation("com.google.mlkit:language-id:17.0.5")
 
-    implementation("androidx.credentials:credentials:1.3.0-alpha03")
-    // optional - needed for credentials support from play services, for devices running
-    // Android 13 and below.
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0-alpha03")
-    implementation ("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+    //Credentials support
+    implementation("androidx.credentials:credentials:1.2.2")
+
+// optional - needed for credentials support from play services, for devices running
+// Android 13 and below.
+    implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
 
     // Preferences DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.0")
@@ -105,11 +119,12 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation(platform("androidx.compose:compose-bom:2024.04.01"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
+    //implementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    implementation("androidx.compose.ui:ui:1.6.6")
+    implementation("androidx.compose.ui:ui-graphics:1.6.6")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.6")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.material3:material3-window-size-class")
 
     implementation("com.vanniktech:android-image-cropper:4.5.0")
 

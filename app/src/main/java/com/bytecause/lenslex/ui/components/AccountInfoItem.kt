@@ -76,7 +76,11 @@ fun AccountInfoItem(
                 ),
                 style = MaterialTheme.typography.titleMedium
             )
-            Text(text = userCredential ?: "Not set", style = MaterialTheme.typography.labelSmall)
+            Text(
+                text = userCredential.takeIf { it?.isNotBlank() == true }
+                    ?: stringResource(id = R.string.not_set),
+                style = MaterialTheme.typography.labelSmall
+            )
         }
         if (isChangeable) {
             val canBeChanged: Boolean =

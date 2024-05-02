@@ -24,10 +24,11 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class FireBaseAuthClient {
-    val getFirebaseAuth: FirebaseAuth = Firebase.auth
+class FirebaseAuthClient: Authenticator {
 
-    suspend fun getGoogleCredential(context: Context): AuthCredential {
+    override val getFirebaseAuth: FirebaseAuth = Firebase.auth
+
+    override suspend fun getGoogleCredential(context: Context): AuthCredential {
         return withContext(Dispatchers.IO) {
             val credentialManager = CredentialManager.create(context)
             val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
@@ -53,7 +54,7 @@ class FireBaseAuthClient {
         }
     }
 
-    suspend fun signInUsingGoogleCredential(context: Context): SignInResult {
+    override suspend fun signInUsingGoogleCredential(context: Context): SignInResult {
         return withContext(Dispatchers.IO) {
             try {
                 val googleCredential = getGoogleCredential(context)
@@ -86,7 +87,7 @@ class FireBaseAuthClient {
         }
     }
 
-    fun signInAnonymously(): Flow<SignInResult> = callbackFlow {
+    override fun signInAnonymously(): Flow<SignInResult> = callbackFlow {
         getFirebaseAuth.signInAnonymously().addOnCompleteListener { task ->
 
             if (task.isSuccessful) {
@@ -115,7 +116,7 @@ class FireBaseAuthClient {
         awaitClose { cancel() }
     }
 
-    fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
+    override fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
             getFirebaseAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
@@ -146,7 +147,7 @@ class FireBaseAuthClient {
             awaitClose { cancel() }
         }
 
-    fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
+    override fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
             getFirebaseAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
@@ -177,7 +178,7 @@ class FireBaseAuthClient {
             awaitClose { cancel() }
         }
 
-    fun signOut() {
+    override fun signOut() {
         try {
             FirebaseAuth.getInstance().signOut()
         } catch (e: Exception) {

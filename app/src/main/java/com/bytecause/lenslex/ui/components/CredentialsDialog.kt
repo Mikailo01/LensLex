@@ -159,7 +159,6 @@ fun CredentialsDialog(
                             })
 
                         PasswordFields(
-                            credentialValidationResult = credentialValidationResult,
                             password = password,
                             confirmPassword = confirmPassword,
                             isPasswordEnabled = !(email.isBlank() || isEmailError),
@@ -212,7 +211,6 @@ fun CredentialsDialog(
 
                     is CredentialType.Password -> {
                         PasswordFields(
-                            credentialValidationResult = credentialValidationResult,
                             password = password,
                             confirmPassword = confirmPassword,
                             isPasswordEnabled = true,

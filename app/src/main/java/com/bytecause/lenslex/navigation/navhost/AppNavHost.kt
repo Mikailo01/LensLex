@@ -19,6 +19,8 @@ import com.bytecause.lenslex.ui.screens.HomeScreen
 import com.bytecause.lenslex.ui.screens.LoginScreen
 import com.bytecause.lenslex.ui.screens.ModifiedImagePreviewScreen
 import com.bytecause.lenslex.ui.screens.RecognizedTextResultScreen
+import com.bytecause.lenslex.ui.screens.SendEmailResetScreen
+import com.bytecause.lenslex.ui.screens.UpdatePasswordScreen
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -27,6 +29,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    isExpandedScreen: Boolean,
     modifier: Modifier = Modifier
 ) {
     val currentUser = Firebase.auth.currentUser
@@ -34,17 +37,58 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = if (currentUser != null) NavigationItem.TextProcessMainGraph.route
-        else NavigationItem.Login.route,
+        else NavigationItem.UserAuthGraph.route,
         modifier = modifier
     ) {
 
-        composable(route = NavigationItem.Login.route) {
-            LoginScreen {
-                navController.navigate(NavigationItem.Home.route) {
-                    popUpTo(NavigationItem.Login.route) {
-                        inclusive = true
+        navigation(
+            startDestination = NavigationItem.Login.route,
+            route = NavigationItem.UserAuthGraph.route
+        ) {
+
+            composable(route = NavigationItem.Login.route) {
+                LoginScreen(
+                    isExpandedScreen = isExpandedScreen,
+                    onNavigate = { navigationItem ->
+                        navController.navigate(navigationItem.route)
+                    }
+                ) {
+                    navController.navigate(NavigationItem.Home.route) {
+                        popUpTo(NavigationItem.Login.route) {
+                            inclusive = true
+                        }
                     }
                 }
+            }
+
+            composable(route = NavigationItem.EmailPasswordReset.route) {
+                SendEmailResetScreen(isExpandedScreen = isExpandedScreen)
+            }
+
+            composable(
+                route = NavigationItem.ResetPassword.route,
+                arguments = NavigationItem.ResetPassword.arguments,
+                deepLinks = NavigationItem.ResetPassword.deepLinks
+            ) {
+                UpdatePasswordScreen(
+                    isExpandedScreen = isExpandedScreen,
+                    oobCode = it.arguments?.getString(NavigationItem.ResetPassword.OOB_CODE),
+                    onPasswordChangedSuccess = {
+                        // Navigate and forget previous destination
+                        navController.navigate(NavigationItem.Login.route) {
+                            popUpTo(NavigationItem.ResetPassword.route) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onGetNewResetCodeClick = {
+                        navController.navigate(NavigationItem.EmailPasswordReset.route) {
+                            popUpTo(NavigationItem.ResetPassword.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                )
             }
         }
 
@@ -88,6 +132,7 @@ fun AppNavHost(
                     sharedViewModel = viewModel,
                     originalImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.ORIGINAL_URI_TYPE_ARG)),
                     modifiedImageUri = Uri.parse(it.arguments?.getString(NavigationItem.ModifiedImagePreview.MODIFIED_URI_TYPE_ARG)),
+                    onNavigateBack = { navController.popBackStackOnce() },
                     onClickNavigate = { navController.navigate(NavigationItem.TextResult.route) }
                 )
             }
@@ -127,6 +172,7 @@ fun AppNavHost(
                 route = NavigationItem.AccountSettings.route
             ) {
                 AccountSettingsScreen(
+                    isExpandedScreen = isExpandedScreen,
                     onNavigateBack = { navController.popBackStackOnce() },
                     onUserLoggedOut = {
                         navController.navigate(NavigationItem.Login.route) {

@@ -90,7 +90,7 @@ fun AddScreenContent(
                     value = textFieldInput,
                     onValueChange = { onTextFieldValueChange(it) },
                     supportingText = {
-                        Text(text = "Word")
+                        Text(text = stringResource(id = R.string.word))
                     }
                 )
                 if (textFieldInput.isNotBlank()) {

@@ -1,8 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
+import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
@@ -29,14 +29,14 @@ class HomeViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val fireStore: FirebaseFirestore,
     supportedLanguagesRepository: SupportedLanguagesRepository,
-    private val fireBaseAuthClient: FireBaseAuthClient
+    private val auth: AuthRepository
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
 
     private val _deletedItemsStack = MutableStateFlow<List<WordsAndSentences>>(emptyList())
     val deletedItemsStack get() = _deletedItemsStack
 
     private val _getSignedInUser: MutableStateFlow<UserData?> =
-        MutableStateFlow(fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+        MutableStateFlow(auth.getFirebaseAuth.currentUser?.run {
             UserData(
                 userId = uid,
                 userName = displayName,
@@ -47,10 +47,10 @@ class HomeViewModel(
     val getSignedInUser: StateFlow<UserData?> = _getSignedInUser.asStateFlow()
 
     fun reload() {
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
+        auth.getFirebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 _getSignedInUser.update {
-                    fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+                    auth.getFirebaseAuth.currentUser?.run {
                         UserData(
                             userId = uid,
                             userName = displayName,

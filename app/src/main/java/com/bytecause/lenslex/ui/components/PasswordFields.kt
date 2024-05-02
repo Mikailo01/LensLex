@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,12 +27,10 @@ import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.theme.disabledBorderColor
 import com.bytecause.lenslex.ui.theme.focusedBorderColor
 import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
-import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
 
 @Composable
 fun PasswordFields(
-    credentialValidationResult: CredentialValidationResult?,
     password: String,
     confirmPassword: String,
     isPasswordEnabled: Boolean,
@@ -102,6 +101,12 @@ fun PasswordFields(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
             ),
+            shape = RoundedCornerShape(
+                topStart = 10.dp,
+                topEnd = 10.dp,
+                bottomStart = 10.dp,
+                bottomEnd = 10.dp
+            ),
             isError = passwordErrors.isNotEmpty(),
             supportingText = {
                 if (passwordErrors.isNotEmpty() && password.isNotBlank()
@@ -117,13 +122,13 @@ fun PasswordFields(
                 focusedBorderColor = focusedBorderColor,
                 unfocusedBorderColor = unfocusedBorderColor,
                 disabledBorderColor = disabledBorderColor
-            )
+            ),
         )
 
         if (password.isNotEmpty()) {
             PasswordRules(
                 modifier = Modifier.padding(10.dp),
-                credentialValidationResult = credentialValidationResult
+                passwordErrors = passwordErrors
             )
         }
     }
@@ -133,7 +138,6 @@ fun PasswordFields(
 @Preview(showBackground = true)
 fun PasswordFieldsPreview() {
     PasswordFields(
-        credentialValidationResult = null,
         password = "",
         confirmPassword = "",
         isPasswordEnabled = true,

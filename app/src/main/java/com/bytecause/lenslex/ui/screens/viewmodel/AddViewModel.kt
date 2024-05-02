@@ -1,8 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.auth.FireBaseAuthClient
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
+import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class AddViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val firebase: FirebaseFirestore,
-    private val fireBaseAuthClient: FireBaseAuthClient,
+    private val auth: AuthRepository,
     userPrefsRepositoryImpl: UserPrefsRepositoryImpl,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
@@ -35,7 +35,7 @@ class AddViewModel(
     }*/
 
     fun insertWord(word: WordsAndSentences, onSuccess: () -> Unit) {
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.uid?.let { userId ->
+        auth.getFirebaseAuth.currentUser?.uid?.let { userId ->
             viewModelScope.launch {
                 firebase
                     .collection("users")

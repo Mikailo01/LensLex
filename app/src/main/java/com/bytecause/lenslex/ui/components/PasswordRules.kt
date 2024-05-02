@@ -22,21 +22,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.theme.valid
-import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
-import com.bytecause.lenslex.util.PasswordValidationResult
 
 @Composable
 fun PasswordRules(
     modifier: Modifier = Modifier,
-    credentialValidationResult: CredentialValidationResult?
+    passwordErrors: List<PasswordErrorType?>,
 ) {
 
     Column(modifier = modifier.fillMaxWidth()) {
         val passwordRules = stringArrayResource(id = R.array.password_rules)
 
         RuleItem(
-            validationResult = credentialValidationResult,
+            passwordErrors = passwordErrors,
             errorType = PasswordErrorType.LENGTH_OUT_OF_BOUNDS,
             textRule = passwordRules[0],
             errorIcon = Icons.Filled.Close,
@@ -46,7 +44,7 @@ fun PasswordRules(
         )
 
         RuleItem(
-            validationResult = credentialValidationResult,
+            passwordErrors = passwordErrors,
             errorType = PasswordErrorType.MISSING_LOWER_CASE,
             textRule = passwordRules[1],
             errorIcon = Icons.Filled.Close,
@@ -56,7 +54,7 @@ fun PasswordRules(
         )
 
         RuleItem(
-            validationResult = credentialValidationResult,
+            passwordErrors = passwordErrors,
             errorType = PasswordErrorType.MISSING_UPPER_CASE,
             textRule = passwordRules[2],
             errorIcon = Icons.Filled.Close,
@@ -66,7 +64,7 @@ fun PasswordRules(
         )
 
         RuleItem(
-            validationResult = credentialValidationResult,
+            passwordErrors = passwordErrors,
             errorType = PasswordErrorType.MISSING_DIGIT,
             textRule = passwordRules[3],
             errorIcon = Icons.Filled.Close,
@@ -80,7 +78,7 @@ fun PasswordRules(
 @Composable
 fun RuleItem(
     modifier: Modifier = Modifier,
-    validationResult: CredentialValidationResult?,
+    passwordErrors: List<PasswordErrorType?>,
     errorType: PasswordErrorType,
     textRule: String,
     errorIcon: ImageVector,
@@ -88,10 +86,7 @@ fun RuleItem(
     errorColor: Color,
     validColor: Color
 ) {
-
-    val isError = validationResult is CredentialValidationResult.Invalid &&
-            (validationResult.passwordError is PasswordValidationResult.Invalid) &&
-            (validationResult.passwordError.cause.contains(errorType))
+    val isError = passwordErrors.contains(errorType)
 
     val icon = if (isError) errorIcon else validIcon
     val colorFilter = if (isError) ColorFilter.tint(errorColor) else ColorFilter.tint(validColor)
@@ -116,5 +111,5 @@ fun RuleItem(
 @Composable
 @Preview(showBackground = true)
 fun PasswordRulesPreview() {
-    PasswordRules(credentialValidationResult = null)
+    PasswordRules(passwordErrors = emptyList())
 }

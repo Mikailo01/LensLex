@@ -69,7 +69,7 @@ fun LinkAccountItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = accountProviderName, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = if (isLinked) "Linked" else "Unlinked",
+                text = if (isLinked) stringResource(id = R.string.linked) else stringResource(id = R.string.unlinked),
                 style = MaterialTheme.typography.labelSmall
             )
         }
@@ -91,13 +91,13 @@ fun LinkAccountItem(
                     if (isLinked) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Checked",
+                            contentDescription = stringResource(id = R.string.checked),
                             tint = MaterialTheme.colorScheme.valid
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Unchecked",
+                            contentDescription = stringResource(id = R.string.unchecked),
                             tint = Color.Red
                         )
                     }

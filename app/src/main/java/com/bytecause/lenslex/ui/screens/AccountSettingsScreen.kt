@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +58,8 @@ import com.bytecause.lenslex.ui.screens.viewmodel.CredentialChangeResult
 import com.bytecause.lenslex.ui.screens.viewmodel.Provider
 import com.bytecause.lenslex.ui.screens.viewmodel.UserAccountDetails
 import com.bytecause.lenslex.util.CredentialValidationResult
+import com.bytecause.lenslex.util.LocalOrientationMode
+import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -69,6 +73,7 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountSettingsScreenContent(
+    isExpandedScreen: Boolean,
     userDetails: UserAccountDetails?,
     credentialValidationResult: CredentialValidationResult?,
     showCredentialUpdateDialog: CredentialType?,
@@ -86,9 +91,7 @@ fun AccountSettingsScreenContent(
     onConfirmConfirmationDialog: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-
-    val snackBarAnonymousAccountMessage =
-        stringResource(id = R.string.email_and_password_cant_be_changed)
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -100,159 +103,318 @@ fun AccountSettingsScreenContent(
             }
         }
     ) { paddingValues ->
+
         Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+
+            if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.link_account),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(start = 10.dp, top = 5.dp)
-                    )
-                    LinkAccountItem(
-                        leadingIconId = R.drawable.google_logo,
-                        contentDescription = R.string.link_google_account,
-                        accountProviderName = "Google",
-                        isLinked = linkedProviders?.contains(Provider.Google) == true,
-                        onLinkButtonClick = { onLinkButtonClick(Provider.Google) }
-                    )
-
-                    Divider(
-                        thickness = 1,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                    )
-
-                    LinkAccountItem(
-                        leadingIconId = R.drawable.baseline_alternate_email_24,
-                        contentDescription = R.string.link_email_account,
-                        accountProviderName = "Email",
-                        isLinked = linkedProviders?.contains(Provider.Email) == true,
-                        onLinkButtonClick = { onLinkButtonClick(Provider.Email) }
-                    )
-                }
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.account_info),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(start = 10.dp, top = 5.dp)
-                    )
-
-                    AccountInfoItem(
-                        leadingIconId = R.drawable.id,
-                        contentDescriptionId = R.string.user_id,
-                        accountInfoType = AccountInfoType.Uid,
-                        userCredential = userDetails?.uid,
-                        isChangeable = false,
-                        isAnonymous = userDetails?.isAnonymous,
-                    )
-
-                    Divider(
-                        thickness = 1,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                    )
-
-                    AccountInfoItem(
-                        leadingIconId = R.drawable.calendar,
-                        contentDescriptionId = R.string.account_creation_date,
-                        accountInfoType = AccountInfoType.CreationDate,
-                        userCredential = userDetails?.let {
-                            SimpleDateFormat.getDateInstance()
-                                .format(Date(it.creationTimeStamp ?: 0))
-                        },
-                        isChangeable = false,
-                        isAnonymous = userDetails?.isAnonymous
-                    )
-
-                    Divider(
-                        thickness = 1,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                    )
-
-                    AccountInfoItem(
-                        leadingIconId = R.drawable.baseline_perm_identity_24,
-                        contentDescriptionId = R.string.username,
-                        accountInfoType = AccountInfoType.UserName,
-                        userCredential = userDetails?.userName,
-                        isChangeable = true,
-                        isAnonymous = userDetails?.isAnonymous,
-                        onAccountInfoChange = { onAccountInfoChange(CredentialType.Username) }
-                    )
-
-                    Divider(
-                        thickness = 1,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                    )
-
-                    AccountInfoItem(
-                        leadingIconId = R.drawable.baseline_alternate_email_24,
-                        contentDescriptionId = R.string.account_email,
-                        accountInfoType = AccountInfoType.Email,
-                        userCredential = userDetails?.email,
-                        isChangeable = true,
-                        isAnonymous = userDetails?.isAnonymous,
-                        showSnackBar = { onShowSnackBar(snackBarAnonymousAccountMessage) },
-                        onAccountInfoChange = { onAccountInfoChange(CredentialType.Email) }
-                    )
-
-                    Divider(
-                        thickness = 1,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                    )
-
-                    AccountInfoItem(
-                        leadingIconId = R.drawable.baseline_password_24,
-                        contentDescriptionId = R.string.account_password,
-                        accountInfoType = AccountInfoType.Password,
-                        userCredential = "********",
-                        isChangeable = true,
-                        isAnonymous = userDetails?.isAnonymous,
-                        showSnackBar = { onShowSnackBar(snackBarAnonymousAccountMessage) },
-                        onAccountInfoChange = { onAccountInfoChange(CredentialType.Password) }
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = { onDeleteAccountButtonClick() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 10.dp, end = 10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.delete_user),
-                            contentDescription = stringResource(id = R.string.delete_account),
-                        )
                         Text(
-                            text = stringResource(id = R.string.delete_account),
-                            modifier = Modifier.padding(end = 10.dp),
-                            fontWeight = FontWeight.Bold
+                            text = stringResource(id = R.string.link_account),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                        )
+                        LinkAccountItem(
+                            leadingIconId = R.drawable.google_logo,
+                            contentDescription = R.string.link_google_account,
+                            accountProviderName = "Google",
+                            isLinked = linkedProviders?.contains(Provider.Google) == true,
+                            onLinkButtonClick = { onLinkButtonClick(Provider.Google) }
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        LinkAccountItem(
+                            leadingIconId = R.drawable.baseline_alternate_email_24,
+                            contentDescription = R.string.link_email_account,
+                            accountProviderName = stringResource(id = R.string.email),
+                            isLinked = linkedProviders?.contains(Provider.Email) == true,
+                            onLinkButtonClick = { onLinkButtonClick(Provider.Email) }
+                        )
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.account_info),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.id,
+                            contentDescriptionId = R.string.user_id,
+                            accountInfoType = AccountInfoType.Uid,
+                            userCredential = userDetails?.uid,
+                            isChangeable = false,
+                            isAnonymous = userDetails?.isAnonymous,
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.calendar,
+                            contentDescriptionId = R.string.account_creation_date,
+                            accountInfoType = AccountInfoType.CreationDate,
+                            userCredential = userDetails?.let {
+                                SimpleDateFormat.getDateInstance()
+                                    .format(Date(it.creationTimeStamp ?: 0))
+                            },
+                            isChangeable = false,
+                            isAnonymous = userDetails?.isAnonymous
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_perm_identity_24,
+                            contentDescriptionId = R.string.username,
+                            accountInfoType = AccountInfoType.UserName,
+                            userCredential = userDetails?.userName,
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Username) }
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_alternate_email_24,
+                            contentDescriptionId = R.string.account_email,
+                            accountInfoType = AccountInfoType.Email,
+                            userCredential = userDetails?.email,
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Email) }
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_password_24,
+                            contentDescriptionId = R.string.account_password,
+                            accountInfoType = AccountInfoType.Password,
+                            userCredential = "********",
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Password) }
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { onDeleteAccountButtonClick() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 10.dp, end = 10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.delete_user),
+                                contentDescription = stringResource(id = R.string.delete_account),
+                            )
+                            Text(
+                                text = stringResource(id = R.string.delete_account),
+                                modifier = Modifier.padding(end = 10.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Card(
+                            modifier = Modifier
+                                .padding(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.link_account),
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                            )
+                            LinkAccountItem(
+                                leadingIconId = R.drawable.google_logo,
+                                contentDescription = R.string.link_google_account,
+                                accountProviderName = "Google",
+                                isLinked = linkedProviders?.contains(Provider.Google) == true,
+                                onLinkButtonClick = { onLinkButtonClick(Provider.Google) }
+                            )
+
+                            Divider(
+                                thickness = 1,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                            )
+
+                            LinkAccountItem(
+                                leadingIconId = R.drawable.baseline_alternate_email_24,
+                                contentDescription = R.string.link_email_account,
+                                accountProviderName = stringResource(id = R.string.email),
+                                isLinked = linkedProviders?.contains(Provider.Email) == true,
+                                onLinkButtonClick = { onLinkButtonClick(Provider.Email) }
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { onDeleteAccountButtonClick() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 10.dp, end = 10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.delete_user),
+                                    contentDescription = stringResource(id = R.string.delete_account),
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.delete_account),
+                                    modifier = Modifier.padding(end = 10.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.account_info),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.id,
+                            contentDescriptionId = R.string.user_id,
+                            accountInfoType = AccountInfoType.Uid,
+                            userCredential = userDetails?.uid,
+                            isChangeable = false,
+                            isAnonymous = userDetails?.isAnonymous,
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.calendar,
+                            contentDescriptionId = R.string.account_creation_date,
+                            accountInfoType = AccountInfoType.CreationDate,
+                            userCredential = userDetails?.let {
+                                SimpleDateFormat.getDateInstance()
+                                    .format(Date(it.creationTimeStamp ?: 0))
+                            },
+                            isChangeable = false,
+                            isAnonymous = userDetails?.isAnonymous
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_perm_identity_24,
+                            contentDescriptionId = R.string.username,
+                            accountInfoType = AccountInfoType.UserName,
+                            userCredential = userDetails?.userName,
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Username) }
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_alternate_email_24,
+                            contentDescriptionId = R.string.account_email,
+                            accountInfoType = AccountInfoType.Email,
+                            userCredential = userDetails?.email,
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Email) }
+                        )
+
+                        Divider(
+                            thickness = 1,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_password_24,
+                            contentDescriptionId = R.string.account_password,
+                            accountInfoType = AccountInfoType.Password,
+                            userCredential = "********",
+                            isChangeable = true,
+                            isAnonymous = userDetails?.isAnonymous,
+                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            onAccountInfoChange = { onAccountInfoChange(CredentialType.Password) }
                         )
                     }
                 }
@@ -311,6 +473,7 @@ fun AccountSettingsScreenContent(
 @Composable
 fun AccountSettingsScreen(
     viewModel: AccountSettingsViewModel = koinViewModel(),
+    isExpandedScreen: Boolean,
     onNavigateBack: () -> Unit,
     onUserLoggedOut: () -> Unit
 ) {
@@ -414,6 +577,7 @@ fun AccountSettingsScreen(
     }
 
     AccountSettingsScreenContent(
+        isExpandedScreen = isExpandedScreen,
         userDetails = userDetails,
         credentialValidationResult = credentialValidationResult,
         showCredentialUpdateDialog = showCredentialUpdateDialog,
@@ -533,6 +697,7 @@ fun AccountSettingsScreen(
 @Preview
 fun AccountSettingsScreenPreview() {
     AccountSettingsScreenContent(
+        isExpandedScreen = false,
         userDetails = null,
         credentialValidationResult = null,
         showCredentialUpdateDialog = null,

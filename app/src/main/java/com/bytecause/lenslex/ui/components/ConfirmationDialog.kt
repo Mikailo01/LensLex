@@ -42,7 +42,7 @@ fun ConfirmationDialog(
             ) {
                 Text(
                     text = stringResource(id = R.string.are_you_sure),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 10.dp),
                     fontWeight = FontWeight.Bold
                 )

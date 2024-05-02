@@ -4,6 +4,9 @@ import com.bytecause.lenslex.models.Credentials
 import java.security.MessageDigest
 import java.util.UUID
 
+private const val PASSWORD_MAX_LENGTH = 24
+private const val PASSWORD_MIN_LENGTH = 8
+
 object ValidationUtil {
 
     fun generateNonce(): String {
@@ -53,7 +56,7 @@ object ValidationUtil {
 
                     !isEmailValid && passwordValidationResult is PasswordValidationResult.Valid -> {
                         CredentialValidationResult.Invalid(
-                            isEmailValid = isEmailValid,
+                            isEmailValid = false,
                             passwordError = null
                         )
                     }
@@ -115,7 +118,7 @@ private fun passwordValidator(
 
     val passwordMatch: Boolean? =
         if (confirmPassword != null) password == confirmPassword else null
-    val passwordLengthInRange: Boolean = password.length in 8..24
+    val passwordLengthInRange: Boolean = password.length in PASSWORD_MIN_LENGTH..PASSWORD_MAX_LENGTH
     val upperCase: Boolean = password.any { it.isUpperCase() }
     val lowerCase: Boolean = password.any { it.isLowerCase() }
     val containsNumber: Boolean = password.any { it.isDigit() }

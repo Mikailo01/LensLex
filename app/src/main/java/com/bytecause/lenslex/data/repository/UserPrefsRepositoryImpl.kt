@@ -5,7 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.bytecause.lenslex.data.local.datastore.UserPrefsRepository
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
@@ -16,11 +16,12 @@ import java.io.IOException
 
 
 class UserPrefsRepositoryImpl(
-    private val userDataStorePreferences: DataStore<Preferences>
+    private val userDataStorePreferences: DataStore<Preferences>,
+    private val coroutineDispatcher: CoroutineDispatcher
 ) : UserPrefsRepository {
 
     override suspend fun saveUserLocale(locale: String) {
-        withContext(Dispatchers.IO) {
+        withContext(coroutineDispatcher) {
             userDataStorePreferences.edit { preferences ->
                 preferences[USER_LOCALE_KEY] = locale
             }
@@ -30,14 +31,14 @@ class UserPrefsRepositoryImpl(
     override fun loadUserLocale(): Flow<String?> = flow {
         emit(userDataStorePreferences.data.firstOrNull()?.get(USER_LOCALE_KEY))
     }
-        .flowOn(Dispatchers.IO)
+        .flowOn(coroutineDispatcher)
         .catch { exception ->
             if (exception is IOException) emit(null)
             else throw exception
         }
 
     override suspend fun saveTranslationOption(langName: String) {
-        withContext(Dispatchers.IO) {
+        withContext(coroutineDispatcher) {
             userDataStorePreferences.edit { preferences ->
                 preferences[TRANSLATION_OPTION_KEY] = langName
             }
@@ -47,7 +48,7 @@ class UserPrefsRepositoryImpl(
     override fun loadTranslationOption(): Flow<String?> = flow {
         emit(userDataStorePreferences.data.firstOrNull()?.get(TRANSLATION_OPTION_KEY))
     }
-        .flowOn(Dispatchers.IO)
+        .flowOn(coroutineDispatcher)
         .catch { exception ->
             if (exception is IOException) emit(null)
             else throw exception

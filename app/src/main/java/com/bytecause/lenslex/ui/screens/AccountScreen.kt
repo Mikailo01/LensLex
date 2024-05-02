@@ -5,10 +5,12 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -50,12 +54,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
 import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.ui.components.AppLanguageRow
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.Divider
@@ -78,13 +84,16 @@ fun AccountScreenContent(
     urlTextFieldValue: String,
     isAnonymous: Boolean,
     showConfirmationDialog: Boolean,
+    showLanguageDialog: Boolean,
     showBottomSheet: Boolean,
     showUrlDialog: Boolean,
     bottomSheetState: SheetState,
     onUpdateName: () -> Unit,
     onUpdateProfilePicture: () -> Unit,
     onEditChange: () -> Unit,
+    onChangeFirebaseLanguage: (String) -> Unit,
     onShowConfirmationDialog: (Boolean) -> Unit,
+    onShowLanguageDialog: (Boolean) -> Unit,
     onShowBottomSheet: (Boolean) -> Unit,
     onShowUrlDialog: (Boolean) -> Unit,
     onSignOut: () -> Unit,
@@ -109,6 +118,8 @@ fun AccountScreenContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .height(IntrinsicSize.Max)
                 .padding(innerPaddingValues),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -166,10 +177,7 @@ fun AccountScreenContent(
                     } else {
                         TextField(
                             value = nameTextFieldValue, onValueChange = {
-
                                 onNameTextFieldValueChange(it)
-
-                                //nameTextFieldValue = it
                             },
                             modifier = Modifier.padding(top = 10.dp)
                         )
@@ -178,9 +186,7 @@ fun AccountScreenContent(
                     IconButton(
                         onClick = {
                             onUpdateName()
-                            //viewModel.updateName(nameTextFieldValue)
                             onEditChange()
-                            //isEditing = !isEditing
                         }
                     ) {
                         Icon(
@@ -205,7 +211,7 @@ fun AccountScreenContent(
                         contentDescription = R.string.select_language,
                         text = R.string.language
                     ) {
-
+                        onShowLanguageDialog(true)
                     }
 
                     Divider(thickness = 1, color = Color.Gray)
@@ -229,10 +235,6 @@ fun AccountScreenContent(
                     ) {
                         if (isAnonymous) onShowConfirmationDialog(true)
                         else onSignOut()
-                        /* if (viewModel.isAccountAnonymous) showConfirmationDialog = true
-                         else {
-                             viewModel.signOut()
-                         }*/
                     }
                 }
             }
@@ -241,94 +243,114 @@ fun AccountScreenContent(
                 profilePicture = profilePicture,
                 modifier = Modifier.padding(top = 130.dp)
             ) {
-                // showBottomSheet = true
                 onShowBottomSheet(true)
             }
 
-            if (showBottomSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { onShowBottomSheet(false) },
-                    sheetState = bottomSheetState,
+            if (showLanguageDialog) {
+                Dialog(
+                    title = stringResource(id = R.string.choose_language),
+                    onDismiss = { onShowLanguageDialog(false) }
                 ) {
 
-                    RowItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIconId = R.drawable.baseline_image_24,
-                        contentDescription = R.string.pick_profile_picture_from_storage,
-                        text = R.string.pick_profile_picture_from_storage
+                    AppLanguageRow(
+                        langCode = "eng",
+                        isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "eng"
                     ) {
-                        // showBottomSheet = false
-                        onShowBottomSheet(false)
-                        /* singlePhotoPickerLauncher.launch(
-                             PickVisualMediaRequest(
-                                 ActivityResultContracts.PickVisualMedia.ImageOnly
-                             )
-                         )*/
-                        onSinglePicturePickerLaunch()
+                        onShowLanguageDialog(false)
+
+                        onChangeFirebaseLanguage("en")
+                        val appLocale: LocaleListCompat =
+                            LocaleListCompat.forLanguageTags("en-EN")
+                        AppCompatDelegate.setApplicationLocales(appLocale)
                     }
 
-                    RowItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIconId = R.drawable.baseline_link_24,
-                        contentDescription = R.string.set_profile_picture_from_url,
-                        text = R.string.set_profile_picture_from_url
+                    AppLanguageRow(
+                        langCode = "cze",
+                        isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "ces"
                     ) {
-                        onShowBottomSheet(false)
-                        //showBottomSheet = false
-                        onShowUrlDialog(true)
+                        onShowLanguageDialog(false)
+
+                        onChangeFirebaseLanguage("cs")
+                        val appLocale: LocaleListCompat =
+                            LocaleListCompat.forLanguageTags("cs-CZ")
+                        AppCompatDelegate.setApplicationLocales(appLocale)
                     }
                 }
             }
         }
 
-        if (showUrlDialog) {
-            Dialog(
-                title = stringResource(id = R.string.type_picture_url),
-                onDismiss = { onShowUrlDialog(false) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentSize()
-                    .padding(16.dp)
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { onShowBottomSheet(false) },
+                sheetState = bottomSheetState,
             ) {
-                OutlinedTextField(
-                    value = urlTextFieldValue,
-                    onValueChange = { onUrlTextFieldValueChange(it) },
-                    supportingText = { Text(text = "URL") },
-                    modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
-                )
-                Button(
-                    onClick = {
-                        if (urlTextFieldValue.isNotBlank()) {
-                            //viewModel.updateProfilePicture(Uri.parse(urlTextFieldValue))
-                            onUpdateProfilePicture()
-                            //profilePicture = urlTextFieldValue
-                        }
-                        onShowUrlDialog(false)
-                        // showUrlDialog = false
-                    }, modifier = Modifier.padding(bottom = 10.dp)
+
+                RowItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIconId = R.drawable.baseline_image_24,
+                    contentDescription = R.string.pick_profile_picture_from_storage,
+                    text = R.string.pick_profile_picture_from_storage
                 ) {
-                    Text(text = stringResource(id = R.string.done))
+                    onShowBottomSheet(false)
+                    onSinglePicturePickerLaunch()
+                }
+
+                RowItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIconId = R.drawable.baseline_link_24,
+                    contentDescription = R.string.set_profile_picture_from_url,
+                    text = R.string.set_profile_picture_from_url
+                ) {
+                    onShowBottomSheet(false)
+                    onShowUrlDialog(true)
                 }
             }
         }
+    }
 
-        if (showConfirmationDialog) {
-            ConfirmationDialog(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentSize(),
-                onDismiss = { onShowConfirmationDialog(false) },
-                onConfirm = {
-                    onShowConfirmationDialog(false)
-                    //showConfirmationDialog = false
-                    onSignOut()
-                }
+    if (showUrlDialog) {
+        Dialog(
+            title = stringResource(id = R.string.type_picture_url),
+            onDismiss = { onShowUrlDialog(false) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentSize()
+                .padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = urlTextFieldValue,
+                onValueChange = { onUrlTextFieldValueChange(it) },
+                supportingText = { Text(text = "URL") },
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
+            )
+            Button(
+                onClick = {
+                    if (urlTextFieldValue.isNotBlank()) {
+                        onUpdateProfilePicture()
+                    }
+                    onShowUrlDialog(false)
+                }, modifier = Modifier.padding(bottom = 10.dp)
             ) {
-                Text(
-                    text = stringResource(id = R.string.signed_using_anonymous_account_message),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = stringResource(id = R.string.done))
             }
+        }
+    }
+
+    if (showConfirmationDialog) {
+        ConfirmationDialog(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentSize(),
+            onDismiss = { onShowConfirmationDialog(false) },
+            onConfirm = {
+                onShowConfirmationDialog(false)
+                onSignOut()
+            }
+        ) {
+            Text(
+                text = stringResource(id = R.string.signed_using_anonymous_account_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -364,6 +386,10 @@ fun AccountScreen(
     }
 
     var showUrlDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showLanguageDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -430,6 +456,7 @@ fun AccountScreen(
         urlTextFieldValue = urlTextFieldValue,
         isAnonymous = viewModel.isAccountAnonymous,
         showConfirmationDialog = showConfirmationDialog,
+        showLanguageDialog = showLanguageDialog,
         showBottomSheet = showBottomSheet,
         showUrlDialog = showUrlDialog,
         bottomSheetState = sheetState,
@@ -442,7 +469,9 @@ fun AccountScreen(
             profilePicture = urlTextFieldValue
         },
         onEditChange = { isEditing = !isEditing },
+        onChangeFirebaseLanguage = { viewModel.changeFirebaseLanguageCode(it) },
         onShowConfirmationDialog = { showConfirmationDialog = it },
+        onShowLanguageDialog = { showLanguageDialog = it },
         onShowBottomSheet = { showBottomSheet = it },
         onShowUrlDialog = { showUrlDialog = it },
         onSignOut = {
@@ -473,13 +502,16 @@ fun AccountScreenPreview() {
         urlTextFieldValue = "",
         isAnonymous = false,
         showConfirmationDialog = false,
+        showLanguageDialog = false,
         showBottomSheet = false,
         showUrlDialog = false,
         bottomSheetState = SheetState(false, LocalDensity.current, SheetValue.Hidden),
         onUpdateName = {},
         onUpdateProfilePicture = {},
         onEditChange = {},
+        onChangeFirebaseLanguage = {},
         onShowConfirmationDialog = {},
+        onShowLanguageDialog = {},
         onShowBottomSheet = {},
         onShowUrlDialog = {},
         onSignOut = {},

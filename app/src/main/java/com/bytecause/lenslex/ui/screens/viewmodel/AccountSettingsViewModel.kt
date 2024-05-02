@@ -7,7 +7,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.auth.FireBaseAuthClient
+import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.models.Credentials
 import com.bytecause.lenslex.ui.components.CredentialType
 import com.bytecause.lenslex.util.CredentialValidationResult
@@ -25,11 +25,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AccountSettingsViewModel(
-    private val fireBaseAuthClient: FireBaseAuthClient,
+    private val auth: AuthRepository,
     private val firebase: FirebaseFirestore,
 ) : ViewModel() {
 
-    private val firebaseAuth = fireBaseAuthClient.getFirebaseAuth
+    private val firebaseAuth = auth.getFirebaseAuth
 
     private val _credentialChangeState = MutableStateFlow<CredentialChangeResult?>(null)
     val credentialChangeState: StateFlow<CredentialChangeResult?> =
@@ -57,13 +57,13 @@ class AccountSettingsViewModel(
     }
 
     private val _getUserAccountDetails =
-        MutableStateFlow(fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+        MutableStateFlow(auth.getFirebaseAuth.currentUser?.run {
             UserAccountDetails(
                 uid = uid,
                 creationTimeStamp = metadata?.creationTimestamp,
-                userName = displayName?.takeIf { it.isNotBlank() } ?: "Not set",
+                userName = displayName?.takeIf { it.isNotBlank() } ?: "",
                 email = email?.takeIf { it.isNotBlank() }
-                    ?: providerData.find { it.email?.isNotBlank() == true }?.email ?: "Not set",
+                    ?: providerData.find { it.email?.isNotBlank() == true }?.email ?: "",
                 isAnonymous = isAnonymous
             )
         }
@@ -74,7 +74,7 @@ class AccountSettingsViewModel(
 
     // List of supported providers which can be linked
     private val _getProviders = MutableStateFlow(
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.let { user ->
+        auth.getFirebaseAuth.currentUser?.let { user ->
             val providers = mutableListOf<Provider>()
 
             user.reload()
@@ -115,8 +115,8 @@ class AccountSettingsViewModel(
         credentialChangeResult: CredentialChangeResult.Failure.ReauthorizationRequired
     ) {
         viewModelScope.launch(Dispatchers.Main) {
-            fireBaseAuthClient.getFirebaseAuth.currentUser
-                ?.reauthenticateAndRetrieveData(fireBaseAuthClient.getGoogleCredential(context))
+            auth.getFirebaseAuth.currentUser
+                ?.reauthenticateAndRetrieveData(auth.getGoogleCredential(context))
                 ?.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         when {
@@ -148,7 +148,7 @@ class AccountSettingsViewModel(
     fun unlinkProvider(provider: Provider) {
         when (provider) {
             Provider.Google -> {
-                fireBaseAuthClient.getFirebaseAuth.currentUser
+                auth.getFirebaseAuth.currentUser
                     ?.unlink(GoogleAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             _getProviders.value =
@@ -163,7 +163,7 @@ class AccountSettingsViewModel(
             }
 
             Provider.Email -> {
-                fireBaseAuthClient.getFirebaseAuth.currentUser
+                auth.getFirebaseAuth.currentUser
                     ?.unlink(EmailAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             _getProviders.value =
@@ -182,7 +182,7 @@ class AccountSettingsViewModel(
     fun linkGoogleProvider(context: Context) {
         viewModelScope.launch {
             firebaseAuth.currentUser?.linkWithCredential(
-                fireBaseAuthClient.getGoogleCredential(
+                auth.getGoogleCredential(
                     context
                 )
             )?.addOnCompleteListener { task ->
@@ -213,7 +213,7 @@ class AccountSettingsViewModel(
         val credential = (credentials as Credentials.Sensitive.SignInCredentials)
         val emailCredentials =
             EmailAuthProvider.getCredential(credential.email, credential.password)
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.linkWithCredential(emailCredentials)
+        auth.getFirebaseAuth.currentUser?.linkWithCredential(emailCredentials)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     _getProviders.value += Provider.Email
@@ -243,9 +243,9 @@ class AccountSettingsViewModel(
 
     // Manual refresh of firebase account details
     private fun reload() {
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.reload()
+        auth.getFirebaseAuth.currentUser?.reload()
 
-        _getUserAccountDetails.value = fireBaseAuthClient.getFirebaseAuth.currentUser?.run {
+        _getUserAccountDetails.value = auth.getFirebaseAuth.currentUser?.run {
             UserAccountDetails(
                 uid = uid,
                 creationTimeStamp = metadata?.creationTimestamp,
@@ -262,7 +262,7 @@ class AccountSettingsViewModel(
             .setDisplayName(userName)
             .build()
 
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
+        auth.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -288,7 +288,7 @@ class AccountSettingsViewModel(
     // then it means that user wants to delete his account.
     fun reauthenticateUsingEmailAndPassword(credentials: Credentials.Sensitive.SignInCredentials) {
         val credential = EmailAuthProvider.getCredential(credentials.email, credentials.password)
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.reauthenticate(credential)
+        auth.getFirebaseAuth.currentUser?.reauthenticate(credential)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     if (credentialChangeState.value is CredentialChangeResult.Failure.ReauthorizationRequired) {
@@ -322,7 +322,7 @@ class AccountSettingsViewModel(
     }
 
     fun updateEmail(email: String) {
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.verifyBeforeUpdateEmail(email)
+        auth.getFirebaseAuth.currentUser?.verifyBeforeUpdateEmail(email)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -348,7 +348,7 @@ class AccountSettingsViewModel(
     }
 
     fun updatePassword(password: String) {
-        fireBaseAuthClient.getFirebaseAuth.currentUser?.updatePassword(password)
+        auth.getFirebaseAuth.currentUser?.updatePassword(password)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -372,7 +372,7 @@ class AccountSettingsViewModel(
     }
 
     fun deleteAccount() {
-        val uid = fireBaseAuthClient.getFirebaseAuth.currentUser?.uid
+        val uid = auth.getFirebaseAuth.currentUser?.uid
         uid?.let { userId ->
             viewModelScope.launch {
                 firebase
@@ -381,7 +381,7 @@ class AccountSettingsViewModel(
                     .delete()
                     .addOnCompleteListener { deleteTask ->
                         if (deleteTask.isSuccessful) {
-                            fireBaseAuthClient.getFirebaseAuth.currentUser?.delete()
+                            auth.getFirebaseAuth.currentUser?.delete()
                                 ?.addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
                                         updateCredentialChangeState(
