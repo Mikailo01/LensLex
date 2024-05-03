@@ -40,7 +40,8 @@ class HomeViewModel(
             UserData(
                 userId = uid,
                 userName = displayName,
-                profilePictureUrl = photoUrl?.toString()
+                profilePictureUrl = photoUrl?.toString(),
+                isAnonymous = isAnonymous
             )
         }
         )
@@ -54,7 +55,8 @@ class HomeViewModel(
                         UserData(
                             userId = uid,
                             userName = displayName,
-                            profilePictureUrl = photoUrl?.toString()
+                            profilePictureUrl = photoUrl?.toString(),
+                            isAnonymous = isAnonymous
                         )
                     }
                 }

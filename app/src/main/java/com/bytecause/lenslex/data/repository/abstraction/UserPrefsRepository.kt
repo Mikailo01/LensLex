@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.data.local.datastore
+package com.bytecause.lenslex.data.repository.abstraction
 
 import kotlinx.coroutines.flow.Flow
 

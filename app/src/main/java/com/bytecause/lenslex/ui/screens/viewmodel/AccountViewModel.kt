@@ -3,75 +3,155 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
 import com.bytecause.lenslex.models.UserData
+import com.bytecause.lenslex.models.uistate.AccountState
+import com.bytecause.lenslex.ui.events.AccountUiEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class AccountViewModel(
-    private val auth: AuthRepository
+    private val authRepository: AuthRepository,
+    private val firebaseCloudRepository: FirebaseCloudRepositoryImpl
 ) : ViewModel() {
 
-    private val firebaseAuth = auth.getFirebaseAuth
+    private val firebaseAuth = authRepository.getFirebaseAuth
 
-    val isAccountAnonymous: Boolean = firebaseAuth.currentUser?.isAnonymous == true
-
-    private val _getSignedInUser = MutableStateFlow(firebaseAuth.currentUser?.run {
+    private val _uiState = MutableStateFlow(AccountState(userData = firebaseAuth.currentUser?.run {
         UserData(
             userId = uid,
             userName = displayName,
-            profilePictureUrl = photoUrl?.toString()
+            profilePictureUrl = photoUrl.toString(),
+            isAnonymous = isAnonymous
         )
     }
     )
+    )
+    val uiState = _uiState.asStateFlow()
+
+    fun uiEventHandler(event: AccountUiEvent) {
+        when (event) {
+            is AccountUiEvent.OnUpdateName -> {
+                _uiState.update {
+                    it.copy(userData = it.userData?.copy(userName = event.value))
+                }
+                updateName(event.value)
+            }
+
+            is AccountUiEvent.OnUpdateProfilePicture -> {
+                _uiState.update {
+                    it.copy(userData = it.userData?.copy(profilePictureUrl = event.value))
+                }
+                updateProfilePicture(Uri.parse(event.value))
+            }
+
+            AccountUiEvent.OnEditChange -> {
+                _uiState.update {
+                    it.copy(isEditing = !it.isEditing)
+                }
+            }
+
+            is AccountUiEvent.OnChangeFirebaseLanguage -> {
+                changeFirebaseLanguageCode(event.value)
+            }
+
+            is AccountUiEvent.OnShowConfirmationDialog -> {
+                _uiState.update {
+                    it.copy(showConfirmationDialog = event.value)
+                }
+            }
+
+            is AccountUiEvent.OnShowLanguageDialog -> {
+                _uiState.update {
+                    it.copy(showLanguageDialog = event.value)
+                }
+            }
+
+            is AccountUiEvent.OnShowBottomSheet -> {
+                _uiState.update {
+                    it.copy(showBottomSheet = event.value)
+                }
+            }
+
+            is AccountUiEvent.OnShowUrlDialog -> {
+                _uiState.update {
+                    it.copy(showUrlDialog = event.value)
+                }
+            }
+
+            AccountUiEvent.OnSignOut -> {
+                signOut()
+                _uiState.update {
+                    it.copy(signedOutSuccess = true)
+                }
+            }
+
+            is AccountUiEvent.OnNameTextFieldValueChange -> {
+                _uiState.update {
+                    it.copy(userData = it.userData?.copy(userName = event.value))
+                }
+            }
+
+            is AccountUiEvent.OnUrlTextFieldValueChange -> {
+                _uiState.update {
+                    it.copy(urlValue = event.value)
+                }
+            }
+
+            is AccountUiEvent.OnSaveUserProfilePicture -> {
+                firebaseCloudRepository.saveUserProfilePicture(event.value)
+            }
+        }
+    }
 
     fun reload() {
         firebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                _getSignedInUser.update {
+                _uiState.update {
+                    it.copy(userData =
                     firebaseAuth.currentUser?.run {
                         UserData(
                             userId = uid,
                             userName = displayName,
-                            profilePictureUrl = photoUrl?.toString()
+                            profilePictureUrl = photoUrl?.toString(),
+                            isAnonymous = isAnonymous
                         )
                     }
+                    )
                 }
             }
         }
     }
 
-    val getSignedInUser: StateFlow<UserData?> = _getSignedInUser.asStateFlow()
-
     private val authStateListener = FirebaseAuth.AuthStateListener {
-        if (it.currentUser == null) _getSignedInUser.value = null
+        if (it.currentUser == null) _uiState.update { state -> state.copy(userData = null) }
     }
 
-    fun changeFirebaseLanguageCode(langCode: String) =
-        auth.getFirebaseAuth.setLanguageCode(langCode)
+    private fun changeFirebaseLanguageCode(langCode: String) =
+        authRepository.getFirebaseAuth.setLanguageCode(langCode)
 
     init {
         firebaseAuth.addAuthStateListener(authStateListener)
     }
 
-    fun updateName(name: String) {
+    private fun updateName(name: String) {
         val changeRequest = UserProfileChangeRequest.Builder()
             .setDisplayName(name)
             .build()
 
-        auth.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
+        authRepository.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
     }
 
-    fun updateProfilePicture(uri: Uri) {
+    private fun updateProfilePicture(uri: Uri) {
         val changeRequest = UserProfileChangeRequest.Builder()
             .setPhotoUri(uri)
             .build()
 
-        auth.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
+        authRepository.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
     }
 
-    fun signOut() = auth.signOut()
+    private fun signOut() = authRepository.signOut()
 }

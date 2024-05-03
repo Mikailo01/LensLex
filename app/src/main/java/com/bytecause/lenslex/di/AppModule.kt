@@ -5,12 +5,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
-import com.bytecause.lenslex.auth.FirebaseAuthClient
+import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.local.room.AppDatabase
 import com.bytecause.lenslex.data.local.room.WordDao
+import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
 import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.VerifyOobRepository
@@ -48,6 +50,10 @@ val appModule = module {
         FirebaseAuthClient()
     }
 
+    single<FirebaseCloudStorage> {
+        FirebaseCloudStorage()
+    }
+
     // Database
     single {
         Room.databaseBuilder(
@@ -83,6 +89,10 @@ val appModule = module {
         AuthRepository(get<FirebaseAuthClient>(), Dispatchers.IO)
     }
 
+    single<FirebaseCloudRepositoryImpl> {
+        FirebaseCloudRepositoryImpl(get())
+    }
+
     // ViewModels
     viewModel {
         HomeViewModel(
@@ -111,7 +121,7 @@ val appModule = module {
     }
 
     viewModel {
-        AccountViewModel(get())
+        AccountViewModel(get(), get())
     }
 
     viewModel {

@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.data.repository.VerifyOobRepository
-import com.bytecause.lenslex.models.SimpleResult
+import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.NetworkUtil

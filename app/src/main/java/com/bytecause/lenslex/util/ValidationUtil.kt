@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.util
 
-import com.bytecause.lenslex.models.Credentials
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import java.security.MessageDigest
 import java.util.UUID
 

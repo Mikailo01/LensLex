@@ -16,7 +16,7 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.AuthRepository
-import com.bytecause.lenslex.models.Credentials
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.SignInState
 import com.bytecause.lenslex.util.CredentialValidationResult

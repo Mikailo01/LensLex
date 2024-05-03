@@ -28,7 +28,7 @@ class FirebaseCloudStorage {
                 val downloadUri = task.result
                 // Store the image URL in Firestore
                 setPhotoUri(downloadUri)
-               // storeImageUrl(downloadUri.toString())
+                // storeImageUrl(downloadUri.toString())
             } else {
                 // Handle failures
             }

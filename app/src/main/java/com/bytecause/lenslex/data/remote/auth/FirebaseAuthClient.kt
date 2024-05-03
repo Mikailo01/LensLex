@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.auth
+package com.bytecause.lenslex.data.remote.auth
 
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -14,76 +14,71 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class FirebaseAuthClient: Authenticator {
+class FirebaseAuthClient : Authenticator {
 
     override val getFirebaseAuth: FirebaseAuth = Firebase.auth
 
     override suspend fun getGoogleCredential(context: Context): AuthCredential {
-        return withContext(Dispatchers.IO) {
-            val credentialManager = CredentialManager.create(context)
-            val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(context.getString(R.string.web_client_id))
-                .setNonce(ValidationUtil.generateNonce())
-                .build()
+        val credentialManager = CredentialManager.create(context)
+        val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(context.getString(R.string.web_client_id))
+            .setNonce(ValidationUtil.generateNonce())
+            .build()
 
-            val request: GetCredentialRequest = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+        val request: GetCredentialRequest = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
 
-            val result = credentialManager.getCredential(
-                request = request,
-                context = context
-            )
+        val result = credentialManager.getCredential(
+            request = request,
+            context = context
+        )
 
-            val credential = result.credential
-            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-            val googleIdToken = googleIdTokenCredential.idToken
+        val credential = result.credential
+        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+        val googleIdToken = googleIdTokenCredential.idToken
 
-            GoogleAuthProvider.getCredential(googleIdToken, null)
-        }
+        return GoogleAuthProvider.getCredential(googleIdToken, null)
     }
 
     override suspend fun signInUsingGoogleCredential(context: Context): SignInResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                val googleCredential = getGoogleCredential(context)
+        return try {
+            val googleCredential = getGoogleCredential(context)
 
-                suspendCoroutine {
-                    getFirebaseAuth.signInWithCredential(googleCredential)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                it.resume(SignInResult(data = getFirebaseAuth.currentUser?.let { user ->
-                                    UserData(
-                                        userId = user.uid,
-                                        userName = user.displayName,
-                                        profilePictureUrl = user.photoUrl.toString()
-                                    )
-                                }, errorMessage = null))
-                            } else {
-                                it.resume(
-                                    SignInResult(
-                                        data = null,
-                                        errorMessage = task.exception?.message
-                                    )
+            suspendCoroutine {
+                getFirebaseAuth.signInWithCredential(googleCredential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            it.resume(SignInResult(data = getFirebaseAuth.currentUser?.run {
+                                UserData(
+                                    userId = uid,
+                                    userName = displayName,
+                                    profilePictureUrl = photoUrl.toString(),
+                                    isAnonymous = isAnonymous
                                 )
-                            }
+                            }, errorMessage = null))
+                        } else {
+                            it.resume(
+                                SignInResult(
+                                    data = null,
+                                    errorMessage = task.exception?.message
+                                )
+                            )
                         }
-                }
-
-            } catch (e: Exception) {
-                SignInResult(data = null, errorMessage = e.message)
+                    }
             }
+
+        } catch (e: Exception) {
+            SignInResult(data = null, errorMessage = e.message)
         }
     }
 
@@ -93,11 +88,12 @@ class FirebaseAuthClient: Authenticator {
             if (task.isSuccessful) {
                 trySend(
                     SignInResult(
-                        data = task.result.user?.let { user ->
+                        data = task.result.user?.run {
                             UserData(
-                                userId = user.uid,
-                                userName = user.displayName,
-                                profilePictureUrl = user.photoUrl.toString()
+                                userId = uid,
+                                userName = displayName,
+                                profilePictureUrl = photoUrl.toString(),
+                                isAnonymous = isAnonymous
                             )
                         },
                         errorMessage = null
@@ -124,11 +120,12 @@ class FirebaseAuthClient: Authenticator {
                     if (task.isSuccessful) {
                         trySend(
                             SignInResult(
-                                data = task.result.user?.let { user ->
+                                data = task.result.user?.run {
                                     UserData(
-                                        userId = user.uid,
-                                        userName = user.displayName,
-                                        profilePictureUrl = user.photoUrl.toString()
+                                        userId = uid,
+                                        userName = displayName,
+                                        profilePictureUrl = photoUrl.toString(),
+                                        isAnonymous = isAnonymous
                                     )
                                 },
                                 errorMessage = null
@@ -155,11 +152,12 @@ class FirebaseAuthClient: Authenticator {
                     if (task.isSuccessful) {
                         trySend(
                             SignInResult(
-                                data = task.result.user?.let { user ->
+                                data = task.result.user?.run {
                                     UserData(
-                                        userId = user.uid,
-                                        userName = user.displayName,
-                                        profilePictureUrl = user.photoUrl.toString()
+                                        userId = uid,
+                                        userName = displayName,
+                                        profilePictureUrl = photoUrl.toString(),
+                                        isAnonymous = isAnonymous
                                     )
                                 },
                                 errorMessage = null

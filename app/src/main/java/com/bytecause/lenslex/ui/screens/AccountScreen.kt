@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -40,9 +39,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -59,7 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
+import com.bytecause.lenslex.models.uistate.AccountState
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.AppLanguageRow
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
@@ -68,6 +64,7 @@ import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AccountUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
@@ -78,28 +75,10 @@ import java.io.InputStream
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreenContent(
-    profilePicture: String,
-    isEditing: Boolean,
-    nameTextFieldValue: String,
-    urlTextFieldValue: String,
-    isAnonymous: Boolean,
-    showConfirmationDialog: Boolean,
-    showLanguageDialog: Boolean,
-    showBottomSheet: Boolean,
-    showUrlDialog: Boolean,
+    state: AccountState,
     bottomSheetState: SheetState,
-    onUpdateName: () -> Unit,
-    onUpdateProfilePicture: () -> Unit,
-    onEditChange: () -> Unit,
-    onChangeFirebaseLanguage: (String) -> Unit,
-    onShowConfirmationDialog: (Boolean) -> Unit,
-    onShowLanguageDialog: (Boolean) -> Unit,
-    onShowBottomSheet: (Boolean) -> Unit,
-    onShowUrlDialog: (Boolean) -> Unit,
-    onSignOut: () -> Unit,
+    onEvent: (AccountUiEvent) -> Unit,
     onSinglePicturePickerLaunch: () -> Unit,
-    onNameTextFieldValueChange: (String) -> Unit,
-    onUrlTextFieldValueChange: (String) -> Unit,
     onNavigate: (NavigationItem) -> Unit,
     onBackButtonClick: () -> Unit
 ) {
@@ -123,7 +102,6 @@ fun AccountScreenContent(
                 .padding(innerPaddingValues),
             contentAlignment = Alignment.TopCenter
         ) {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,11 +115,11 @@ fun AccountScreenContent(
                         AsyncImage(
                             model = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                                 ImageRequest.Builder(context)
-                                    .data(profilePicture.takeIf { it != "null" }
+                                    .data(state.userData?.profilePictureUrl.takeIf { it != "null" }
                                         ?: R.drawable.default_account_image)
                                     .transformations(BlurTransformation(context, 15))
                                     .build()
-                            } else profilePicture.takeIf { it != "null" }
+                            } else state.userData?.profilePictureUrl.takeIf { it != "null" }
                                 ?: R.drawable.default_account_image,
                             contentDescription = "avatar",
                             contentScale = ContentScale.Crop,
@@ -169,15 +147,17 @@ fun AccountScreenContent(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (!isEditing) {
+                    if (!state.isEditing) {
                         Text(
-                            text = nameTextFieldValue,
+                            text = state.userData?.userName.takeIf { it?.isNotBlank() == true }
+                                ?: state.userData?.userId ?: "",
                             fontWeight = FontWeight.Bold
                         )
                     } else {
                         TextField(
-                            value = nameTextFieldValue, onValueChange = {
-                                onNameTextFieldValueChange(it)
+                            value = state.userData?.userName.takeIf { it?.isNotBlank() == true }
+                                ?: state.userData?.userId ?: "", onValueChange = {
+                                onEvent(AccountUiEvent.OnNameTextFieldValueChange(it))
                             },
                             modifier = Modifier.padding(top = 10.dp)
                         )
@@ -185,12 +165,12 @@ fun AccountScreenContent(
 
                     IconButton(
                         onClick = {
-                            onUpdateName()
-                            onEditChange()
+                            onEvent(AccountUiEvent.OnUpdateName(state.userData?.userName ?: ""))
+                            onEvent(AccountUiEvent.OnEditChange)
                         }
                     ) {
                         Icon(
-                            imageVector = if (isEditing) Icons.Filled.Check else Icons.Filled.Create,
+                            imageVector = if (state.isEditing) Icons.Filled.Check else Icons.Filled.Create,
                             contentDescription = ""
                         )
                     }
@@ -211,7 +191,7 @@ fun AccountScreenContent(
                         contentDescription = R.string.select_language,
                         text = R.string.language
                     ) {
-                        onShowLanguageDialog(true)
+                        onEvent(AccountUiEvent.OnShowLanguageDialog(true))
                     }
 
                     Divider(thickness = 1, color = Color.Gray)
@@ -233,32 +213,36 @@ fun AccountScreenContent(
                         contentDescription = R.string.sign_out,
                         text = R.string.sign_out
                     ) {
-                        if (isAnonymous) onShowConfirmationDialog(true)
-                        else onSignOut()
+                        if (state.userData?.isAnonymous == true) onEvent(
+                            AccountUiEvent.OnShowConfirmationDialog(
+                                true
+                            )
+                        )
+                        else onEvent(AccountUiEvent.OnSignOut)
                     }
                 }
             }
 
             ProfilePicture(
-                profilePicture = profilePicture,
+                profilePicture = state.userData?.profilePictureUrl.toString(),
                 modifier = Modifier.padding(top = 130.dp)
             ) {
-                onShowBottomSheet(true)
+                onEvent(AccountUiEvent.OnShowBottomSheet(true))
             }
 
-            if (showLanguageDialog) {
+            if (state.showLanguageDialog) {
                 Dialog(
                     title = stringResource(id = R.string.choose_language),
-                    onDismiss = { onShowLanguageDialog(false) }
+                    onDismiss = { onEvent(AccountUiEvent.OnShowLanguageDialog(false)) }
                 ) {
 
                     AppLanguageRow(
                         langCode = "eng",
                         isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "eng"
                     ) {
-                        onShowLanguageDialog(false)
+                        onEvent(AccountUiEvent.OnShowLanguageDialog(false))
+                        onEvent(AccountUiEvent.OnChangeFirebaseLanguage("en"))
 
-                        onChangeFirebaseLanguage("en")
                         val appLocale: LocaleListCompat =
                             LocaleListCompat.forLanguageTags("en-EN")
                         AppCompatDelegate.setApplicationLocales(appLocale)
@@ -268,9 +252,9 @@ fun AccountScreenContent(
                         langCode = "cze",
                         isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "ces"
                     ) {
-                        onShowLanguageDialog(false)
+                        onEvent(AccountUiEvent.OnShowLanguageDialog(false))
+                        onEvent(AccountUiEvent.OnChangeFirebaseLanguage("cs"))
 
-                        onChangeFirebaseLanguage("cs")
                         val appLocale: LocaleListCompat =
                             LocaleListCompat.forLanguageTags("cs-CZ")
                         AppCompatDelegate.setApplicationLocales(appLocale)
@@ -279,9 +263,9 @@ fun AccountScreenContent(
             }
         }
 
-        if (showBottomSheet) {
+        if (state.showBottomSheet) {
             ModalBottomSheet(
-                onDismissRequest = { onShowBottomSheet(false) },
+                onDismissRequest = { onEvent(AccountUiEvent.OnShowBottomSheet(false)) },
                 sheetState = bottomSheetState,
             ) {
 
@@ -291,7 +275,7 @@ fun AccountScreenContent(
                     contentDescription = R.string.pick_profile_picture_from_storage,
                     text = R.string.pick_profile_picture_from_storage
                 ) {
-                    onShowBottomSheet(false)
+                    onEvent(AccountUiEvent.OnShowBottomSheet(false))
                     onSinglePicturePickerLaunch()
                 }
 
@@ -301,34 +285,35 @@ fun AccountScreenContent(
                     contentDescription = R.string.set_profile_picture_from_url,
                     text = R.string.set_profile_picture_from_url
                 ) {
-                    onShowBottomSheet(false)
-                    onShowUrlDialog(true)
+                    onEvent(AccountUiEvent.OnShowBottomSheet(false))
+                    onEvent(AccountUiEvent.OnShowUrlDialog(true))
                 }
             }
         }
     }
 
-    if (showUrlDialog) {
+    if (state.showUrlDialog) {
         Dialog(
             title = stringResource(id = R.string.type_picture_url),
-            onDismiss = { onShowUrlDialog(false) },
+            onDismiss = { onEvent(AccountUiEvent.OnShowUrlDialog(false)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentSize()
                 .padding(16.dp)
         ) {
             OutlinedTextField(
-                value = urlTextFieldValue,
-                onValueChange = { onUrlTextFieldValueChange(it) },
+                value = state.urlValue,
+                onValueChange = { onEvent(AccountUiEvent.OnUrlTextFieldValueChange(it)) },
                 supportingText = { Text(text = "URL") },
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
             )
             Button(
                 onClick = {
-                    if (urlTextFieldValue.isNotBlank()) {
-                        onUpdateProfilePicture()
+                    if (state.urlValue.isNotBlank()) {
+                        onEvent(AccountUiEvent.OnUpdateProfilePicture(state.urlValue))
                     }
-                    onShowUrlDialog(false)
+                    onEvent(AccountUiEvent.OnShowUrlDialog(false))
+
                 }, modifier = Modifier.padding(bottom = 10.dp)
             ) {
                 Text(text = stringResource(id = R.string.done))
@@ -336,15 +321,15 @@ fun AccountScreenContent(
         }
     }
 
-    if (showConfirmationDialog) {
+    if (state.showConfirmationDialog) {
         ConfirmationDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentSize(),
-            onDismiss = { onShowConfirmationDialog(false) },
+            onDismiss = { onEvent(AccountUiEvent.OnShowConfirmationDialog(false)) },
             onConfirm = {
-                onShowConfirmationDialog(false)
-                onSignOut()
+                onEvent(AccountUiEvent.OnShowConfirmationDialog(false))
+                onEvent(AccountUiEvent.OnSignOut)
             }
         ) {
             Text(
@@ -364,42 +349,9 @@ fun AccountScreen(
     onUserLoggedOut: () -> Unit
 ) {
 
-    val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState()
-
-    var showBottomSheet by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var showConfirmationDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var nameTextFieldValue by rememberSaveable {
-        mutableStateOf(getSignedInUser?.userName?.takeIf { it.isNotBlank() }
-            ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() } ?: "")
-    }
-
-    var profilePicture by rememberSaveable {
-        mutableStateOf(getSignedInUser?.profilePictureUrl.toString())
-    }
-
-    var showUrlDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var showLanguageDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var isEditing by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var urlTextFieldValue by rememberSaveable {
-        mutableStateOf("")
-    }
 
     val context = LocalContext.current
 
@@ -419,19 +371,23 @@ fun AccountScreen(
                         imageUri = uri,
                         quality = 20
                     )?.let { compressedUri ->
-                        profilePicture = compressedUri.toString()
-                        FirebaseCloudStorage().saveUserProfilePicture(compressedUri)
+                        viewModel.uiEventHandler(AccountUiEvent.OnUpdateProfilePicture(compressedUri.toString()))
+                        viewModel.uiEventHandler(
+                            AccountUiEvent.OnSaveUserProfilePicture(
+                                compressedUri
+                            )
+                        )
                     }
                 } else {
-                    profilePicture = uri.toString()
-                    FirebaseCloudStorage().saveUserProfilePicture(uri)
+                    viewModel.uiEventHandler(AccountUiEvent.OnUpdateProfilePicture(uri.toString()))
+                    viewModel.uiEventHandler(AccountUiEvent.OnSaveUserProfilePicture(uri))
                 }
             } ?: run {
-                profilePicture = uri.toString()
-                FirebaseCloudStorage().saveUserProfilePicture(uri)
+                viewModel.uiEventHandler(AccountUiEvent.OnUpdateProfilePicture(uri.toString()))
+                viewModel.uiEventHandler(AccountUiEvent.OnSaveUserProfilePicture(uri))
             }
 
-            showBottomSheet = false
+            viewModel.uiEventHandler(AccountUiEvent.OnShowBottomSheet(false))
         }
     )
 
@@ -440,43 +396,15 @@ fun AccountScreen(
         viewModel.reload()
     }
 
-    LaunchedEffect(getSignedInUser) {
-        if (getSignedInUser == null) onUserLoggedOut()
-        else {
-            nameTextFieldValue = getSignedInUser?.userName?.takeIf { it.isNotBlank() }
-                ?: getSignedInUser?.userId?.takeIf { it.isNotBlank() } ?: ""
-            profilePicture = getSignedInUser?.profilePictureUrl.toString()
-        }
+    LaunchedEffect(uiState.userData) {
+        if (uiState.userData == null) onUserLoggedOut()
     }
 
     AccountScreenContent(
-        profilePicture = profilePicture,
-        isEditing = isEditing,
-        nameTextFieldValue = nameTextFieldValue,
-        urlTextFieldValue = urlTextFieldValue,
-        isAnonymous = viewModel.isAccountAnonymous,
-        showConfirmationDialog = showConfirmationDialog,
-        showLanguageDialog = showLanguageDialog,
-        showBottomSheet = showBottomSheet,
-        showUrlDialog = showUrlDialog,
+        state = uiState,
         bottomSheetState = sheetState,
-        onUpdateName = {
-            viewModel.updateName(nameTextFieldValue)
-
-        },
-        onUpdateProfilePicture = {
-            viewModel.updateProfilePicture(Uri.parse(urlTextFieldValue))
-            profilePicture = urlTextFieldValue
-        },
-        onEditChange = { isEditing = !isEditing },
-        onChangeFirebaseLanguage = { viewModel.changeFirebaseLanguageCode(it) },
-        onShowConfirmationDialog = { showConfirmationDialog = it },
-        onShowLanguageDialog = { showLanguageDialog = it },
-        onShowBottomSheet = { showBottomSheet = it },
-        onShowUrlDialog = { showUrlDialog = it },
-        onSignOut = {
-            viewModel.signOut()
-            onUserLoggedOut()
+        onEvent = { event ->
+            viewModel.uiEventHandler(event)
         },
         onSinglePicturePickerLaunch = {
             singlePhotoPickerLauncher.launch(
@@ -485,8 +413,6 @@ fun AccountScreen(
                 )
             )
         },
-        onNameTextFieldValueChange = { nameTextFieldValue = it },
-        onUrlTextFieldValueChange = { urlTextFieldValue = it },
         onNavigate = { onNavigate(it) },
         onBackButtonClick = { onBackButtonClick() })
 }
@@ -496,28 +422,10 @@ fun AccountScreen(
 @Preview
 fun AccountScreenPreview() {
     AccountScreenContent(
-        profilePicture = "",
-        isEditing = false,
-        nameTextFieldValue = "Mikailo",
-        urlTextFieldValue = "",
-        isAnonymous = false,
-        showConfirmationDialog = false,
-        showLanguageDialog = false,
-        showBottomSheet = false,
-        showUrlDialog = false,
+        state = AccountState(),
         bottomSheetState = SheetState(false, LocalDensity.current, SheetValue.Hidden),
-        onUpdateName = {},
-        onUpdateProfilePicture = {},
-        onEditChange = {},
-        onChangeFirebaseLanguage = {},
-        onShowConfirmationDialog = {},
-        onShowLanguageDialog = {},
-        onShowBottomSheet = {},
-        onShowUrlDialog = {},
-        onSignOut = {},
+        onEvent = {},
         onSinglePicturePickerLaunch = {},
-        onNameTextFieldValueChange = {},
-        onUrlTextFieldValueChange = {},
         onNavigate = {},
         onBackButtonClick = {}
     )

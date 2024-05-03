@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.data.repository
 
 import android.content.Context
-import com.bytecause.lenslex.auth.Authenticator
+import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.models.SignInResult
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -28,11 +28,6 @@ class AuthRepository(
 
     fun signInAnonymously(): Flow<SignInResult> =
         auth.signInAnonymously().flowOn(coroutineDispatcher)
-
-    suspend fun getGoogleCredential(context: Context): AuthCredential =
-        withContext(coroutineDispatcher) {
-            auth.getGoogleCredential(context)
-        }
 
     suspend fun signInUsingGoogleCredential(context: Context) =
         withContext(coroutineDispatcher) {

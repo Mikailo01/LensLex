@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.models
+package com.bytecause.lenslex.ui.interfaces
 
 import java.lang.Exception
 

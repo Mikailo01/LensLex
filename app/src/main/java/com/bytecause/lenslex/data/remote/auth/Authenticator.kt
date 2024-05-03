@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.auth
+package com.bytecause.lenslex.data.remote.auth
 
 import android.content.Context
 import com.bytecause.lenslex.models.SignInResult
