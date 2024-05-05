@@ -1,16 +1,14 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.app.Application
-
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.AuthRepository
-import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.SignInState
 import com.bytecause.lenslex.models.uistate.LoginState
 import com.bytecause.lenslex.ui.events.LoginUiEvent
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil.areCredentialsValid
 import kotlinx.coroutines.flow.Flow
@@ -69,12 +67,14 @@ class LoginViewModel(
                                         it.copy(isLoading = true)
                                     }
 
-                                    signInViaEmailAndPasswordIfValid(
+                                    signInUsingEmailAndPassword(
                                         Credentials.Sensitive.SignInCredentials(
                                             email = _uiState.value.email,
                                             password = _uiState.value.password
                                         )
-                                    )
+                                    ).firstOrNull()?.let {
+                                        onSignInResult(it)
+                                    }
                                 }
 
                                 false -> {
@@ -88,7 +88,9 @@ class LoginViewModel(
                                             password = _uiState.value.password,
                                             confirmPassword = _uiState.value.confirmPassword
                                         )
-                                    )
+                                    ).firstOrNull()?.let {
+                                        onSignInResult(it)
+                                    }
                                 }
                             }
                         }
@@ -194,104 +196,15 @@ class LoginViewModel(
         }
     }
 
-    fun signInUsingGoogleCredential(context: Context) {
-        viewModelScope.launch {
-            onSignInResult(auth.signInUsingGoogleCredential(context))
-        }
-    }
-
-    /*private suspend fun saveCredential(context: Context, username: String, password: String) {
-        try {
-            // Ask the user for permission to add the credentials to their store
-            credentialManager.createCredential(
-                context = context,
-                request = CreatePasswordRequest(username, password)
-            )
-            Log.v("CredentialTest", "Credentials successfully added")
-        } catch (e: CreateCredentialCancellationException) {
-            // do nothing, the user chose not to save the credential
-            Log.v("CredentialTest", "User cancelled the save")
-        } catch (e: CreateCredentialException) {
-            Log.v("CredentialTest", "Credential save error", e)
-        }
-    }
-
-    private suspend fun getCredential(context: Context): PasswordCredential? {
-        try {
-            // GetPasswordOption() tell the credential library that we're only interested in password credentials
-            // Show the user a dialog allowing them to pick a saved credential
-            val credentialResponse = credentialManager.getCredential(
-                request = GetCredentialRequest(
-                    listOf(GetPasswordOption())
-                ),
-                context = context
-            )
-
-            // Return the selected credential (as long as it's a username/password)
-            return credentialResponse.credential as? PasswordCredential
-        } catch (e: GetCredentialCancellationException) {
-            // User cancelled the request. Return nothing
-            return null
-        } catch (e: NoCredentialException) {
-            // We don't have a matching credential
-            return null
-        } catch (e: GetCredentialException) {
-            Log.e("CredentialTest", "Error getting credential", e)
-            throw e
-        }
-    }*/
-
-    /* fun signInWithSavedCredential(context: Context) {
-         viewModelScope.launch {
-             try {
-                 val passwordCredential = getCredential(context) ?: return@launch
-
-                 signInUsingEmailAndPassword(
-                     Credentials.Sensitive.SignInCredentials(
-                         email = passwordCredential.id,
-                         password = passwordCredential.password
-                     )
-                 ).firstOrNull()?.let {
-                     onSignInResult(it)
-                 }
-             } catch (e: Exception) {
-                 Log.e("CredentialTest", "Error getting credential", e)
-             }
-         }
-     } */
-
-    fun signInUsingEmailAndPassword(
+    private fun signInUsingEmailAndPassword(
         credentials: Credentials.Sensitive.SignInCredentials
-    ): Flow<SignInResult> {
-        return auth.signInViaEmailAndPassword(credentials.email, credentials.password)
-    }
+    ): Flow<SignInResult> =
+        auth.signInViaEmailAndPassword(credentials.email, credentials.password)
 
-    suspend fun signInViaEmailAndPasswordIfValid(
-        credentials: Credentials.Sensitive.SignInCredentials
-    ) {
-        signInUsingEmailAndPassword(credentials).firstOrNull()?.let {
-            /*if (it.data != null) saveCredential(
-                context = context,
-                credentials.email,
-                credentials.password
-            )*/
-            onSignInResult(it)
-        }
-    }
-
-    suspend fun signUpViaEmailAndPassword(
+    private fun signUpViaEmailAndPassword(
         credentials: Credentials.Sensitive.SignUpCredentials
-    ) {
+    ): Flow<SignInResult> =
         auth.signUpViaEmailAndPassword(credentials.email, credentials.password)
-            .firstOrNull()?.let {
-                onSignInResult(it)
-                /* if (it.data != null) saveCredential(
-                     context = context,
-                     credentials.email,
-                     credentials.password
-                 )*/
-            }
-    }
 
     private suspend fun signInAnonymously() {
         auth.signInAnonymously().firstOrNull()?.let {

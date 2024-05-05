@@ -51,7 +51,6 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
-import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.uistate.LoginState
 import com.bytecause.lenslex.navigation.NavigationItem
@@ -72,7 +71,6 @@ import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.PasswordValidationResult
 import com.bytecause.lenslex.util.shadowCustom
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -272,12 +270,10 @@ fun LoginScreen(
         mutableStateOf(Animatable(if (!animationStarted) 1050f else 0f))
     }
 
+    // TODO("Uncomment after testing")
     // Prevention from multiple Credential Manager calls.
-    if (!credentialManagerShown) {
+   /* if (!credentialManagerShown) {
         LaunchedEffect(Unit) {
-            // TODO("Uncomment after testing")
-            //viewModel.signInWithSavedCredential(context = context)
-
             try {
                 val passwordCredential =
                     getCredential(credentialManager = credentialManager, context = context)
@@ -298,12 +294,15 @@ fun LoginScreen(
 
             credentialManagerShown = true
         }
-    }
+    }*/
 
     LaunchedEffect(key1 = signUiState) {
         when {
             signUiState.isSignInSuccessful -> {
                 keyboardController?.hide()
+                if (!uiState.signIn) {
+                    saveCredential(credentialManager, context, uiState.email, uiState.password)
+                }
                 onUserLoggedIn()
             }
 
