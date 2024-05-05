@@ -21,7 +21,7 @@ sealed interface Credentials {
 
         data class PasswordCredential(
             val password: String,
-            val confirmPassword: String
+            val confirmPassword: String? = null
         ) : Sensitive
     }
 

@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.util
 
+import android.util.Log
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import java.security.MessageDigest
 import java.util.UUID
@@ -26,8 +27,10 @@ object ValidationUtil {
         return when (credentials) {
             is Credentials.Sensitive.SignInCredentials -> {
 
-                val isEmailValid: Boolean = emailValidator(credentials.email)
+                val isEmailValid: Boolean = emailValidator(credentials.email.also { Log.d("idk", it) })
                 val isPasswordValid = passwordValidator(password = credentials.password)
+
+                Log.d("idk", isEmailValid.toString())
 
                 if (isEmailValid && isPasswordValid is PasswordValidationResult.Valid) CredentialValidationResult.Valid
                 else CredentialValidationResult.Invalid(
