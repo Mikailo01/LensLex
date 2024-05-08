@@ -15,10 +15,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,11 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.mlkit.Translator
-import com.bytecause.lenslex.models.SupportedLanguage
-import com.bytecause.lenslex.models.WordsAndSentences
+import com.bytecause.lenslex.models.uistate.AddState
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.util.Util.readJsonAsMapFromAssets
 import org.koin.androidx.compose.koinViewModel
@@ -41,18 +41,8 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddScreenContent(
-    supportedLanguages: List<SupportedLanguage>,
-    textFieldInput: String,
-    selectedLanguage: SupportedLanguage,
-    showLanguageDialog: Boolean,
-    onTextFieldValueChange: (String) -> Unit,
-    onSelectLanguageClick: () -> Unit,
-    onInsertWord: (String) -> Unit,
-    onDismissDialog: () -> Unit,
-    onConfirmDialog: (SupportedLanguage) -> Unit,
-    onDownloadLanguage: (String) -> Unit,
-    onRemoveLanguage: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    state: AddState,
+    onEvent: (AddUiEvent) -> Unit
 ) {
 
     val context = LocalContext.current
@@ -66,7 +56,7 @@ fun AddScreenContent(
                 titleRes = R.string.add_word,
                 navigationIcon = Icons.AutoMirrored.Filled.ArrowBack
             ) {
-                onNavigateBack()
+                onEvent(AddUiEvent.OnNavigateBack)
             }
         }
     ) { innerPadding ->
@@ -80,20 +70,20 @@ fun AddScreenContent(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(5.dp),
-                    text = selectedLanguage.langName,
+                    text = state.selectedLanguage.langName,
                     onClick = {
-                        onSelectLanguageClick()
+                        onEvent(AddUiEvent.OnShowLanguageDialog(true))
                     }
                 )
                 TextField(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    value = textFieldInput,
-                    onValueChange = { onTextFieldValueChange(it) },
+                    value = state.textValue,
+                    onValueChange = { onEvent(AddUiEvent.OnTextValueChange(it)) },
                     supportingText = {
                         Text(text = stringResource(id = R.string.word))
                     }
                 )
-                if (textFieldInput.isNotBlank()) {
+                if (state.textValue.isNotBlank()) {
 
                     Button(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -106,10 +96,10 @@ fun AddScreenContent(
                                 readJsonAsMapFromAssets(context, "abbreviations_wordlist.json")
 
                             Translator.translate(
-                                text = jsonContent?.get(textFieldInput.lowercase())
-                                    ?: textFieldInput,
+                                text = jsonContent?.get(state.textValue.lowercase())
+                                    ?: state.textValue,
                                 sourceLang = "en",
-                                targetLang = selectedLanguage.langCode
+                                targetLang = state.selectedLanguage.langCode
                             ) { translationResult ->
 
                                 when (translationResult) {
@@ -123,7 +113,7 @@ fun AddScreenContent(
                                     }
 
                                     is Translator.TranslationResult.TranslationSuccess -> {
-                                        onInsertWord(translationResult.translatedText)
+                                        onEvent(AddUiEvent.OnInsertWord(translationResult.translatedText))
                                     }
 
                                     Translator.TranslationResult.TranslationFailure -> {
@@ -145,22 +135,22 @@ fun AddScreenContent(
         }
     }
 
-    if (showLanguageDialog) {
+    if (state.showLanguageDialog) {
         LanguageDialog(
-            lazyListContent = supportedLanguages,
+            lazyListContent = state.supportedLanguages,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(500.dp)
                 .padding(16.dp),
-            onDismiss = { onDismissDialog() },
+            onDismiss = { onEvent(AddUiEvent.OnShowLanguageDialog(false)) },
             onConfirm = {
-                onConfirmDialog(it)
+                onEvent(AddUiEvent.OnConfirmDialog(it))
             },
             onDownload = { langCode ->
-                onDownloadLanguage(langCode)
+                onEvent(AddUiEvent.OnDownloadLanguage(langCode))
             },
             onRemove = { langCode ->
-                onRemoveLanguage(langCode)
+                onEvent(AddUiEvent.OnRemoveLanguage(langCode))
             }
         )
     }
@@ -171,79 +161,25 @@ fun AddScreen(
     viewModel: AddViewModel = koinViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
-        initialValue = SupportedLanguage()
-    )
-    val supportedLanguages by viewModel.supportedLanguages.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var textFieldInput by rememberSaveable {
-        mutableStateOf("")
-    }
-
-    var showLanguageDialog by rememberSaveable {
-        mutableStateOf(false)
+    LaunchedEffect(key1 = uiState.shouldNavigateBack) {
+        if (uiState.shouldNavigateBack) onNavigateBack()
     }
 
     AddScreenContent(
-        supportedLanguages = supportedLanguages,
-        textFieldInput = textFieldInput,
-        selectedLanguage = selectedLanguage,
-        showLanguageDialog = showLanguageDialog,
-        onTextFieldValueChange = {
-            textFieldInput = it
-        },
-        onSelectLanguageClick = {
-            showLanguageDialog = true
-        },
-        onInsertWord = { translatedText ->
-            viewModel.insertWord(
-                WordsAndSentences(
-                    id = "${textFieldInput}_en".lowercase()
-                        .replace(" ", "_"),
-                    word = textFieldInput,
-                    languageCode = "en",
-                    translations = mapOf(selectedLanguage.langCode to translatedText),
-                    timeStamp = System.currentTimeMillis()
-                )
-            ) {
-                onNavigateBack()
-            }
-        },
-        onDismissDialog = {
-            showLanguageDialog = false
-        },
-        onConfirmDialog = {
-            viewModel.setLangOption(it)
-            showLanguageDialog = false
-        },
-        onDownloadLanguage = { langCode ->
-            viewModel.downloadModel(langCode)
-        },
-        onRemoveLanguage = { langCode ->
-            viewModel.removeModel(langCode)
-        },
-        onNavigateBack = {
-            onNavigateBack()
+        state = uiState,
+        onEvent = {
+            viewModel.uiEventHandler(it)
         }
     )
-
 }
 
 @Preview
 @Composable
 fun AddScreenPreview() {
     AddScreenContent(
-        supportedLanguages = emptyList(),
-        textFieldInput = "",
-        selectedLanguage = SupportedLanguage("cs", "Czech"),
-        showLanguageDialog = false,
-        onTextFieldValueChange = {},
-        onSelectLanguageClick = {},
-        onInsertWord = {},
-        onDismissDialog = {},
-        onConfirmDialog = {},
-        onDownloadLanguage = {},
-        onRemoveLanguage = {},
-        onNavigateBack = {}
+        state = AddState(),
+        onEvent = {}
     )
 }

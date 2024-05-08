@@ -1,9 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.SignInState
 import com.bytecause.lenslex.models.uistate.LoginState
@@ -19,30 +18,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    application: Application,
-    private val auth: AuthRepository
-) : AndroidViewModel(application) {
+    private val auth: Authenticator
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginState())
     val uiState = _uiState.asStateFlow()
-
-    /* private val credentialManager by lazy {
-         CredentialManager.create(application)
-     }*/
 
     private val _signUiState = MutableStateFlow(SignInState())
     val signUiState = _signUiState.asStateFlow()
 
     fun uiEventHandler(event: LoginUiEvent) {
         when (event) {
-            is LoginUiEvent.OnCredentialChanged -> {
-                _uiState.update {
-                    it.copy(
-                        credentialValidationResult = areCredentialsValid(event.value)
-                    )
-                }
-            }
-
             is LoginUiEvent.OnCredentialsEntered -> {
                 areCredentialsValid(
                     if (_uiState.value.signIn) Credentials.Sensitive.SignInCredentials(
@@ -73,6 +59,11 @@ class LoginViewModel(
                                             password = _uiState.value.password
                                         )
                                     ).firstOrNull()?.let {
+                                        if (it.errorMessage != null) {
+                                            _uiState.update { state ->
+                                                state.copy(isLoading = false)
+                                            }
+                                        }
                                         onSignInResult(it)
                                     }
                                 }
@@ -89,6 +80,11 @@ class LoginViewModel(
                                             confirmPassword = _uiState.value.confirmPassword
                                         )
                                     ).firstOrNull()?.let {
+                                        if (it.errorMessage != null) {
+                                            _uiState.update { state ->
+                                                state.copy(isLoading = false)
+                                            }
+                                        }
                                         onSignInResult(it)
                                     }
                                 }
@@ -101,16 +97,16 @@ class LoginViewModel(
             is LoginUiEvent.OnEmailValueChange -> {
                 _uiState.update {
                     it.copy(
-                        email = event.value,
+                        email = event.email,
                         credentialValidationResult = areCredentialsValid(
                             if (_uiState.value.signIn) {
                                 Credentials.Sensitive.SignInCredentials(
-                                    email = event.value,
+                                    email = event.email,
                                     password = _uiState.value.password
                                 )
                             } else {
                                 Credentials.Sensitive.SignUpCredentials(
-                                    email = event.value,
+                                    email = event.email,
                                     password = _uiState.value.password,
                                     confirmPassword = _uiState.value.confirmPassword
                                 )
@@ -123,17 +119,17 @@ class LoginViewModel(
             is LoginUiEvent.OnPasswordValueChange -> {
                 _uiState.update {
                     it.copy(
-                        password = event.value,
+                        password = event.password,
                         credentialValidationResult = areCredentialsValid(
                             if (_uiState.value.signIn) {
                                 Credentials.Sensitive.SignInCredentials(
                                     email = _uiState.value.email,
-                                    password = event.value
+                                    password = event.password
                                 )
                             } else {
                                 Credentials.Sensitive.SignUpCredentials(
                                     email = _uiState.value.email,
-                                    password = event.value,
+                                    password = event.password,
                                     confirmPassword = _uiState.value.confirmPassword
                                 )
                             }
@@ -142,15 +138,15 @@ class LoginViewModel(
                 }
             }
 
-            is LoginUiEvent.OnConfirmPasswordChange -> {
+            is LoginUiEvent.OnConfirmPasswordValueChange -> {
                 _uiState.update {
                     it.copy(
-                        confirmPassword = event.value,
+                        confirmPassword = event.confirmationPassword,
                         credentialValidationResult = areCredentialsValid(
                             Credentials.Sensitive.SignUpCredentials(
                                 email = _uiState.value.email,
                                 password = _uiState.value.password,
-                                confirmPassword = event.value
+                                confirmPassword = event.confirmationPassword
                             )
                         )
                     )
@@ -177,7 +173,9 @@ class LoginViewModel(
 
             LoginUiEvent.OnSignInAnonymously -> {
                 viewModelScope.launch {
-                    signInAnonymously()
+                    signInAnonymously().firstOrNull()?.let {
+                        onSignInResult(it)
+                    }
                 }
             }
 
@@ -206,9 +204,5 @@ class LoginViewModel(
     ): Flow<SignInResult> =
         auth.signUpViaEmailAndPassword(credentials.email, credentials.password)
 
-    private suspend fun signInAnonymously() {
-        auth.signInAnonymously().firstOrNull()?.let {
-            onSignInResult(it)
-        }
-    }
+    private fun signInAnonymously(): Flow<SignInResult> = auth.signInAnonymously()
 }

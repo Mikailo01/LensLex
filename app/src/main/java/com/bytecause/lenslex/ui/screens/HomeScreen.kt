@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,10 +41,12 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,6 +56,7 @@ import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.models.SupportedLanguage
 import com.bytecause.lenslex.models.WordsAndSentences
+import com.bytecause.lenslex.models.uistate.HomeState
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.Divider
@@ -63,9 +67,11 @@ import com.bytecause.lenslex.ui.components.NoteItem
 import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
+import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.bytecause.lenslex.util.isScrollingUp
+import com.bytecause.lenslex.util.then
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
@@ -81,25 +87,14 @@ enum class FabNavigation { CAMERA, GALLERY, ADD }
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreenContent(
-    wordList: List<WordsAndSentences>,
-    profilePictureUrl: String,
-    fabState: Boolean,
-    showProgressBar: Boolean,
+    state: HomeState,
     cameraPermissionState: PermissionState?,
-    supportedLanguages: List<SupportedLanguage>,
-    selectedLanguage: SupportedLanguage,
-    showLanguageDialog: Boolean,
-    deletedItemsStack: List<WordsAndSentences>,
-    onIconStateChanged: (Boolean) -> Unit,
-    onConfirmLanguageDialog: (SupportedLanguage) -> Unit,
-    onShowLanguageDialog: (Boolean) -> Unit,
+    lazyListState: LazyListState,
+    onEvent: (HomeUiEvent) -> Unit,
+    onScrollToTop: () -> Unit,
     onClickNavigate: (NavigationItem) -> Unit,
     onCameraIntent: (Uri) -> Unit,
-    onMultiplePhotoPickerLaunch: () -> Unit,
-    onDownloadLanguage: (String) -> Unit,
-    onRemoveLanguage: (String) -> Unit,
-    onItemRemoved: (WordsAndSentences) -> Unit,
-    onItemRestored: () -> Unit
+    onMultiplePhotoPickerLaunch: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -108,13 +103,13 @@ fun HomeScreenContent(
             TopAppBar(
                 titleRes = R.string.app_name,
                 actionIcon = {
-                    if (deletedItemsStack.isNotEmpty()) {
+                    if (state.showUndoButton) {
                         Image(
                             modifier = Modifier
                                 .padding(end = 10.dp)
                                 .clip(CircleShape)
                                 .clickable {
-                                    onItemRestored()
+                                    onEvent(HomeUiEvent.OnItemRestored)
                                 },
                             painter = painterResource(id = R.drawable.baseline_undo_24),
                             contentDescription = "Undo remove"
@@ -122,7 +117,7 @@ fun HomeScreenContent(
                     }
 
                     AsyncImage(
-                        model = profilePictureUrl.takeIf { it != "null" }
+                        model = state.profilePictureUrl.takeIf { it != "null" }
                             ?: R.drawable.default_account_image,
                         contentDescription = "avatar",
                         contentScale = ContentScale.Crop,
@@ -145,10 +140,6 @@ fun HomeScreenContent(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-
-            val lazyListState = rememberLazyListState()
-            val coroutineScope = rememberCoroutineScope()
-
             Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.Center,
@@ -156,8 +147,8 @@ fun HomeScreenContent(
                 ) {
                     LanguagePreferences(
                         modifier = Modifier.padding(5.dp),
-                        text = selectedLanguage.langName,
-                        onClick = { onShowLanguageDialog(true) }
+                        text = state.selectedLanguage.langName,
+                        onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(true)) }
                     )
                     Divider(
                         thickness = 3,
@@ -169,13 +160,13 @@ fun HomeScreenContent(
                     modifier = Modifier.padding(8.dp),
                     state = lazyListState
                 ) {
-                    items(wordList, key = { item -> item.timeStamp }) { item ->
-                        item.translations[selectedLanguage.langCode]?.let {
+                    items(state.wordList, key = { item -> item.timeStamp }) { item ->
+                        item.translations[state.selectedLanguage.langCode]?.let {
                             NoteItem(
                                 originalText = item.word,
                                 translatedText = it
                             ) {
-                                onItemRemoved(item)
+                                onEvent(HomeUiEvent.OnItemRemoved(item))
                             }
                         }
                     }
@@ -188,14 +179,12 @@ fun HomeScreenContent(
                 exit = fadeOut()
             ) {
                 ScrollToTop {
-                    coroutineScope.launch {
-                        lazyListState.scrollToItem(0)
-                    }
+                    onScrollToTop()
                 }
             }
 
             CircularFloatingActionMenu(
-                iconState = fabState,
+                iconState = state.fabState,
                 fabColor = MaterialTheme.colorScheme.primary,
                 fabContentColor = MaterialTheme.colorScheme.onPrimary,
                 expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
@@ -229,26 +218,26 @@ fun HomeScreenContent(
                     }
                 },
                 onIconStateChange = {
-                    onIconStateChanged(it)
+                    onEvent(HomeUiEvent.OnIconStateChange(it))
                 }
             )
 
-            if (showLanguageDialog) {
+            if (state.showLanguageDialog) {
                 LanguageDialog(
-                    lazyListContent = supportedLanguages,
+                    lazyListContent = state.supportedLanguages,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(500.dp)
                         .padding(16.dp),
-                    onDismiss = { onShowLanguageDialog(false) },
+                    onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(false)) },
                     onConfirm = { language ->
-                        onConfirmLanguageDialog(language)
+                        onEvent(HomeUiEvent.OnConfirmLanguageDialog(language))
                     },
                     onDownload = { langCode ->
-                        onDownloadLanguage(langCode)
+                        onEvent(HomeUiEvent.OnDownloadLanguage(langCode))
                     },
                     onRemove = { langCode ->
-                        onRemoveLanguage(langCode)
+                        onEvent(HomeUiEvent.OnRemoveLanguage(langCode))
                     }
                 )
             }
@@ -256,8 +245,8 @@ fun HomeScreenContent(
             IndeterminateCircularIndicator(
                 modifier = Modifier.align(Center),
                 size = 65.dp,
-                isShowed = showProgressBar,
-                subContent = { Text(text = "Processing") }
+                isShowed = state.showProgressBar,
+                subContent = { Text(text = stringResource(id = R.string.processing)) }
             )
         }
     }
@@ -273,26 +262,15 @@ fun HomeScreen(
 ) {
 
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    val supportedLanguages by viewModel.supportedLanguages.collectAsStateWithLifecycle()
-    val getSignedInUser by viewModel.getSignedInUser.collectAsStateWithLifecycle()
-    val selectedLanguage by viewModel.languageOptionFlow.collectAsStateWithLifecycle(
-        SupportedLanguage()
-    )
-
-    val wordList by viewModel.getAllWordsFromFireStore.collectAsStateWithLifecycle(initialValue = emptyList())
-
-    val deletedItemsStack by viewModel.deletedItemsStack.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
     }
 
-    var showLanguageDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var fabState by rememberSaveable { mutableStateOf(false) }
+    val lazyListState = rememberLazyListState()
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -330,10 +308,6 @@ fun HomeScreen(
             }
         }
 
-    var showProgressBar by remember {
-        mutableStateOf(false)
-    }
-
     val multiplePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
         onResult = { uris ->
@@ -344,10 +318,10 @@ fun HomeScreen(
                 return@rememberLauncherForActivityResult
             }
 
-            showProgressBar = true
+            viewModel.showProgressBar(true)
 
             TextRecognizer(context).runTextRecognition(imagePaths = uris) {
-                showProgressBar = false
+                viewModel.showProgressBar(false)
                 if (it.isEmpty()) {
                     Toast.makeText(
                         context,
@@ -362,29 +336,18 @@ fun HomeScreen(
         }
     )
 
-    LaunchedEffect(Unit) {
-        viewModel.reload()
-    }
-
     HomeScreenContent(
-        wordList = wordList,
-        profilePictureUrl = getSignedInUser?.profilePictureUrl.toString(),
-        fabState = fabState,
-        showProgressBar = showProgressBar,
+        state = uiState,
         cameraPermissionState = cameraPermissionState,
-        supportedLanguages = supportedLanguages,
-        selectedLanguage = selectedLanguage,
-        showLanguageDialog = showLanguageDialog,
-        deletedItemsStack = deletedItemsStack,
-        onIconStateChanged = {
-            fabState = it
+        lazyListState = lazyListState,
+        // Events that can be processed in viewModel
+        onEvent = {
+            viewModel.uiEventHandler(it)
         },
-        onConfirmLanguageDialog = { language ->
-            viewModel.saveTranslationOption(language)
-            showLanguageDialog = false
-        },
-        onShowLanguageDialog = {
-            showLanguageDialog = it
+        onScrollToTop = {
+            coroutineScope.launch {
+                lazyListState.scrollToItem(0)
+            }
         },
         onClickNavigate = {
             onClickNavigate(it)
@@ -397,20 +360,6 @@ fun HomeScreen(
             multiplePhotoPickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
-        },
-        onDownloadLanguage = { langCode ->
-            viewModel.downloadModel(langCode)
-        },
-        onRemoveLanguage = { langCode ->
-            viewModel.removeModel(langCode)
-        },
-        onItemRemoved = { item ->
-            viewModel.addDeletedItemToStack(item)
-            viewModel.deleteWordFromFireStore(item.id)
-        },
-        onItemRestored = {
-            viewModel.insertWordToFireStore(deletedItemsStack.last())
-            viewModel.removeDeletedItemFromStack()
         }
     )
 }
@@ -420,24 +369,13 @@ fun HomeScreen(
 @Preview
 fun HomeScreenPreview() {
     HomeScreenContent(
-        wordList = emptyList(),
-        profilePictureUrl = "",
-        fabState = true,
-        showProgressBar = false,
+        state = HomeState(),
         cameraPermissionState = null,
-        supportedLanguages = emptyList(),
-        selectedLanguage = SupportedLanguage("cs", "Czech"),
-        showLanguageDialog = false,
-        deletedItemsStack = emptyList(),
-        onIconStateChanged = {},
-        onConfirmLanguageDialog = {},
-        onShowLanguageDialog = {},
+        lazyListState = rememberLazyListState(),
+        onEvent = {},
+        onScrollToTop = {},
         onClickNavigate = {},
         onCameraIntent = {},
-        onMultiplePhotoPickerLaunch = {},
-        onDownloadLanguage = {},
-        onRemoveLanguage = {},
-        onItemRemoved = {},
-        onItemRestored = {}
+        onMultiplePhotoPickerLaunch = {}
     )
 }

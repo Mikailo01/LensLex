@@ -26,7 +26,6 @@ android {
         generateLocaleConfig = true
     }
 
-
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -63,13 +62,11 @@ android {
 }
 
 dependencies {
-    implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
-    implementation("androidx.compose.material3:material3-android:1.2.1")
     val roomVersion = "2.6.1"
     val koinVersion = "3.5.3"
 
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.core:core-ktx:1.13.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
     // Retrofit2 library
@@ -98,17 +95,18 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
 
     // Preferences DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
     // When using the BoM, don't specify versions in Firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
     // authentication
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.android.gms:play-services-auth:21.1.0")
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
+
+    implementation("com.google.android.gms:play-services-auth:21.1.1")
 
     // Room & Dao
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -120,9 +118,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
     //implementation(platform("androidx.compose:compose-bom:2024.04.01"))
-    implementation("androidx.compose.ui:ui:1.6.6")
-    implementation("androidx.compose.ui:ui-graphics:1.6.6")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.6.6")
+    implementation("androidx.compose.ui:ui:1.6.7")
+    implementation("androidx.compose.ui:ui-graphics:1.6.7")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.7")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.material3:material3-window-size-class")
 
@@ -140,7 +138,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.05.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

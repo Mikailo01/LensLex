@@ -24,7 +24,7 @@ import kotlin.coroutines.suspendCoroutine
 
 class FirebaseAuthClient : Authenticator {
 
-    override val getFirebaseAuth: FirebaseAuth = Firebase.auth
+    override val getAuth: FirebaseAuth = Firebase.auth
 
     override suspend fun getGoogleCredential(context: Context): AuthCredential {
         val credentialManager = CredentialManager.create(context)
@@ -55,10 +55,10 @@ class FirebaseAuthClient : Authenticator {
             val googleCredential = getGoogleCredential(context)
 
             suspendCoroutine {
-                getFirebaseAuth.signInWithCredential(googleCredential)
+                getAuth.signInWithCredential(googleCredential)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            it.resume(SignInResult(data = getFirebaseAuth.currentUser?.run {
+                            it.resume(SignInResult(data = getAuth.currentUser?.run {
                                 UserData(
                                     userId = uid,
                                     userName = displayName,
@@ -83,7 +83,7 @@ class FirebaseAuthClient : Authenticator {
     }
 
     override fun signInAnonymously(): Flow<SignInResult> = callbackFlow {
-        getFirebaseAuth.signInAnonymously().addOnCompleteListener { task ->
+        getAuth.signInAnonymously().addOnCompleteListener { task ->
 
             if (task.isSuccessful) {
                 trySend(
@@ -114,7 +114,7 @@ class FirebaseAuthClient : Authenticator {
 
     override fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            getFirebaseAuth.createUserWithEmailAndPassword(email, password)
+            getAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {
@@ -146,7 +146,7 @@ class FirebaseAuthClient : Authenticator {
 
     override fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            getFirebaseAuth.signInWithEmailAndPassword(email, password)
+            getAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {

@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.ui.events
 
+import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.components.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Provider
 
 sealed interface AccountSettingsUiEvent {

@@ -2,15 +2,15 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
-import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
 import com.bytecause.lenslex.models.SupportedLanguage
-import com.bytecause.lenslex.models.UserData
 import com.bytecause.lenslex.models.WordsAndSentences
+import com.bytecause.lenslex.models.uistate.HomeState
+import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
-import com.bytecause.lenslex.util.mutableStateIn
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -18,9 +18,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,48 +30,111 @@ class HomeViewModel(
     private val wordsDatabaseRepository: WordsDatabaseRepository,
     private val fireStore: FirebaseFirestore,
     supportedLanguagesRepository: SupportedLanguagesRepository,
-    private val auth: AuthRepository
+    auth: Authenticator
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
 
-    private val _deletedItemsStack = MutableStateFlow<List<WordsAndSentences>>(emptyList())
-    val deletedItemsStack get() = _deletedItemsStack
+    private var userId = auth.getAuth.currentUser?.uid
 
-    private val _getSignedInUser: MutableStateFlow<UserData?> =
-        MutableStateFlow(auth.getFirebaseAuth.currentUser?.run {
-            UserData(
-                userId = uid,
-                userName = displayName,
-                profilePictureUrl = photoUrl?.toString(),
-                isAnonymous = isAnonymous
-            )
-        }
-        )
-    val getSignedInUser: StateFlow<UserData?> = _getSignedInUser.asStateFlow()
+    private val getAllWordsFromFireStore: Flow<List<WordsAndSentences>> =
+        callbackFlow {
+            addSnapShotListener()
 
-    fun reload() {
-        auth.getFirebaseAuth.currentUser?.reload()?.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                _getSignedInUser.update {
-                    auth.getFirebaseAuth.currentUser?.run {
-                        UserData(
-                            userId = uid,
-                            userName = displayName,
-                            profilePictureUrl = photoUrl?.toString(),
-                            isAnonymous = isAnonymous
-                        )
-                    }
+            fireStore
+                .collection("users")
+                .document(userId.toString())
+                .collection("WordsAndSentences")
+                .get()
+                .addOnSuccessListener { snapShot ->
+                    trySend(
+                        snapShot.documents.map(::mapDocumentObject).toMutableList()
+                            .sortedByDescending { it.timeStamp }
+                    )
                 }
+            awaitClose { close() }
+        }
+
+    private val _uiState =
+        MutableStateFlow(HomeState(profilePictureUrl = auth.getAuth.currentUser?.photoUrl.toString()))
+    val uiState = _uiState.asStateFlow()
+
+    init {
+        combine(
+            getAllWordsFromFireStore,
+            languageOptionFlow,
+            supportedLanguages
+        ) { words, selectedLang, supportedLanguages ->
+
+            if (_uiState.value.wordList != words) _uiState.update { it.copy(wordList = words) }
+            if (_uiState.value.selectedLanguage != selectedLang) _uiState.update {
+                it.copy(
+                    selectedLanguage = selectedLang
+                )
             }
+            if (_uiState.value.supportedLanguages != supportedLanguages) _uiState.update {
+                it.copy(
+                    supportedLanguages = supportedLanguages
+                )
+            }
+
+        }.launchIn(viewModelScope)
+    }
+
+    private var deletedItemsStack = emptyList<WordsAndSentences>()
+
+    fun uiEventHandler(event: HomeUiEvent) {
+        when (event) {
+            is HomeUiEvent.OnIconStateChange -> {
+                _uiState.update { it.copy(fabState = event.value) }
+            }
+
+            is HomeUiEvent.OnConfirmLanguageDialog -> {
+                saveTranslationOption(event.value)
+                _uiState.update { it.copy(showLanguageDialog = false) }
+            }
+
+            is HomeUiEvent.OnShowLanguageDialog -> {
+                _uiState.update { it.copy(showLanguageDialog = event.value) }
+            }
+
+            is HomeUiEvent.OnDownloadLanguage -> {
+                downloadModel(event.langCode)
+            }
+
+            is HomeUiEvent.OnRemoveLanguage -> {
+                removeModel(event.langCode)
+            }
+
+            is HomeUiEvent.OnItemRemoved -> {
+                addDeletedItemToStack(event.word)
+                deleteWordFromFireStore(event.word.id)
+                _uiState.update { it.copy(showUndoButton = true) }
+            }
+
+            HomeUiEvent.OnItemRestored -> {
+                insertWordToFireStore(deletedItemsStack.last())
+                removeDeletedItemFromStack()
+                _uiState.update { it.copy(showUndoButton = deletedItemsStack.isNotEmpty()) }
+            }
+        }
+    }
+
+    fun showProgressBar(boolean: Boolean) {
+        _uiState.update { it.copy(showProgressBar = boolean) }
+    }
+
+    private fun addWords(list: List<WordsAndSentences>) {
+        _uiState.update {
+            it.copy(wordList = list)
         }
     }
 
     private lateinit var fireStoreSnapShotListener: ListenerRegistration
 
     private fun addSnapShotListener() {
-        getSignedInUser.value?.let {
+        userId?.let { id ->
             fireStoreSnapShotListener = fireStore
                 .collection("users")
-                .document(it.userId)
+                .document(id)
                 .collection("WordsAndSentences")
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
@@ -83,10 +147,9 @@ class HomeViewModel(
                             wordsList.add(mapDocumentObject(doc))
                         }
 
-                        _getAllWordsFromFireStore.value =
-                            wordsList.sortedByDescending { it.timeStamp }
+                        addWords(wordsList.sortedByDescending { it.timeStamp })
                     } else {
-                        _getAllWordsFromFireStore.value = emptyList()
+                        addWords(emptyList())
                     }
                 }
         }
@@ -104,40 +167,12 @@ class HomeViewModel(
         } ?: WordsAndSentences()
     }
 
-    private val _getAllWordsFromFireStore: MutableStateFlow<List<WordsAndSentences>> =
-        getSignedInUser.value?.let {
-            callbackFlow {
-                addSnapShotListener()
-
-                fireStore
-                    .collection("users")
-                    .document(it.userId)
-                    .collection("WordsAndSentences")
-                    .get()
-                    .addOnSuccessListener { snapShot ->
-                        trySend(
-                            snapShot.documents.map { document ->
-                                mapDocumentObject(document)
-                            }.toMutableList().sortedByDescending { it.timeStamp }
-                        )
-                    }
-                awaitClose { close() }
-            }
-        }
-            ?.mutableStateIn(
-                viewModelScope,
-                emptyList()
-            ) ?: MutableStateFlow(emptyList())
-
-    val getAllWordsFromFireStore: StateFlow<List<WordsAndSentences>> =
-        _getAllWordsFromFireStore.asStateFlow()
-
-    fun insertWordToFireStore(word: WordsAndSentences) {
-        getSignedInUser.value?.let {
+    private fun insertWordToFireStore(word: WordsAndSentences) {
+        userId?.let { id ->
             viewModelScope.launch(Dispatchers.IO) {
                 fireStore
                     .collection("users")
-                    .document(it.userId)
+                    .document(id)
                     .collection("WordsAndSentences")
                     .document(word.id)
                     .set(word)
@@ -145,12 +180,12 @@ class HomeViewModel(
         }
     }
 
-    fun deleteWordFromFireStore(documentId: String) {
-        getSignedInUser.value?.let {
+    private fun deleteWordFromFireStore(documentId: String) {
+        userId?.let { id ->
             viewModelScope.launch(Dispatchers.IO) {
                 fireStore
                     .collection("users")
-                    .document(it.userId)
+                    .document(id)
                     .collection("WordsAndSentences")
                     .document(documentId)
                     .delete()
@@ -158,19 +193,19 @@ class HomeViewModel(
         }
     }
 
-    fun addDeletedItemToStack(item: WordsAndSentences) {
-        _deletedItemsStack.value += item
+    private fun addDeletedItemToStack(item: WordsAndSentences) {
+        deletedItemsStack += item
     }
 
-    fun removeDeletedItemFromStack() {
-        _deletedItemsStack.value = _deletedItemsStack.value
+    private fun removeDeletedItemFromStack() {
+        deletedItemsStack = deletedItemsStack
             .toMutableList()
             .apply {
                 removeLast()
             }
     }
 
-    fun saveTranslationOption(language: SupportedLanguage) {
+    private fun saveTranslationOption(language: SupportedLanguage) {
         viewModelScope.launch {
             userPrefsRepositoryImpl.saveTranslationOption(language.langCode)
             super.setLangOption(language = language)

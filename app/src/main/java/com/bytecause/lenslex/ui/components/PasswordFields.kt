@@ -28,6 +28,7 @@ import com.bytecause.lenslex.ui.theme.disabledBorderColor
 import com.bytecause.lenslex.ui.theme.focusedBorderColor
 import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
 import com.bytecause.lenslex.util.PasswordErrorType
+import com.bytecause.lenslex.util.then
 
 @Composable
 fun PasswordFields(

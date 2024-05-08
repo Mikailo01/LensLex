@@ -20,10 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,17 +32,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.interfaces.Credentials
+import com.bytecause.lenslex.models.uistate.SendEmailResetState
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.components.CircularProgressWithCount
 import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
+import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
-import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
-import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -53,16 +49,12 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SendEmailResetScreenContent(
     isExpandedScreen: Boolean,
-    email: String,
-    isEmailError: Boolean,
-    timer: Int,
+    state: SendEmailResetState,
     xOffset: Animatable<Float, AnimationVector1D>,
     yOffset: Animatable<Float, AnimationVector1D>,
     snackBarHostState: SnackbarHostState,
-    onEmailValueChanged: (String) -> Unit,
-    onSendEmailClick: () -> Unit
+    onEvent: (SendEmailResetUiEvent) -> Unit
 ) {
-
     if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
         UserAuthBackground(
             snackBarHostState = snackBarHostState,
@@ -93,15 +85,15 @@ fun SendEmailResetScreenContent(
             },
             foregroundContent = {
                 EmailField(
-                    emailValue = email,
-                    isEmailError = isEmailError,
+                    emailValue = state.email,
+                    isEmailError = state.isEmailError,
                     onEmailValueChanged = {
-                        onEmailValueChanged(it)
+                        onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
                     })
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     Button(
-                        onClick = { onSendEmailClick() },
+                        onClick = { onEvent(SendEmailResetUiEvent.OnSendEmailClick) },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
@@ -112,12 +104,12 @@ fun SendEmailResetScreenContent(
                             bottomStart = 10.dp,
                             bottomEnd = 10.dp
                         ),
-                        enabled = timer == -1,
+                        enabled = state.timer == -1,
                         colors = ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer)
                     ) {
-                        if (timer != -1) {
+                        if (state.timer != -1) {
                             CircularProgressWithCount(
-                                value = timer.toFloat(),
+                                value = state.timer.toFloat(),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         } else Text(text = stringResource(id = R.string.send))
@@ -155,15 +147,15 @@ fun SendEmailResetScreenContent(
             },
             foregroundContent = {
                 EmailField(
-                    emailValue = email,
-                    isEmailError = isEmailError,
+                    emailValue = state.email,
+                    isEmailError = state.isEmailError,
                     onEmailValueChanged = {
-                        onEmailValueChanged(it)
+                        onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
                     })
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     Button(
-                        onClick = { onSendEmailClick() },
+                        onClick = { onEvent(SendEmailResetUiEvent.OnSendEmailClick) },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
@@ -174,12 +166,12 @@ fun SendEmailResetScreenContent(
                             bottomStart = 10.dp,
                             bottomEnd = 10.dp
                         ),
-                        enabled = timer == -1,
+                        enabled = state.timer == -1,
                         colors = ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer)
                     ) {
-                        if (timer != -1) {
+                        if (state.timer != -1) {
                             CircularProgressWithCount(
-                                value = timer.toFloat(),
+                                value = state.timer.toFloat(),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         } else Text(text = stringResource(id = R.string.send))
@@ -195,16 +187,7 @@ fun SendEmailResetScreen(
     viewModel: SendEmailResetViewModel = koinViewModel(),
     isExpandedScreen: Boolean
 ) {
-    val requestResult by viewModel.onResetRequestResult.collectAsStateWithLifecycle()
-    val timer by viewModel.timer.collectAsStateWithLifecycle()
-    val credentialValidationResult by viewModel.credentialValidationResultState.collectAsStateWithLifecycle()
-
-    var email by rememberSaveable {
-        mutableStateOf("")
-    }
-    var isEmailError by rememberSaveable {
-        mutableStateOf(false)
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val snackBarHostState = remember {
         SnackbarHostState()
@@ -212,23 +195,11 @@ fun SendEmailResetScreen(
 
     val context = LocalContext.current
 
-    var animationStarted by rememberSaveable { mutableStateOf(false) }
-
-    val xOffset = remember { Animatable(if (!animationStarted) -1050f else 0f) }
-    val yOffset = remember { Animatable(if (!animationStarted) 700f else 0f) }
-
-    LaunchedEffect(key1 = credentialValidationResult) {
-        isEmailError = when (credentialValidationResult) {
-            is CredentialValidationResult.Invalid -> {
-                (credentialValidationResult as CredentialValidationResult.Invalid).isEmailValid != true
-            }
-
-            else -> false
-        }
-    }
+    val xOffset = remember { Animatable(if (!uiState.animationStarted) -1050f else 0f) }
+    val yOffset = remember { Animatable(if (!uiState.animationStarted) 700f else 0f) }
 
     LaunchedEffect(Unit) {
-        if (!animationStarted) {
+        if (!uiState.animationStarted) {
             coroutineScope {
                 launch {
                     xOffset.animateTo(
@@ -248,23 +219,23 @@ fun SendEmailResetScreen(
                         )
                     )
                 }
-            }.invokeOnCompletion { animationStarted = true }
+            }.invokeOnCompletion { viewModel.uiEventHandler(SendEmailResetUiEvent.OnAnimationStarted) }
         }
     }
 
-    LaunchedEffect(key1 = requestResult) {
-        when (requestResult) {
+    LaunchedEffect(key1 = uiState.requestResult) {
+        when (uiState.requestResult) {
             SimpleResult.OnSuccess -> {
                 snackBarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
-                viewModel.updateResult(null)
+                viewModel.updateRequestResult(null)
             }
 
             is SimpleResult.OnFailure -> {
                 snackBarHostState.showSnackbar(
-                    message = (requestResult as SimpleResult.OnFailure)
+                    message = (uiState.requestResult as SimpleResult.OnFailure)
                         .exception?.message.toString()
                 )
-                viewModel.updateResult(null)
+                viewModel.updateRequestResult(null)
             }
 
             null -> {
@@ -275,27 +246,11 @@ fun SendEmailResetScreen(
 
     SendEmailResetScreenContent(
         isExpandedScreen = isExpandedScreen,
-        email = email,
-        isEmailError = isEmailError,
-        timer = timer,
+        state = uiState,
         xOffset = xOffset,
         yOffset = yOffset,
         snackBarHostState = snackBarHostState,
-        onEmailValueChanged = {
-            email = it
-            viewModel.saveCredentialValidationResult(
-                ValidationUtil.areCredentialsValid(Credentials.Sensitive.EmailCredential(email))
-            )
-        },
-        onSendEmailClick = {
-            viewModel.saveCredentialValidationResult(
-                ValidationUtil.areCredentialsValid(Credentials.Sensitive.EmailCredential(email))
-                    .also { validationResult ->
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            viewModel.sendPasswordResetEmail(email)
-                        }
-                    })
-        }
+        onEvent = { viewModel.uiEventHandler(it) }
     )
 }
 
@@ -304,9 +259,7 @@ fun SendEmailResetScreen(
 fun SendEmailResetScreenContentPreview() {
     SendEmailResetScreenContent(
         isExpandedScreen = false,
-        email = "",
-        isEmailError = false,
-        timer = 50,
+        state = SendEmailResetState(),
         xOffset = remember {
             Animatable(0f)
         },
@@ -314,7 +267,6 @@ fun SendEmailResetScreenContentPreview() {
             Animatable(0f)
         },
         snackBarHostState = SnackbarHostState(),
-        onEmailValueChanged = {},
-        onSendEmailClick = {}
+        onEvent = {}
     )
 }

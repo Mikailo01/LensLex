@@ -7,7 +7,8 @@ sealed interface CredentialChangeResult {
     sealed class Failure : CredentialChangeResult {
         data class ReauthorizationRequired(
             val email: String? = null,
-            val password: String? = null
+            val password: String? = null,
+            val deleteAccount: Boolean = false
         ) : Failure()
 
         data class Error(val exception: Exception) : Failure()

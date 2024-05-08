@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
@@ -25,8 +26,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -39,19 +38,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.interfaces.SimpleResult
+import com.bytecause.lenslex.models.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
+import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
+import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
-import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
-import com.bytecause.lenslex.util.ValidationUtil
 import com.bytecause.lenslex.util.shimmerEffect
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -61,25 +59,12 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun UpdatePasswordScreenContent(
     isExpandedScreen: Boolean,
+    state: UpdatePasswordState,
     modifier: Modifier = Modifier,
-    password: String,
-    confirmationPassword: String,
     snackBarHostState: SnackbarHostState,
     yTextOffset: Animatable<Float, AnimationVector1D>,
     yImageOffset: Animatable<Float, AnimationVector1D>,
-    passwordErrors: List<PasswordErrorType>,
-    isPasswordVisible: Boolean,
-    isLoading: Boolean,
-    isCodeValid: Boolean?,
-    showOobCodeExpiredDialog: Boolean?,
-    onPasswordVisibilityClick: (Boolean) -> Unit,
-    onPasswordValueChange: (String) -> Unit,
-    onConfirmPasswordValueChange: (String) -> Unit,
-    onCredentialChanged: () -> Unit,
-    onResetPasswordClick: () -> Unit,
-    onTryAgainClick: () -> Unit,
-    onGetNewResetCodeClick: () -> Unit,
-    onDismiss: () -> Unit
+    onEvent: (UpdatePasswordUiEvent) -> Unit
 ) {
 
     if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
@@ -119,7 +104,7 @@ fun UpdatePasswordScreenContent(
                     ) {
 
                         // Loading placeholders
-                        if (isLoading) {
+                        if (state.codeValidationResult?.isLoading == true) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Row(
                                     modifier = Modifier
@@ -146,23 +131,38 @@ fun UpdatePasswordScreenContent(
                             ) {}
                         } else {
                             PasswordFields(
-                                password = password,
-                                confirmPassword = confirmationPassword,
-                                isPasswordEnabled = isCodeValid == true,
-                                isPasswordVisible = isPasswordVisible,
-                                passwordErrors = passwordErrors,
-                                onPasswordValueChange = { onPasswordValueChange(it) },
-                                onConfirmPasswordValueChange = { onConfirmPasswordValueChange(it) },
-                                onPasswordVisibilityClick = { onPasswordVisibilityClick(!isPasswordVisible) },
+                                password = state.password,
+                                confirmPassword = state.confirmationPassword,
+                                isPasswordEnabled = state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid,
+                                isPasswordVisible = state.passwordVisible,
+                                passwordErrors = ((state.credentialValidationResult as? CredentialValidationResult.Invalid)?.passwordError as? PasswordValidationResult.Invalid)?.cause
+                                    ?: emptyList(),
+                                onPasswordValueChange = {
+                                    onEvent(
+                                        UpdatePasswordUiEvent.OnPasswordValueChange(
+                                            it
+                                        )
+                                    )
+                                },
+                                onConfirmPasswordValueChange = {
+                                    onEvent(
+                                        UpdatePasswordUiEvent.OnConfirmPasswordValueChange(
+                                            it
+                                        )
+                                    )
+                                },
+                                onPasswordVisibilityClick = { onEvent(UpdatePasswordUiEvent.OnPasswordVisibilityClick) },
                                 onCredentialChanged = {
-                                    onCredentialChanged()
+
                                 }
                             )
 
                             Button(
                                 onClick = {
-                                    if (isCodeValid == true) onResetPasswordClick()
-                                    else onTryAgainClick()
+                                    if (state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid) onEvent(
+                                        UpdatePasswordUiEvent.OnResetPasswordClick
+                                    )
+                                    else onEvent(UpdatePasswordUiEvent.OnTryAgainClick)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -174,16 +174,18 @@ fun UpdatePasswordScreenContent(
                                     bottomEnd = 10.dp
                                 )
                             ) {
-                                if (isCodeValid == true) Text(text = stringResource(id = R.string.reset_password))
+                                if (state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid) Text(
+                                    text = stringResource(id = R.string.reset_password)
+                                )
                                 else Text(text = stringResource(id = R.string.try_again))
                             }
                         }
                     }
 
-                    if (showOobCodeExpiredDialog == true) {
+                    if (state.showOobCodeExpiredDialog) {
                         Dialog(
                             title = stringResource(id = R.string.reset_code_expired),
-                            onDismiss = { onDismiss() }) {
+                            onDismiss = { onEvent(UpdatePasswordUiEvent.OnDismiss) }) {
                             Column(
                                 modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
@@ -199,7 +201,7 @@ fun UpdatePasswordScreenContent(
                                     fontStyle = FontStyle.Italic
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Button(onClick = { onGetNewResetCodeClick() }) {
+                                Button(onClick = { onEvent(UpdatePasswordUiEvent.OnGetNewResetCodeClick) }) {
                                     Text(text = stringResource(id = R.string.get_code))
                                 }
                             }
@@ -244,7 +246,7 @@ fun UpdatePasswordScreenContent(
                     ) {
 
                         // Loading placeholders
-                        if (isLoading) {
+                        if (state.codeValidationResult?.isLoading == true) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Row(
                                     modifier = Modifier
@@ -271,23 +273,38 @@ fun UpdatePasswordScreenContent(
                             ) {}
                         } else {
                             PasswordFields(
-                                password = password,
-                                confirmPassword = confirmationPassword,
-                                isPasswordEnabled = isCodeValid == true,
-                                isPasswordVisible = isPasswordVisible,
-                                passwordErrors = passwordErrors,
-                                onPasswordValueChange = { onPasswordValueChange(it) },
-                                onConfirmPasswordValueChange = { onConfirmPasswordValueChange(it) },
-                                onPasswordVisibilityClick = { onPasswordVisibilityClick(!isPasswordVisible) },
+                                password = state.password,
+                                confirmPassword = state.confirmationPassword,
+                                isPasswordEnabled = state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid,
+                                isPasswordVisible = state.passwordVisible,
+                                passwordErrors = ((state.credentialValidationResult as? CredentialValidationResult.Invalid)?.passwordError as? PasswordValidationResult.Invalid)?.cause
+                                    ?: emptyList(),
+                                onPasswordValueChange = {
+                                    onEvent(
+                                        UpdatePasswordUiEvent.OnPasswordValueChange(
+                                            it
+                                        )
+                                    )
+                                },
+                                onConfirmPasswordValueChange = {
+                                    onEvent(
+                                        UpdatePasswordUiEvent.OnConfirmPasswordValueChange(
+                                            it
+                                        )
+                                    )
+                                },
+                                onPasswordVisibilityClick = { onEvent(UpdatePasswordUiEvent.OnPasswordVisibilityClick) },
                                 onCredentialChanged = {
-                                    onCredentialChanged()
+
                                 }
                             )
 
                             Button(
                                 onClick = {
-                                    if (isCodeValid == true) onResetPasswordClick()
-                                    else onTryAgainClick()
+                                    if (state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid) onEvent(
+                                        UpdatePasswordUiEvent.OnResetPasswordClick
+                                    )
+                                    else onEvent(UpdatePasswordUiEvent.OnTryAgainClick)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -299,16 +316,18 @@ fun UpdatePasswordScreenContent(
                                     bottomEnd = 10.dp
                                 )
                             ) {
-                                if (isCodeValid == true) Text(text = stringResource(id = R.string.reset_password))
+                                if (state.codeValidationResult?.result is UpdatePasswordViewModel.CodeValidation.Valid) Text(
+                                    text = stringResource(id = R.string.reset_password)
+                                )
                                 else Text(text = stringResource(id = R.string.try_again))
                             }
                         }
                     }
 
-                    if (showOobCodeExpiredDialog == true) {
+                    if (state.showOobCodeExpiredDialog) {
                         Dialog(
                             title = stringResource(id = R.string.reset_code_expired),
-                            onDismiss = { onDismiss() }) {
+                            onDismiss = { onEvent(UpdatePasswordUiEvent.OnDismiss) }) {
                             Column(
                                 modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
@@ -324,7 +343,7 @@ fun UpdatePasswordScreenContent(
                                     fontStyle = FontStyle.Italic
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Button(onClick = { onGetNewResetCodeClick() }) {
+                                Button(onClick = { onEvent(UpdatePasswordUiEvent.OnGetNewResetCodeClick) }) {
                                     Text(text = stringResource(id = R.string.get_code))
                                 }
                             }
@@ -344,49 +363,39 @@ fun UpdatePasswordScreen(
     onPasswordChangedSuccess: () -> Unit,
     onGetNewResetCodeClick: () -> Unit
 ) {
-    val credentialValidationResult by viewModel.credentialValidationResultState.collectAsStateWithLifecycle()
-
-    var password by rememberSaveable {
-        mutableStateOf("")
-    }
-    var confirmPassword by rememberSaveable {
-        mutableStateOf("")
-    }
-    var passwordErrors by rememberSaveable {
-        mutableStateOf(emptyList<PasswordErrorType>())
-    }
-    var isPasswordVisible by rememberSaveable {
-        mutableStateOf(false)
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val snackBarHostState = remember {
         SnackbarHostState()
     }
 
-    var animationStarted by rememberSaveable {
-        mutableStateOf(false)
-    }
-
     val yTextOffset by remember {
-        mutableStateOf(Animatable(if (!animationStarted) -700f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationStarted) -700f else 0f))
     }
 
     val yImageOffset by remember {
-        mutableStateOf(Animatable(if (!animationStarted) 700f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationStarted) 700f else 0f))
     }
 
     val context = LocalContext.current
 
-    LaunchedEffect(key1 = viewModel.resetState) {
-        when (viewModel.resetState) {
+    LaunchedEffect(key1 = uiState.resetState) {
+        when (uiState.resetState) {
             SimpleResult.OnSuccess -> {
-                snackBarHostState.showSnackbar(context.resources.getString(R.string.password_reset_success))
+
+                // Show Toast instead of Snackbar to perform navigation to LoginScreen instantly
+                Toast.makeText(
+                    context,
+                    context.resources.getString(R.string.password_reset_success),
+                    Toast.LENGTH_SHORT
+                ).show()
+
                 viewModel.updateState(null)
                 onPasswordChangedSuccess()
             }
 
             is SimpleResult.OnFailure -> {
-                snackBarHostState.showSnackbar((viewModel.resetState as SimpleResult.OnFailure).exception?.message.toString())
+                snackBarHostState.showSnackbar((uiState.resetState as SimpleResult.OnFailure).exception?.message.toString())
                 viewModel.updateState(null)
             }
 
@@ -396,9 +405,9 @@ fun UpdatePasswordScreen(
         }
     }
 
-    LaunchedEffect(viewModel.codeValidationResultState) {
-        if (viewModel.codeValidationResultState?.isLoading == false) {
-            when (viewModel.codeValidationResultState?.error) {
+    LaunchedEffect(uiState.codeValidationResult) {
+        if (uiState.codeValidationResult?.isLoading == false) {
+            when (uiState.codeValidationResult?.error) {
                 UpdatePasswordViewModel.NetworkErrorType.NetworkUnavailable -> {
                     snackBarHostState.showSnackbar(context.resources.getString(R.string.network_unavailable))
                 }
@@ -414,28 +423,16 @@ fun UpdatePasswordScreen(
         }
     }
 
-    LaunchedEffect(
-        key1 = password,
-        key2 = confirmPassword
-    ) {
-        passwordErrors = when (credentialValidationResult) {
-            is CredentialValidationResult.Invalid -> {
-                when (val passwordError =
-                    (credentialValidationResult as CredentialValidationResult.Invalid).passwordError) {
-                    is PasswordValidationResult.Invalid -> {
-                        passwordError.cause
-                    }
+    LaunchedEffect(key1 = uiState.getNewCode) {
+        if (uiState.getNewCode) onGetNewResetCodeClick()
+    }
 
-                    else -> emptyList()
-                }
-            }
-
-            else -> emptyList()
-        }
+    LaunchedEffect(key1 = uiState.dismissExpiredDialog) {
+        if (uiState.dismissExpiredDialog) (context as? Activity)?.finish()
     }
 
     LaunchedEffect(Unit) {
-        if (!animationStarted) {
+        if (!uiState.animationStarted) {
             coroutineScope {
                 launch {
                     yTextOffset.animateTo(
@@ -456,7 +453,7 @@ fun UpdatePasswordScreen(
                     )
                 }
             }.invokeOnCompletion {
-                animationStarted = true
+                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnAnimationStarted)
 
                 // After animations finish, make API call
                 oobCode?.let {
@@ -468,60 +465,11 @@ fun UpdatePasswordScreen(
 
     UpdatePasswordScreenContent(
         isExpandedScreen = isExpandedScreen,
-        password = password,
-        confirmationPassword = confirmPassword,
+        state = uiState,
         snackBarHostState = snackBarHostState,
-        passwordErrors = passwordErrors,
-        isPasswordVisible = isPasswordVisible,
-        isLoading = viewModel.codeValidationResultState?.isLoading == true,
-        isCodeValid = viewModel.codeValidationResultState?.result is UpdatePasswordViewModel.CodeValidation.Valid
-                && viewModel.codeValidationResultState?.error == null,
-        showOobCodeExpiredDialog = viewModel.codeValidationResultState?.result is UpdatePasswordViewModel.CodeValidation.Invalid,
         yTextOffset = yTextOffset,
         yImageOffset = yImageOffset,
-        onPasswordVisibilityClick = { isPasswordVisible = it },
-        onPasswordValueChange = { password = it },
-        onConfirmPasswordValueChange = { confirmPassword = it },
-        onCredentialChanged = {
-            viewModel.saveCredentialValidationResult(
-                ValidationUtil.areCredentialsValid(
-                    Credentials.Sensitive.PasswordCredential(
-                        password, confirmPassword
-                    )
-                )
-            )
-        },
-        onResetPasswordClick = {
-            if (password.isBlank()) {
-                passwordErrors = listOf(PasswordErrorType.PASSWORD_EMPTY)
-                return@UpdatePasswordScreenContent
-            }
-
-            viewModel.saveCredentialValidationResult(
-                ValidationUtil.areCredentialsValid(
-                    Credentials.Sensitive.PasswordCredential(
-                        password,
-                        confirmPassword
-                    )
-                ).also { validationResult ->
-                    if (validationResult is CredentialValidationResult.Valid) {
-                        oobCode?.let { code ->
-                            viewModel.resetPassword(code, password)
-                        }
-                    }
-                }
-            )
-        },
-        onTryAgainClick = {
-            oobCode?.let {
-                viewModel.verifyOob(oobCode = it)
-            }
-        },
-        onGetNewResetCodeClick = {
-            viewModel.resetCodeValidationState()
-            onGetNewResetCodeClick()
-        },
-        onDismiss = { (context as? Activity)?.finish() }
+        onEvent = { viewModel.uiEventHandler(it) }
     )
 }
 
@@ -530,29 +478,16 @@ fun UpdatePasswordScreen(
 fun UpdatePasswordScreenContentPreview() {
     UpdatePasswordScreenContent(
         isExpandedScreen = false,
-        password = "",
-        confirmationPassword = "",
+        state = UpdatePasswordState(),
         snackBarHostState = remember {
             SnackbarHostState()
         },
-        passwordErrors = emptyList(),
-        isPasswordVisible = false,
-        isLoading = false,
-        isCodeValid = true,
-        showOobCodeExpiredDialog = false,
         yTextOffset = remember {
             Animatable(0f)
         },
         yImageOffset = remember {
             Animatable(0f)
         },
-        onPasswordVisibilityClick = {},
-        onPasswordValueChange = {},
-        onConfirmPasswordValueChange = {},
-        onCredentialChanged = {},
-        onResetPasswordClick = {},
-        onTryAgainClick = {},
-        onGetNewResetCodeClick = {},
-        onDismiss = {}
+        onEvent = {}
     )
 }

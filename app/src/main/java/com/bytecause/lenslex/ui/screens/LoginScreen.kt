@@ -6,15 +6,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -26,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -54,22 +49,17 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.models.SignInResult
 import com.bytecause.lenslex.models.uistate.LoginState
 import com.bytecause.lenslex.navigation.NavigationItem
-import com.bytecause.lenslex.ui.components.AnnotatedClickableText
 import com.bytecause.lenslex.ui.components.Divider
-import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.ImageResource
-import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.LoginOptionRow
-import com.bytecause.lenslex.ui.components.PasswordField
-import com.bytecause.lenslex.ui.components.PasswordFields
+import com.bytecause.lenslex.ui.components.SignIn
+import com.bytecause.lenslex.ui.components.SignUp
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
-import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
-import com.bytecause.lenslex.util.PasswordValidationResult
 import com.bytecause.lenslex.util.shadowCustom
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -272,29 +262,29 @@ fun LoginScreen(
 
     // TODO("Uncomment after testing")
     // Prevention from multiple Credential Manager calls.
-   /* if (!credentialManagerShown) {
-        LaunchedEffect(Unit) {
-            try {
-                val passwordCredential =
-                    getCredential(credentialManager = credentialManager, context = context)
-                        ?: return@LaunchedEffect
+    /* if (!credentialManagerShown) {
+         LaunchedEffect(Unit) {
+             try {
+                 val passwordCredential =
+                     getCredential(credentialManager = credentialManager, context = context)
+                         ?: return@LaunchedEffect
 
-                viewModel.signInUsingEmailAndPassword(
-                    Credentials.Sensitive.SignInCredentials(
-                        email = passwordCredential.id,
-                        password = passwordCredential.password
-                    )
-                ).firstOrNull()?.let {
-                    viewModel.onSignInResult(it)
-                }
+                 viewModel.signInUsingEmailAndPassword(
+                     Credentials.Sensitive.SignInCredentials(
+                         email = passwordCredential.id,
+                         password = passwordCredential.password
+                     )
+                 ).firstOrNull()?.let {
+                     viewModel.onSignInResult(it)
+                 }
 
-            } catch (e: Exception) {
-                Log.e("CredentialTest", "Error getting credential", e)
-            }
+             } catch (e: Exception) {
+                 Log.e("CredentialTest", "Error getting credential", e)
+             }
 
-            credentialManagerShown = true
-        }
-    }*/
+             credentialManagerShown = true
+         }
+     }*/
 
     LaunchedEffect(key1 = signUiState) {
         when {
@@ -309,7 +299,6 @@ fun LoginScreen(
             !signUiState.signInError.isNullOrEmpty() -> {
                 keyboardController?.hide()
                 coroutineScope.launch {
-                    //isLoading = false
                     signUiState.signInError?.let {
                         snackBarHostState.showSnackbar(it)
                         viewModel.onSignInResult(SignInResult(null, null))
@@ -372,146 +361,7 @@ fun LoginScreen(
                 }
             }
         }
-        /* onCredentialChanged = { credential ->
-             viewModel.saveCredentialValidationResult(
-                 areCredentialsValid(
-                     credential
-                 )
-             )
-         },
-         onSignInUsingGoogle = {
-             viewModel.signInUsingGoogleCredential(context)
-         },
-         onSignInAnonymously = {
-             coroutineScope.launch {
-                 viewModel.signInAnonymously()
-             }
-         },
-         onCredentialsEntered = { credentials ->
-             keyboardController?.hide()
-
-             when (credentials) {
-                 is Credentials.Sensitive.SignInCredentials -> {
-                     viewModel.saveCredentialValidationResult(areCredentialsValid(credentials).also { validationResult ->
-                         if (validationResult is CredentialValidationResult.Valid) {
-                             isLoading = true
-
-                             coroutineScope.launch {
-                                 viewModel.signInViaEmailAndPasswordIfValid(
-                                     context,
-                                     Credentials.Sensitive.SignInCredentials(
-                                         email = credentials.email,
-                                         password = credentials.password
-                                     )
-                                 )
-                             }
-                         }
-                     }
-                     )
-                 }
-
-                 is Credentials.Sensitive.SignUpCredentials -> {
-                     viewModel.saveCredentialValidationResult(
-                         areCredentialsValid(credentials).also { validationResult ->
-                             if (validationResult is CredentialValidationResult.Valid) {
-                                 isLoading = true
-
-                                 coroutineScope.launch {
-                                     viewModel.signUpViaEmailAndPassword(
-                                         context,
-                                         credentials
-                                     )
-                                 }
-                             } else if (((validationResult as? CredentialValidationResult.Invalid)?.passwordError
-                                         as? PasswordValidationResult.Invalid)?.cause?.contains(
-                                     PasswordErrorType.PASSWORD_EMPTY
-                                 ) == true
-                             ) {
-                                 coroutineScope.launch {
-                                     snackBarHostState.showSnackbar(
-                                         message = context.resources.getString(
-                                             R.string.fill_all_fields
-                                         )
-                                     )
-                                 }
-                             }
-                         }
-                     )
-                 }
-
-                 else -> {
-
-                 }
-             }
-         },
-         onForgetPasswordClick = {
-             onNavigate(NavigationItem.EmailPasswordReset)
-         },
-         onSignInAnnotatedStringClick = {
-             signIn = !signIn
-         }*/
     )
-}
-
-@Composable
-fun SignIn(
-    modifier: Modifier = Modifier,
-    state: LoginState,
-    onEvent: (LoginUiEvent) -> Unit
-) {
-    Column(modifier = modifier) {
-        EmailField(
-            emailValue = state.email,
-            isEmailError = (state.credentialValidationResult as? CredentialValidationResult.Invalid)?.isEmailValid == false,
-            onEmailValueChanged = {
-                onEvent(LoginUiEvent.OnEmailValueChange(it))
-            }
-        )
-
-        PasswordField(
-            password = state.password,
-            passwordErrors = ((state.credentialValidationResult as? CredentialValidationResult.Invalid)?.passwordError as? PasswordValidationResult.Invalid)?.cause
-                ?: emptyList(),
-            isPasswordEnabled = !(state.email.isBlank() || (state.credentialValidationResult as? CredentialValidationResult.Invalid)?.isEmailValid == false),
-            isPasswordVisible = state.passwordVisible,
-            onPasswordVisibilityClick = { onEvent(LoginUiEvent.OnPasswordsVisibilityChange) },
-            onPasswordValueChange = {
-                onEvent(LoginUiEvent.OnPasswordValueChange(it))
-            },
-            onCredentialChanged = {
-
-            }
-        )
-
-        Text(
-            text = stringResource(id = R.string.forget_password),
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(bottom = 10.dp)
-                .clickable { onEvent(LoginUiEvent.OnForgetPasswordClick) }
-        )
-
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 10.dp),
-            onClick = { onEvent(LoginUiEvent.OnCredentialsEntered) }
-        ) {
-            if (state.isLoading) IndeterminateCircularIndicator(isShowed = true)
-            else Text(text = stringResource(id = R.string.sign_in))
-        }
-
-        AnnotatedClickableText(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            normalText = R.string.sign_prompt,
-            annotatedText = R.string.sign_up,
-            annotatedTextColor = MaterialTheme.colorScheme.error,
-            onAnnotatedTextClick = {
-                onEvent(LoginUiEvent.OnAnnotatedStringClick)
-            }
-        )
-    }
 }
 
 private suspend fun saveCredential(
@@ -564,60 +414,6 @@ private suspend fun getCredential(
 }
 
 @Composable
-fun SignUp(
-    modifier: Modifier = Modifier,
-    state: LoginState,
-    onEvent: (LoginUiEvent) -> Unit
-) {
-    Column(
-        modifier = modifier
-            .padding(start = 10.dp, end = 10.dp)
-    ) {
-
-        EmailField(
-            emailValue = state.email,
-            isEmailError = (state.credentialValidationResult as? CredentialValidationResult.Invalid)?.isEmailValid == false,
-            onEmailValueChanged = {
-                onEvent(LoginUiEvent.OnEmailValueChange(it))
-            }
-        )
-
-        PasswordFields(
-            password = state.password,
-            confirmPassword = state.confirmPassword,
-            isPasswordEnabled = !(state.email.isBlank() || (state.credentialValidationResult as? CredentialValidationResult.Invalid)?.isEmailValid == false),
-            isPasswordVisible = state.passwordVisible,
-            passwordErrors = ((state.credentialValidationResult as? CredentialValidationResult.Invalid)?.passwordError as? PasswordValidationResult.Invalid)?.cause
-                ?: emptyList(),
-            onPasswordValueChange = { onEvent(LoginUiEvent.OnPasswordValueChange(it)) },
-            onConfirmPasswordValueChange = { onEvent(LoginUiEvent.OnConfirmPasswordChange(it)) },
-            onPasswordVisibilityClick = { onEvent(LoginUiEvent.OnPasswordsVisibilityChange) },
-            onCredentialChanged = {
-
-            }
-        )
-
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 15.dp),
-            onClick = { onEvent(LoginUiEvent.OnCredentialsEntered) }
-        ) {
-            if (state.isLoading) IndeterminateCircularIndicator(isShowed = true)
-            else Text(text = stringResource(id = R.string.sign_up))
-        }
-
-        AnnotatedClickableText(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            normalText = R.string.sign_prompt,
-            annotatedText = R.string.sign_in,
-            annotatedTextColor = MaterialTheme.colorScheme.error,
-            onAnnotatedTextClick = { onEvent(LoginUiEvent.OnAnnotatedStringClick) }
-        )
-    }
-}
-
-@Composable
 @Preview
 fun LoginScreenPreview() {
     LoginScreenContent(
@@ -630,24 +426,6 @@ fun LoginScreenPreview() {
         xText2offset = remember {
             Animatable(0f)
         },
-        onEvent = {}
-    )
-}
-
-@Composable
-@Preview
-fun StatefulSignUpCompPreview() {
-    SignUp(
-        state = LoginState(),
-        onEvent = {}
-    )
-}
-
-@Composable
-@Preview
-fun StatefulSignInCompPreview() {
-    SignIn(
-        state = LoginState(),
         onEvent = {}
     )
 }

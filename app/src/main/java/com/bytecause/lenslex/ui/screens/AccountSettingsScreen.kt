@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,8 +22,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -52,17 +55,24 @@ import com.bytecause.lenslex.models.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.components.AccountInfoItem
 import com.bytecause.lenslex.ui.components.AccountInfoType
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
-import com.bytecause.lenslex.ui.components.CredentialType
-import com.bytecause.lenslex.ui.components.CredentialsDialog
 import com.bytecause.lenslex.ui.components.Divider
+import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.LinkAccountItem
+import com.bytecause.lenslex.ui.components.PasswordField
+import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
+import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
+import com.bytecause.lenslex.ui.interfaces.CredentialType
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
+import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
+import com.bytecause.lenslex.util.PasswordErrorType
+import com.bytecause.lenslex.util.PasswordValidationResult
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -80,14 +90,6 @@ fun AccountSettingsScreenContent(
     snackBarHostState: SnackbarHostState,
     onEvent: (AccountSettingsUiEvent) -> Unit,
     onShowSnackBar: (String) -> Unit,
-    /*onLinkButtonClick: (Provider) -> Unit,
-    onDialogCredentialChanged: (Credentials.Sensitive) -> Unit,
-    onAccountInfoChange: (CredentialType) -> Unit,
-    onEnteredCredential: (Credentials) -> Unit,
-    onCredentialsDialogDismiss: (CredentialType) -> Unit,
-    onDeleteAccountButtonClick: () -> Unit,
-    onDismissConfirmationDialog: () -> Unit,
-    onConfirmConfirmationDialog: () -> Unit,*/
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -510,7 +512,8 @@ fun AccountSettingsScreenContent(
                 CredentialsDialog(
                     credentialValidationResult = state.credentialValidationResult,
                     credentialType = it,
-                    onDismiss = { onEvent(AccountSettingsUiEvent.OnCredentialsDialogDismiss(it)) },
+                    onEvent = { onEvent(it) }
+                    /*onDismiss = { onEvent(AccountSettingsUiEvent.OnCredentialsDialogDismiss(it)) },
                     onEnteredCredential = { credential ->
                         onEvent(
                             AccountSettingsUiEvent.OnEnteredCredential(
@@ -524,7 +527,7 @@ fun AccountSettingsScreenContent(
                                 credential
                             )
                         )
-                    }
+                    }*/
                 )
             }
 
@@ -551,7 +554,6 @@ fun AccountSettingsScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val launchGoogleIntent by viewModel.launchGoogleIntent.collectAsStateWithLifecycle()
-    val credentialChangeState by viewModel.credentialChangeState.collectAsStateWithLifecycle()
 
     var isGoogleIntentLaunched by rememberSaveable {
         mutableStateOf(false)
@@ -587,12 +589,12 @@ fun AccountSettingsScreen(
         } else isGoogleIntentLaunched = true
     }
 
-    LaunchedEffect(credentialChangeState) {
-        when (credentialChangeState) {
+    LaunchedEffect(uiState.credentialChangeResult) {
+        when (uiState.credentialChangeResult) {
             is CredentialChangeResult.Success -> {
                 coroutineScope.launch {
                     val messageId =
-                        (credentialChangeState as CredentialChangeResult.Success).message
+                        (uiState.credentialChangeResult as CredentialChangeResult.Success).message
                     snackBarHostState.showSnackbar(
                         context.getString(messageId)
                     )
@@ -613,10 +615,8 @@ fun AccountSettingsScreen(
                             val authClient = FirebaseAuthClient()
                             val authCredential = authClient.getGoogleCredential(context)
 
-                            viewModel.reauthenticateWithGoogle(
-                                authCredential,
-                                credentialChangeState as CredentialChangeResult.Failure.ReauthorizationRequired
-                            )
+                            viewModel.reauthenticateWithGoogle(authCredential)
+
                             isGoogleIntentLaunched = false
                         } catch (e: Exception) {
                             isGoogleIntentLaunched = false
@@ -637,7 +637,7 @@ fun AccountSettingsScreen(
 
             is CredentialChangeResult.Failure.Error -> {
                 val castedError =
-                    (credentialChangeState as CredentialChangeResult.Failure.Error).exception
+                    (uiState.credentialChangeResult as CredentialChangeResult.Failure.Error).exception
 
                 when (castedError) {
                     is FirebaseAuthInvalidUserException -> {
@@ -700,106 +700,6 @@ fun AccountSettingsScreen(
         onEvent = {
             viewModel.uiEventHandler(it)
         },
-        /*onLinkButtonClick = { provider ->
-            when (provider) {
-                is Provider.Email -> {
-                    if (linkedProviders?.contains(Provider.Email) == true) {
-                        viewModel.unlinkProvider(Provider.Email)
-                    } else viewModel.showCredentialUpdateDialog(CredentialType.AccountLink)
-                }
-
-                is Provider.Google -> {
-                    if (linkedProviders?.contains(Provider.Google) == true) {
-                        viewModel.unlinkProvider(Provider.Google)
-                    } else {
-                        viewModel.linkGoogleProvider(context)
-                    }
-                }
-            }
-        },
-        onDialogCredentialChanged = { credential ->
-            viewModel.saveCredentialValidationResult(
-                ValidationUtil.areCredentialsValid(
-                    credential
-                )
-            )
-        },
-        onAccountInfoChange = {
-            when (it) {
-                is CredentialType.Username -> {
-                    viewModel.showCredentialUpdateDialog(CredentialType.Username)
-                }
-
-                is CredentialType.Email -> {
-                    viewModel.showCredentialUpdateDialog(CredentialType.Email)
-                }
-
-                is CredentialType.Password -> {
-                    viewModel.showCredentialUpdateDialog(CredentialType.Password)
-                }
-
-                else -> return@AccountSettingsScreenContent
-            }
-        },
-        onEnteredCredential = { credential ->
-            showCredentialUpdateDialog?.let {
-                when (it) {
-                    is CredentialType.Reauthorization -> {
-                        if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            val credentials = credential as Credentials.Sensitive.SignInCredentials
-                            viewModel.reauthenticateUsingEmailAndPassword(credentials)
-                        }
-                    }
-
-                    is CredentialType.AccountLink -> {
-                        if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.linkEmailProvider(
-                                credential as Credentials.Sensitive
-                            )
-                        }
-                    }
-
-                    is CredentialType.Username -> {
-                        (credential as Credentials.Insensitive.UsernameUpdate)
-                            .takeIf { user -> user.username.isNotBlank() }
-                            ?.let { user ->
-                                viewModel.updateUserName(user.username)
-                            }
-                        viewModel.showCredentialUpdateDialog(null)
-                    }
-
-                    is CredentialType.Email -> {
-                        if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updateEmail((credential as Credentials.Sensitive.EmailCredential).email)
-                        }
-                    }
-
-                    is CredentialType.Password -> {
-                        if (credentialValidationResult is CredentialValidationResult.Valid) {
-                            viewModel.updatePassword((credential as Credentials.Sensitive.PasswordCredential).password)
-                        }
-                    }
-                }
-
-                if (credentialValidationResult is CredentialValidationResult.Valid) {
-                    viewModel.showCredentialUpdateDialog(null)
-                }
-            }
-        },
-        onCredentialsDialogDismiss = {
-            if (it is CredentialType.Reauthorization) viewModel.resetCredentialChangeState()
-            viewModel.showCredentialUpdateDialog(null)
-        },
-        onDeleteAccountButtonClick = {
-            showConfirmationDialog = true
-        },
-        onDismissConfirmationDialog = {
-            showConfirmationDialog = false
-        },
-        onConfirmConfirmationDialog = {
-            showConfirmationDialog = false
-            viewModel.deleteAccount()
-        },*/
         onNavigateBack = { onNavigateBack() }
     )
 }
@@ -822,5 +722,328 @@ fun AccountSettingsScreenPreview() {
         onShowSnackBar = {},
         onEvent = {},
         onNavigateBack = {}
+    )
+}
+
+@Composable
+fun CredentialsDialog(
+    credentialValidationResult: CredentialValidationResult?,
+    modifier: Modifier = Modifier,
+    credentialType: CredentialType,
+    onEvent: (AccountSettingsUiEvent) -> Unit
+    /* onDismiss: () -> Unit,
+     onEnteredCredential: (Credentials) -> Unit,
+     onCredentialChanged: (Credentials.Sensitive) -> Unit*/
+) {
+
+    var username by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var email by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var isEmailError by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var password by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var confirmPassword by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var isPasswordVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var isPasswordError by rememberSaveable {
+        mutableStateOf<List<PasswordErrorType>>(emptyList())
+    }
+
+    LaunchedEffect(key1 = credentialValidationResult) {
+        isEmailError = when (credentialValidationResult) {
+            is CredentialValidationResult.Invalid -> {
+                credentialValidationResult.isEmailValid != true
+            }
+
+            else -> false
+        }
+    }
+
+    LaunchedEffect(
+        key1 = password,
+        key2 = confirmPassword
+    ) {
+        when (credentialValidationResult) {
+            is CredentialValidationResult.Invalid -> {
+                isPasswordError =
+                    when (val passwordError = credentialValidationResult.passwordError) {
+                        is PasswordValidationResult.Invalid -> {
+                            passwordError.cause
+                        }
+
+                        else -> emptyList()
+                    }
+            }
+
+            else -> {
+                isPasswordError = emptyList()
+            }
+        }
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = {
+        onEvent(
+            AccountSettingsUiEvent.OnCredentialsDialogDismiss(
+                credentialType
+            )
+        )
+    }) {
+        Card(
+            modifier = modifier,
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+
+
+                when (credentialType) {
+                    is CredentialType.Reauthorization -> {
+                        Text(text = stringResource(id = R.string.reauthorization))
+
+                        EmailField(
+                            emailValue = email,
+                            isEmailError = isEmailError,
+                            onEmailValueChanged = {
+                                email = it
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.SignInCredentials(
+                                            email,
+                                            password
+                                        )
+                                    )
+                                )
+                            }
+                        )
+
+                        PasswordField(
+                            password = password,
+                            passwordErrors = isPasswordError,
+                            isPasswordEnabled = !isEmailError,
+                            isPasswordVisible = isPasswordVisible,
+                            onPasswordVisibilityClick = { isPasswordVisible = it },
+                            onPasswordValueChange = {
+                                password = it
+                            },
+                            onCredentialChanged = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.SignInCredentials(
+                                            email,
+                                            password
+                                        )
+                                    )
+                                )
+                            }
+                        )
+
+                    }
+
+                    is CredentialType.AccountLink -> {
+                        EmailField(
+                            emailValue = email,
+                            isEmailError = isEmailError,
+                            onEmailValueChanged = {
+                                email = it
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.EmailCredential(
+                                            it
+                                        )
+                                    )
+                                )
+                            })
+
+                        PasswordFields(
+                            password = password,
+                            confirmPassword = confirmPassword,
+                            isPasswordEnabled = !(email.isBlank() || isEmailError),
+                            isPasswordVisible = isPasswordVisible,
+                            passwordErrors = isPasswordError,
+                            onPasswordValueChange = { password = it },
+                            onConfirmPasswordValueChange = { confirmPassword = it },
+                            onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
+                            onCredentialChanged = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.PasswordCredential(
+                                            password, confirmPassword
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    is CredentialType.Username -> {
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_perm_identity_24),
+                                    contentDescription = "Enter new username"
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = stringResource(id = R.string.username)
+                                )
+                            })
+                    }
+
+                    is CredentialType.Email -> {
+                        EmailField(
+                            emailValue = email,
+                            isEmailError = isEmailError,
+                            onEmailValueChanged = {
+                                email = it
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.EmailCredential(
+                                            it
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    is CredentialType.Password -> {
+                        PasswordFields(
+                            password = password,
+                            confirmPassword = confirmPassword,
+                            isPasswordEnabled = true,
+                            isPasswordVisible = isPasswordVisible,
+                            passwordErrors = isPasswordError,
+                            onPasswordValueChange = { password = it },
+                            onConfirmPasswordValueChange = { confirmPassword = it },
+                            onPasswordVisibilityClick = { isPasswordVisible = !isPasswordVisible },
+                            onCredentialChanged = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
+                                        Credentials.Sensitive.PasswordCredential(
+                                            password, confirmPassword
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
+
+                OutlinedButton(onClick = {
+                    onEvent(
+                        AccountSettingsUiEvent.OnEnteredCredential(
+                            when (credentialType) {
+                                is CredentialType.Reauthorization -> {
+                                    Credentials.Sensitive.SignInCredentials(email, password)
+                                }
+
+                                is CredentialType.AccountLink -> {
+                                    Credentials.Sensitive.SignInCredentials(email, password)
+                                }
+
+                                is CredentialType.Username -> {
+                                    Credentials.Insensitive.UsernameUpdate(username)
+                                }
+
+                                is CredentialType.Email -> {
+                                    if (email.isBlank()) {
+                                        isEmailError = true
+                                        return@OutlinedButton
+                                    }
+                                    Credentials.Sensitive.EmailCredential(email)
+                                }
+
+                                is CredentialType.Password -> {
+                                    if (password.isBlank()) {
+                                        isPasswordError = listOf(PasswordErrorType.PASSWORD_EMPTY)
+                                        return@OutlinedButton
+                                    }
+                                    Credentials.Sensitive.PasswordCredential(
+                                        password,
+                                        confirmPassword
+                                    )
+                                }
+                            }
+                        )
+                    )
+                }) {
+                    Text(text = stringResource(id = R.string.done))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsEmailDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Email,
+        onEvent = {}
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsPasswordDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Password,
+        onEvent = {}
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsUsernameDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Username,
+        onEvent = {}
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsReauthorizationDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.Reauthorization,
+        onEvent = {}
+    )
+}
+
+@Composable
+@Preview(showBackground = true)
+fun CredentialsAccountLinkDialogPreview() {
+    CredentialsDialog(
+        credentialValidationResult = null,
+        credentialType = CredentialType.AccountLink,
+        onEvent = {}
     )
 }

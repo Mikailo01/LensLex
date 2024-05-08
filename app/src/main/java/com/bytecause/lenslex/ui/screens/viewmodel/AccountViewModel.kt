@@ -2,7 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
-import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
 import com.bytecause.lenslex.models.UserData
 import com.bytecause.lenslex.models.uistate.AccountState
@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class AccountViewModel(
-    private val authRepository: AuthRepository,
+    private val auth: Authenticator,
     private val firebaseCloudRepository: FirebaseCloudRepositoryImpl
 ) : ViewModel() {
 
-    private val firebaseAuth = authRepository.getFirebaseAuth
+    private val firebaseAuth = auth.getAuth
 
     private val _uiState = MutableStateFlow(AccountState(userData = firebaseAuth.currentUser?.run {
         UserData(
@@ -131,7 +131,7 @@ class AccountViewModel(
     }
 
     private fun changeFirebaseLanguageCode(langCode: String) =
-        authRepository.getFirebaseAuth.setLanguageCode(langCode)
+        auth.getAuth.setLanguageCode(langCode)
 
     init {
         firebaseAuth.addAuthStateListener(authStateListener)
@@ -142,7 +142,7 @@ class AccountViewModel(
             .setDisplayName(name)
             .build()
 
-        authRepository.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
+        auth.getAuth.currentUser?.updateProfile(changeRequest)
     }
 
     private fun updateProfilePicture(uri: Uri) {
@@ -150,8 +150,8 @@ class AccountViewModel(
             .setPhotoUri(uri)
             .build()
 
-        authRepository.getFirebaseAuth.currentUser?.updateProfile(changeRequest)
+        auth.getAuth.currentUser?.updateProfile(changeRequest)
     }
 
-    private fun signOut() = authRepository.signOut()
+    private fun signOut() = auth.signOut()
 }

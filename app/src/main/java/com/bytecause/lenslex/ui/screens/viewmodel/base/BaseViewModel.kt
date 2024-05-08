@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel.base
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.mlkit.TranslationModelManager
@@ -8,9 +9,11 @@ import com.bytecause.lenslex.models.SupportedLanguage
 import com.bytecause.lenslex.util.capital
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import java.util.Locale
 
 abstract class BaseViewModel(

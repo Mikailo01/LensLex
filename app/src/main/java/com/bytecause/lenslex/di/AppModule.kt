@@ -5,13 +5,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
-import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.local.room.AppDatabase
 import com.bytecause.lenslex.data.local.room.WordDao
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
+import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
-import com.bytecause.lenslex.data.repository.AuthRepository
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
@@ -85,10 +84,6 @@ val appModule = module {
         VerifyOobRepository(get(), Dispatchers.IO)
     }
 
-    single<AuthRepository> {
-        AuthRepository(get<FirebaseAuthClient>(), Dispatchers.IO)
-    }
-
     single<FirebaseCloudRepositoryImpl> {
         FirebaseCloudRepositoryImpl(get())
     }
@@ -100,20 +95,20 @@ val appModule = module {
             wordsDatabaseRepository = get(),
             fireStore = get(),
             supportedLanguagesRepository = get(),
-            auth = get()
+            auth = get<FirebaseAuthClient>()
         )
     }
 
     viewModel {
-        UpdatePasswordViewModel(get(), get())
+        UpdatePasswordViewModel(get<FirebaseAuthClient>(), get())
     }
 
     viewModel {
-        LoginViewModel(get(), get())
+        LoginViewModel(get<FirebaseAuthClient>())
     }
 
     viewModel {
-        SendEmailResetViewModel(get())
+        SendEmailResetViewModel(get<FirebaseAuthClient>())
     }
 
     viewModel {
@@ -121,20 +116,20 @@ val appModule = module {
     }
 
     viewModel {
-        AccountViewModel(get(), get())
+        AccountViewModel(get<FirebaseAuthClient>(), get())
     }
 
     viewModel {
         AddViewModel(
             wordsDatabaseRepository = get(),
             firebase = get(),
-            auth = get(),
+            auth = get<FirebaseAuthClient>(),
             userPrefsRepositoryImpl = get(),
             supportedLanguagesRepository = get()
         )
     }
 
     viewModel {
-        AccountSettingsViewModel(get(), get())
+        AccountSettingsViewModel(get<FirebaseAuthClient>(), get())
     }
 }

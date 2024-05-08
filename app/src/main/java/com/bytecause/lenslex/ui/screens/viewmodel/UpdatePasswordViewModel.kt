@@ -1,16 +1,22 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.repository.AuthRepository
+import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.VerifyOobRepository
+import com.bytecause.lenslex.models.uistate.UpdatePasswordState
+import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
+import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.NetworkUtil
+import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,37 +24,102 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UpdatePasswordViewModel(
-    private val auth: AuthRepository,
+    private val auth: Authenticator,
     private val verifyOobRepository: VerifyOobRepository
 ) : ViewModel() {
 
-    var resetState by mutableStateOf<SimpleResult?>(null)
-        private set
+    private val _uiState = MutableStateFlow(UpdatePasswordState())
+    val uiState = _uiState.asStateFlow()
 
-    var codeValidationResultState by mutableStateOf<CodeValidationResult?>(CodeValidationResult(isLoading = true))
-        private set
+    /*var codeValidationResultState by mutableStateOf<CodeValidationResult?>(
+        CodeValidationResult(
+            isLoading = true
+        )
+    )
+        private set*/
 
-    private val _credentialValidationResultState =
-        MutableStateFlow<CredentialValidationResult?>(null)
-    val credentialValidationResultState: StateFlow<CredentialValidationResult?> =
-        _credentialValidationResultState.asStateFlow()
+    fun uiEventHandler(event: UpdatePasswordUiEvent) {
+        when (event) {
+            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> {
+                _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
+            }
 
-    fun resetCodeValidationState() {
-        codeValidationResultState = null
-    }
+            is UpdatePasswordUiEvent.OnPasswordValueChange -> {
+                _uiState.update {
+                    it.copy(
+                        password = event.password,
+                        credentialValidationResult = ValidationUtil.areCredentialsValid(
+                            Credentials.Sensitive.PasswordCredential(
+                                password = event.password,
+                                confirmPassword = _uiState.value.confirmationPassword
+                            )
+                        )
+                    )
+                }
+            }
 
-    fun saveCredentialValidationResult(result: CredentialValidationResult) {
-        _credentialValidationResultState.update {
-            result
+            is UpdatePasswordUiEvent.OnConfirmPasswordValueChange -> {
+                _uiState.update {
+                    it.copy(
+                        confirmationPassword = event.confirmPassword,
+                        credentialValidationResult = ValidationUtil.areCredentialsValid(
+                            Credentials.Sensitive.PasswordCredential(
+                                password = _uiState.value.password,
+                                confirmPassword = event.confirmPassword
+                            )
+                        )
+                    )
+                }
+            }
+
+            UpdatePasswordUiEvent.OnResetPasswordClick -> {
+                ValidationUtil.areCredentialsValid(
+                    Credentials.Sensitive.PasswordCredential(
+                        password = _uiState.value.password,
+                        confirmPassword = _uiState.value.confirmationPassword
+                    )
+                ).let { validationResult ->
+
+                    _uiState.update { it.copy(credentialValidationResult = validationResult) }
+
+                    if (validationResult is CredentialValidationResult.Valid) {
+                        _uiState.value.oobCode?.let { code ->
+                            resetPassword(code, _uiState.value.password)
+                        }
+                    }
+                }
+            }
+
+            UpdatePasswordUiEvent.OnAnimationStarted -> {
+                _uiState.update { it.copy(animationStarted = true) }
+            }
+
+            UpdatePasswordUiEvent.OnTryAgainClick -> {
+                _uiState.value.oobCode?.let { code ->
+                    verifyOob(code)
+                }
+            }
+
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> {
+                _uiState.update { it.copy(showOobCodeExpiredDialog = false, getNewCode = true) }
+            }
+
+            UpdatePasswordUiEvent.OnDismiss -> {
+                _uiState.update { it.copy(dismissExpiredDialog = true) }
+            }
         }
     }
 
-    fun updateState(state: SimpleResult?) {
-        resetState = state
+    fun resetCodeValidationState() {
+        _uiState.update { it.copy(codeValidationResult = null) }
     }
 
-    fun resetPassword(oobCode: String, password: String) {
-        auth.getFirebaseAuth.confirmPasswordReset(oobCode, password)
+    fun updateState(state: SimpleResult?) {
+        _uiState.update { it.copy(resetState = state) }
+    }
+
+    private fun resetPassword(oobCode: String, password: String) {
+        auth.getAuth.confirmPasswordReset(oobCode, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateState(SimpleResult.OnSuccess)
@@ -60,27 +131,46 @@ class UpdatePasswordViewModel(
 
     fun verifyOob(oobCode: String) {
         viewModelScope.launch {
-            codeValidationResultState = codeValidationResultState?.copy(isLoading = true)
+            _uiState.update { it.copy(oobCode = oobCode) }
             when (val result = verifyOobRepository.verifyOob(oobCode)) {
                 is ApiResult.Success -> {
-                    codeValidationResultState = when (result.data) {
+                    when (result.data) {
                         true -> {
-                            CodeValidationResult(isLoading = false, result = CodeValidation.Valid)
+                            _uiState.update {
+                                it.copy(
+                                    codeValidationResult = CodeValidationResult(
+                                        isLoading = false,
+                                        result = CodeValidation.Valid
+                                    )
+                                )
+                            }
                         }
 
                         else -> {
-                            CodeValidationResult(isLoading = false, result = CodeValidation.Invalid)
+                            _uiState.update {
+                                it.copy(
+                                    showOobCodeExpiredDialog = true,
+                                    codeValidationResult = CodeValidationResult(
+                                        isLoading = false,
+                                        result = CodeValidation.Invalid
+                                    )
+                                )
+                            }
                         }
                     }
                 }
 
                 is ApiResult.Failure -> {
                     result.exception?.let {
-                        codeValidationResultState = CodeValidationResult(
-                            isLoading = false,
-                            error = if (!NetworkUtil.isOnline()) NetworkErrorType.NetworkUnavailable
-                            else NetworkErrorType.ServiceUnavailable
-                        )
+                        _uiState.update {
+                            it.copy(
+                                codeValidationResult = CodeValidationResult(
+                                    isLoading = false,
+                                    error = if (!NetworkUtil.isOnline()) NetworkErrorType.NetworkUnavailable
+                                    else NetworkErrorType.ServiceUnavailable
+                                )
+                            )
+                        }
                     }
                 }
             }
