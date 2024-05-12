@@ -3,9 +3,19 @@ package com.bytecause.lenslex.util
 import android.content.Context
 import org.json.JSONObject
 import java.io.IOException
+import java.security.MessageDigest
+import java.util.UUID
 
 
 object Util {
+
+    fun generateNonce(): String {
+        val rawNonce = UUID.randomUUID().toString()
+        val bytes = rawNonce.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
 
     fun readJsonFromAssets(context: Context, fileName: String): String? {
         return try {

@@ -1,18 +1,29 @@
 package com.bytecause.lenslex.ui.events
 
 import android.net.Uri
+import com.bytecause.lenslex.navigation.NavigationItem
 
+// I defined Direct and NonDirect sealed interfaces to get rid of else statement in when expressions and make
+// it clear, where should be each event be handled (Direct = directly inside composable, NonDirect = inside viewmodel)
 sealed interface AccountUiEvent {
-    data class OnUpdateName(val value: String): AccountUiEvent
-    data class OnUpdateProfilePicture(val value: String): AccountUiEvent
-    data class OnChangeFirebaseLanguage(val value: String): AccountUiEvent
-    data class OnShowConfirmationDialog(val value: Boolean): AccountUiEvent
-    data class OnShowLanguageDialog(val value: Boolean): AccountUiEvent
-    data class OnShowBottomSheet(val value: Boolean): AccountUiEvent
-    data class OnShowUrlDialog(val value: Boolean): AccountUiEvent
-    data class OnNameTextFieldValueChange(val value: String): AccountUiEvent
-    data class OnUrlTextFieldValueChange(val value: String): AccountUiEvent
-    data class OnSaveUserProfilePicture(val value: Uri): AccountUiEvent
-    data object OnEditChange: AccountUiEvent
-    data object OnSignOut: AccountUiEvent
+
+    sealed interface Direct : AccountUiEvent
+    sealed interface NonDirect : AccountUiEvent
+
+    data class OnNavigate(val destination: NavigationItem): Direct
+    data object OnBackButtonClick: Direct
+    data object OnSinglePicturePickerLaunch: Direct
+
+    data class OnUpdateName(val value: String): NonDirect
+    data class OnUpdateProfilePicture(val value: String): NonDirect
+    data class OnChangeFirebaseLanguage(val value: String): NonDirect
+    data class OnShowConfirmationDialog(val value: Boolean): NonDirect
+    data class OnShowLanguageDialog(val value: Boolean): NonDirect
+    data class OnShowBottomSheet(val value: Boolean): NonDirect
+    data class OnShowUrlDialog(val value: Boolean): NonDirect
+    data class OnNameTextFieldValueChange(val value: String): NonDirect
+    data class OnUrlTextFieldValueChange(val value: String): NonDirect
+    data class OnSaveUserProfilePicture(val value: Uri): NonDirect
+    data object OnEditChange: NonDirect
+    data object OnSignOut: NonDirect
 }

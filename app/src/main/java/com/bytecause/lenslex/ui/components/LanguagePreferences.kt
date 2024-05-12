@@ -17,6 +17,7 @@ import com.bytecause.lenslex.R
 fun LanguagePreferences(
     modifier: Modifier = Modifier,
     text: String,
+    isLoading: Boolean = false,
     onClick: () -> Unit
 ) {
     Row(
@@ -37,6 +38,7 @@ fun LanguagePreferences(
             text = text,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            isLoading = isLoading,
             onClick = { onClick() }
         )
     }

@@ -6,8 +6,8 @@ import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
-import com.bytecause.lenslex.models.WordsAndSentences
-import com.bytecause.lenslex.models.uistate.AddState
+import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import com.google.firebase.firestore.FirebaseFirestore

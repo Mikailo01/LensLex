@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.models.SignInResult
-import com.bytecause.lenslex.models.UserData
+import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.domain.models.UserData
+import com.bytecause.lenslex.util.Util
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -31,7 +32,7 @@ class FirebaseAuthClient : Authenticator {
         val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(context.getString(R.string.web_client_id))
-            .setNonce(ValidationUtil.generateNonce())
+            .setNonce(Util.generateNonce())
             .build()
 
         val request: GetCredentialRequest = GetCredentialRequest.Builder()

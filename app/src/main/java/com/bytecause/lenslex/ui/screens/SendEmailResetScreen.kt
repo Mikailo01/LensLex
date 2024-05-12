@@ -1,16 +1,20 @@
 package com.bytecause.lenslex.ui.screens
 
+import android.widget.Space
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,7 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.models.uistate.SendEmailResetState
+import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.components.CircularProgressWithCount
 import com.bytecause.lenslex.ui.components.EmailField
@@ -84,14 +88,15 @@ fun SendEmailResetScreenContent(
                 )
             },
             foregroundContent = {
-                EmailField(
-                    emailValue = state.email,
-                    isEmailError = state.isEmailError,
-                    onEmailValueChanged = {
-                        onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
-                    })
-
                 Box(modifier = Modifier.fillMaxSize()) {
+                    EmailField(
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        emailValue = state.email,
+                        isEmailError = state.isEmailError,
+                        onEmailValueChanged = {
+                            onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
+                        })
+
                     Button(
                         onClick = { onEvent(SendEmailResetUiEvent.OnSendEmailClick) },
                         modifier = Modifier
@@ -250,7 +255,7 @@ fun SendEmailResetScreen(
         xOffset = xOffset,
         yOffset = yOffset,
         snackBarHostState = snackBarHostState,
-        onEvent = { viewModel.uiEventHandler(it) }
+        onEvent = viewModel::uiEventHandler
     )
 }
 

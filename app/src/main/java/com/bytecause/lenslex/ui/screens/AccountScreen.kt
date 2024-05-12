@@ -55,7 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.models.uistate.AccountState
+import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.AppLanguageRow
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
@@ -65,11 +65,13 @@ import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AccountUiEvent
+import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
 import org.koin.androidx.compose.koinViewModel
 import java.io.InputStream
+import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,10 +79,7 @@ import java.io.InputStream
 fun AccountScreenContent(
     state: AccountState,
     bottomSheetState: SheetState,
-    onEvent: (AccountUiEvent) -> Unit,
-    onSinglePicturePickerLaunch: () -> Unit,
-    onNavigate: (NavigationItem) -> Unit,
-    onBackButtonClick: () -> Unit
+    onEvent: (AccountUiEvent) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -90,7 +89,7 @@ fun AccountScreenContent(
                 titleRes = R.string.account,
                 navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
             ) {
-                onBackButtonClick()
+                onEvent(AccountUiEvent.OnBackButtonClick)
             }
         }
     ) { innerPaddingValues ->
@@ -202,7 +201,7 @@ fun AccountScreenContent(
                         contentDescription = R.string.account_settings,
                         text = R.string.account_settings
                     ) {
-                        onNavigate(NavigationItem.AccountSettings)
+                        onEvent(AccountUiEvent.OnNavigate(NavigationItem.AccountSettings))
                     }
 
                     Divider(thickness = 1, color = Color.Gray)
@@ -231,6 +230,8 @@ fun AccountScreenContent(
             }
 
             if (state.showLanguageDialog) {
+                val getLocale = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language
+
                 Dialog(
                     title = stringResource(id = R.string.choose_language),
                     onDismiss = { onEvent(AccountUiEvent.OnShowLanguageDialog(false)) }
@@ -238,7 +239,9 @@ fun AccountScreenContent(
 
                     AppLanguageRow(
                         langCode = "eng",
-                        isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "eng"
+                        isChecked = getLocale?.let {
+                            it == "eng"
+                        } ?: (Locale.getDefault().isO3Language == "eng")
                     ) {
                         onEvent(AccountUiEvent.OnShowLanguageDialog(false))
                         onEvent(AccountUiEvent.OnChangeFirebaseLanguage("en"))
@@ -250,7 +253,9 @@ fun AccountScreenContent(
 
                     AppLanguageRow(
                         langCode = "cze",
-                        isChecked = AppCompatDelegate.getApplicationLocales()[0]?.isO3Language == "ces"
+                        isChecked = getLocale?.let {
+                            it == "ces"
+                        } ?: (Locale.getDefault().isO3Language == "ces")
                     ) {
                         onEvent(AccountUiEvent.OnShowLanguageDialog(false))
                         onEvent(AccountUiEvent.OnChangeFirebaseLanguage("cs"))
@@ -276,7 +281,7 @@ fun AccountScreenContent(
                     text = R.string.pick_profile_picture_from_storage
                 ) {
                     onEvent(AccountUiEvent.OnShowBottomSheet(false))
-                    onSinglePicturePickerLaunch()
+                    onEvent(AccountUiEvent.OnSinglePicturePickerLaunch)
                 }
 
                 RowItem(
@@ -304,7 +309,7 @@ fun AccountScreenContent(
             OutlinedTextField(
                 value = state.urlValue,
                 onValueChange = { onEvent(AccountUiEvent.OnUrlTextFieldValueChange(it)) },
-                supportingText = { Text(text = "URL") },
+                supportingText = { Text(text = stringResource(id = R.string.url)) },
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
             )
             Button(
@@ -404,17 +409,27 @@ fun AccountScreen(
         state = uiState,
         bottomSheetState = sheetState,
         onEvent = { event ->
-            viewModel.uiEventHandler(event)
-        },
-        onSinglePicturePickerLaunch = {
-            singlePhotoPickerLauncher.launch(
-                PickVisualMediaRequest(
-                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                )
-            )
-        },
-        onNavigate = { onNavigate(it) },
-        onBackButtonClick = { onBackButtonClick() })
+            when (event) {
+                AccountUiEvent.OnSinglePicturePickerLaunch -> {
+                    singlePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
+                }
+
+                is AccountUiEvent.OnNavigate -> {
+                    onNavigate(event.destination)
+                }
+
+                AccountUiEvent.OnBackButtonClick -> {
+                    onBackButtonClick()
+                }
+
+                else -> viewModel.uiEventHandler(event as AccountUiEvent.NonDirect)
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -424,9 +439,6 @@ fun AccountScreenPreview() {
     AccountScreenContent(
         state = AccountState(),
         bottomSheetState = SheetState(false, LocalDensity.current, SheetValue.Hidden),
-        onEvent = {},
-        onSinglePicturePickerLaunch = {},
-        onNavigate = {},
-        onBackButtonClick = {}
+        onEvent = {}
     )
 }

@@ -1,12 +1,13 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.models.uistate.SendEmailResetState
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
+import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SendEmailResetViewModel(
-    private val auth: Authenticator,
+    private val auth: Authenticator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SendEmailResetState())
@@ -87,6 +88,7 @@ class SendEmailResetViewModel(
                         updateRequestResult(SimpleResult.OnSuccess)
                     } else {
                         updateRequestResult(SimpleResult.OnFailure(task.exception))
+                        sendPasswordResetEmailJob = null
                     }
                 }
         }.also { it.invokeOnCompletion { sendPasswordResetEmailJob = null } }

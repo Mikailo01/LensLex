@@ -46,7 +46,7 @@ fun UserAuthBackground(
     }
 
     // Foreground
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .padding(top = 270.dp)
@@ -57,7 +57,8 @@ fun UserAuthBackground(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                //.fillMaxSize()
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .height(IntrinsicSize.Max)
                 .padding(start = 30.dp, end = 30.dp, top = 30.dp, bottom = 40.dp),
@@ -65,12 +66,13 @@ fun UserAuthBackground(
         ) {
             foregroundContent()
         }
+
         if (snackBarHostState != null) {
             SnackbarHost(
                 hostState = snackBarHostState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
+                    //.align(Alignment.BottomCenter)
             )
         }
     }

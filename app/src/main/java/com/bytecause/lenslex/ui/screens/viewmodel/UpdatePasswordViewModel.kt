@@ -1,24 +1,18 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.VerifyOobRepository
-import com.bytecause.lenslex.models.uistate.UpdatePasswordState
-import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
+import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.NetworkUtil
 import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,17 +25,12 @@ class UpdatePasswordViewModel(
     private val _uiState = MutableStateFlow(UpdatePasswordState())
     val uiState = _uiState.asStateFlow()
 
-    /*var codeValidationResultState by mutableStateOf<CodeValidationResult?>(
-        CodeValidationResult(
-            isLoading = true
-        )
-    )
-        private set*/
-
     fun uiEventHandler(event: UpdatePasswordUiEvent) {
         when (event) {
-            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> {
-                _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
+            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> _uiState.update {
+                it.copy(
+                    passwordVisible = !it.passwordVisible
+                )
             }
 
             is UpdatePasswordUiEvent.OnPasswordValueChange -> {
@@ -72,6 +61,13 @@ class UpdatePasswordViewModel(
                 }
             }
 
+            is UpdatePasswordUiEvent.OnVerifyOob -> {
+                _uiState.update {
+                    it.copy(oobCode = event.oobCode)
+                }
+                verifyOob(event.oobCode)
+            }
+
             UpdatePasswordUiEvent.OnResetPasswordClick -> {
                 ValidationUtil.areCredentialsValid(
                     Credentials.Sensitive.PasswordCredential(
@@ -90,23 +86,22 @@ class UpdatePasswordViewModel(
                 }
             }
 
-            UpdatePasswordUiEvent.OnAnimationStarted -> {
-                _uiState.update { it.copy(animationStarted = true) }
-            }
-
+            UpdatePasswordUiEvent.OnAnimationStarted -> _uiState.update { it.copy(animationStarted = true) }
             UpdatePasswordUiEvent.OnTryAgainClick -> {
                 _uiState.value.oobCode?.let { code ->
                     verifyOob(code)
                 }
             }
 
-            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> {
-                _uiState.update { it.copy(showOobCodeExpiredDialog = false, getNewCode = true) }
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> _uiState.update {
+                it.copy(
+                    showOobCodeExpiredDialog = false,
+                    getNewCode = true
+                )
             }
 
-            UpdatePasswordUiEvent.OnDismiss -> {
-                _uiState.update { it.copy(dismissExpiredDialog = true) }
-            }
+            UpdatePasswordUiEvent.OnDismiss -> _uiState.update { it.copy(dismissExpiredDialog = true) }
+            UpdatePasswordUiEvent.OnResetPasswordResult -> updateState(null)
         }
     }
 
@@ -114,7 +109,7 @@ class UpdatePasswordViewModel(
         _uiState.update { it.copy(codeValidationResult = null) }
     }
 
-    fun updateState(state: SimpleResult?) {
+    private fun updateState(state: SimpleResult?) {
         _uiState.update { it.copy(resetState = state) }
     }
 
@@ -129,9 +124,8 @@ class UpdatePasswordViewModel(
             }
     }
 
-    fun verifyOob(oobCode: String) {
+    private fun verifyOob(oobCode: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(oobCode = oobCode) }
             when (val result = verifyOobRepository.verifyOob(oobCode)) {
                 is ApiResult.Success -> {
                     when (result.data) {

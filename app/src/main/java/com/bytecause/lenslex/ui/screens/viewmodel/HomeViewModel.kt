@@ -6,9 +6,9 @@ import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
-import com.bytecause.lenslex.models.SupportedLanguage
-import com.bytecause.lenslex.models.WordsAndSentences
-import com.bytecause.lenslex.models.uistate.HomeState
+import com.bytecause.lenslex.domain.models.SupportedLanguage
+import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import com.google.firebase.firestore.DocumentSnapshot
@@ -33,6 +33,7 @@ class HomeViewModel(
     auth: Authenticator
 ) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
 
+    private lateinit var fireStoreSnapShotListener: ListenerRegistration
     private var userId = auth.getAuth.currentUser?.uid
 
     private val getAllWordsFromFireStore: Flow<List<WordsAndSentences>> =
@@ -64,24 +65,20 @@ class HomeViewModel(
             supportedLanguages
         ) { words, selectedLang, supportedLanguages ->
 
-            if (_uiState.value.wordList != words) _uiState.update { it.copy(wordList = words) }
-            if (_uiState.value.selectedLanguage != selectedLang) _uiState.update {
-                it.copy(
-                    selectedLanguage = selectedLang
+            _uiState.update { state ->
+                state.copy(
+                    wordList = words.takeIf { it != state.wordList } ?: state.wordList,
+                    selectedLanguage = selectedLang.takeIf { it != state.selectedLanguage } ?: state.selectedLanguage,
+                    supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages } ?: state.supportedLanguages,
+                    isLoading = words != state.wordList
                 )
             }
-            if (_uiState.value.supportedLanguages != supportedLanguages) _uiState.update {
-                it.copy(
-                    supportedLanguages = supportedLanguages
-                )
-            }
-
         }.launchIn(viewModelScope)
     }
 
     private var deletedItemsStack = emptyList<WordsAndSentences>()
 
-    fun uiEventHandler(event: HomeUiEvent) {
+    fun uiEventHandler(event: HomeUiEvent.NonDirect) {
         when (event) {
             is HomeUiEvent.OnIconStateChange -> {
                 _uiState.update { it.copy(fabState = event.value) }
@@ -128,7 +125,6 @@ class HomeViewModel(
         }
     }
 
-    private lateinit var fireStoreSnapShotListener: ListenerRegistration
 
     private fun addSnapShotListener() {
         userId?.let { id ->

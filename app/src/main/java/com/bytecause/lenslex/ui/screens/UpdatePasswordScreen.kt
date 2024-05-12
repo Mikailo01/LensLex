@@ -38,7 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.models.uistate.UpdatePasswordState
+import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.UserAuthBackground
@@ -390,13 +390,13 @@ fun UpdatePasswordScreen(
                     Toast.LENGTH_SHORT
                 ).show()
 
-                viewModel.updateState(null)
+                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnResetPasswordResult)
                 onPasswordChangedSuccess()
             }
 
             is SimpleResult.OnFailure -> {
                 snackBarHostState.showSnackbar((uiState.resetState as SimpleResult.OnFailure).exception?.message.toString())
-                viewModel.updateState(null)
+                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnResetPasswordResult)
             }
 
             null -> {
@@ -456,8 +456,8 @@ fun UpdatePasswordScreen(
                 viewModel.uiEventHandler(UpdatePasswordUiEvent.OnAnimationStarted)
 
                 // After animations finish, make API call
-                oobCode?.let {
-                    viewModel.verifyOob(oobCode = it)
+                oobCode?.let { code ->
+                    viewModel.uiEventHandler(UpdatePasswordUiEvent.OnVerifyOob(code))
                 }
             }
         }
@@ -469,7 +469,7 @@ fun UpdatePasswordScreen(
         snackBarHostState = snackBarHostState,
         yTextOffset = yTextOffset,
         yImageOffset = yImageOffset,
-        onEvent = { viewModel.uiEventHandler(it) }
+        onEvent = viewModel::uiEventHandler
     )
 }
 

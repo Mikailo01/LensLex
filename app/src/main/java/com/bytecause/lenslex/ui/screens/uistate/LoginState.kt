@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.models.uistate
+package com.bytecause.lenslex.ui.screens.uistate
 
 import com.bytecause.lenslex.util.CredentialValidationResult
 

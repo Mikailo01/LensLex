@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.ui.events
 
-import com.bytecause.lenslex.models.SupportedLanguage
+import com.bytecause.lenslex.domain.models.SupportedLanguage
 
 sealed interface AddUiEvent {
 

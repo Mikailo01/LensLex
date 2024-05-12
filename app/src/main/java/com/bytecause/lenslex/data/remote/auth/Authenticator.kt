@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.data.remote.auth
 
 import android.content.Context
-import com.bytecause.lenslex.models.SignInResult
+import com.bytecause.lenslex.domain.models.SignInResult
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.Flow

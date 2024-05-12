@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
-import com.bytecause.lenslex.models.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.components.AccountInfoItem
 import com.bytecause.lenslex.ui.components.AccountInfoType
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
@@ -62,11 +61,12 @@ import com.bytecause.lenslex.ui.components.PasswordField
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
-import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
+import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsConfirmationDialog
+import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
@@ -88,9 +88,7 @@ fun AccountSettingsScreenContent(
     isExpandedScreen: Boolean,
     state: AccountSettingsState,
     snackBarHostState: SnackbarHostState,
-    onEvent: (AccountSettingsUiEvent) -> Unit,
-    onShowSnackBar: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onEvent: (AccountSettingsUiEvent) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -100,7 +98,7 @@ fun AccountSettingsScreenContent(
                 titleRes = R.string.account_settings,
                 navigationIcon = Icons.AutoMirrored.Filled.ArrowBack
             ) {
-                onNavigateBack()
+                onEvent(AccountSettingsUiEvent.OnNavigateBack)
             }
         }
     ) { paddingValues ->
@@ -235,7 +233,15 @@ fun AccountSettingsScreenContent(
                             userCredential = state.userDetails?.email,
                             isChangeable = true,
                             isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
                             onAccountInfoChange = {
                                 onEvent(
                                     AccountSettingsUiEvent.OnShowCredentialDialog(
@@ -258,7 +264,15 @@ fun AccountSettingsScreenContent(
                             userCredential = "********",
                             isChangeable = true,
                             isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
                             onAccountInfoChange = {
                                 onEvent(
                                     AccountSettingsUiEvent.OnShowCredentialDialog(
@@ -445,7 +459,15 @@ fun AccountSettingsScreenContent(
                             userCredential = state.userDetails?.email,
                             isChangeable = true,
                             isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
                             onAccountInfoChange = {
                                 onEvent(
                                     AccountSettingsUiEvent.OnShowCredentialDialog(
@@ -468,7 +490,15 @@ fun AccountSettingsScreenContent(
                             userCredential = "********",
                             isChangeable = true,
                             isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = { onShowSnackBar(context.resources.getString(R.string.email_and_password_cant_be_changed)) },
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
                             onAccountInfoChange = {
                                 onEvent(
                                     AccountSettingsUiEvent.OnShowCredentialDialog(
@@ -481,54 +511,58 @@ fun AccountSettingsScreenContent(
                 }
             }
 
-            if (state.showConfirmationDialog) {
-                ConfirmationDialog(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentSize(),
-                    onDismiss = { onEvent(AccountSettingsUiEvent.OnDismissConfirmationDialog) },
-                    onConfirm = {
-                        onEvent(AccountSettingsUiEvent.OnConfirmConfirmationDialog)
-                    }
-                ) {
-                    Row {
-                        Image(
-                            painter = painterResource(id = R.drawable.delete_user),
-                            contentDescription = "",
-                            modifier = Modifier
-                                .size(50.dp)
-                                .padding(end = 10.dp)
-                        )
-                        Text(
-                            text = stringResource(id = R.string.account_deletion_warning_message),
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-
             state.showCredentialUpdateDialog?.let {
                 CredentialsDialog(
                     credentialValidationResult = state.credentialValidationResult,
                     credentialType = it,
-                    onEvent = { onEvent(it) }
-                    /*onDismiss = { onEvent(AccountSettingsUiEvent.OnCredentialsDialogDismiss(it)) },
-                    onEnteredCredential = { credential ->
-                        onEvent(
-                            AccountSettingsUiEvent.OnEnteredCredential(
-                                credential
-                            )
-                        )
-                    },
-                    onCredentialChanged = { credential ->
-                        onEvent(
-                            AccountSettingsUiEvent.OnDialogCredentialChanged(
-                                credential
-                            )
-                        )
-                    }*/
+                    onEvent = { event -> onEvent(event) }
                 )
+            }
+
+            when (state.showConfirmationDialog) {
+                null -> {
+                    // do nothing
+                }
+
+                else -> {
+                    ConfirmationDialog(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentSize(),
+                        title = if (state.showConfirmationDialog is AccountSettingsConfirmationDialog.PasswordChangeWarning) R.string.google_account_will_be_unlinked else -1,
+                        onDismiss = { onEvent(AccountSettingsUiEvent.OnDismissConfirmationDialog) },
+                        onConfirm = {
+                            onEvent(AccountSettingsUiEvent.OnConfirmConfirmationDialog)
+                        }
+                    ) {
+                        when (state.showConfirmationDialog) {
+                            AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
+                                Row {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.delete_user),
+                                        contentDescription = "",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .padding(end = 10.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(id = R.string.account_deletion_warning_message),
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+
+                            AccountSettingsConfirmationDialog.PasswordChangeWarning -> {
+                                Text(
+                                    text = stringResource(id = R.string.google_account_will_be_unlinked_message),
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             SnackbarHost(
@@ -692,15 +726,21 @@ fun AccountSettingsScreen(
         isExpandedScreen = isExpandedScreen,
         state = uiState,
         snackBarHostState = snackBarHostState,
-        onShowSnackBar = {
-            coroutineScope.launch {
-                snackBarHostState.showSnackbar(it)
+        onEvent = { event ->
+            when (event) {
+                is AccountSettingsUiEvent.OnShowSnackBar -> {
+                    coroutineScope.launch {
+                        snackBarHostState.showSnackbar(event.message)
+                    }
+                }
+
+                AccountSettingsUiEvent.OnNavigateBack -> onNavigateBack()
+
+                else -> {
+                    viewModel.uiEventHandler(event as AccountSettingsUiEvent.NonDirect)
+                }
             }
-        },
-        onEvent = {
-            viewModel.uiEventHandler(it)
-        },
-        onNavigateBack = { onNavigateBack() }
+        }
     )
 }
 
@@ -719,9 +759,7 @@ fun AccountSettingsScreenPreview() {
         isExpandedScreen = false,
         state = AccountSettingsState(),
         snackBarHostState = SnackbarHostState(),
-        onShowSnackBar = {},
-        onEvent = {},
-        onNavigateBack = {}
+        onEvent = {}
     )
 }
 
@@ -731,9 +769,6 @@ fun CredentialsDialog(
     modifier: Modifier = Modifier,
     credentialType: CredentialType,
     onEvent: (AccountSettingsUiEvent) -> Unit
-    /* onDismiss: () -> Unit,
-     onEnteredCredential: (Credentials) -> Unit,
-     onCredentialChanged: (Credentials.Sensitive) -> Unit*/
 ) {
 
     var username by rememberSaveable {

@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.screens
 
 import android.Manifest
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -15,6 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +45,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -54,9 +58,9 @@ import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.mlkit.TextRecognizer
-import com.bytecause.lenslex.models.SupportedLanguage
-import com.bytecause.lenslex.models.WordsAndSentences
-import com.bytecause.lenslex.models.uistate.HomeState
+import com.bytecause.lenslex.domain.models.SupportedLanguage
+import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.Divider
@@ -71,6 +75,7 @@ import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.bytecause.lenslex.util.isScrollingUp
+import com.bytecause.lenslex.util.shimmerEffect
 import com.bytecause.lenslex.util.then
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
@@ -90,11 +95,7 @@ fun HomeScreenContent(
     state: HomeState,
     cameraPermissionState: PermissionState?,
     lazyListState: LazyListState,
-    onEvent: (HomeUiEvent) -> Unit,
-    onScrollToTop: () -> Unit,
-    onClickNavigate: (NavigationItem) -> Unit,
-    onCameraIntent: (Uri) -> Unit,
-    onMultiplePhotoPickerLaunch: () -> Unit
+    onEvent: (HomeUiEvent) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -127,8 +128,9 @@ fun HomeScreenContent(
                             .clip(CircleShape)
                             .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             .clickable {
-                                onClickNavigate(NavigationItem.SettingsGraph)
+                                onEvent(HomeUiEvent.OnNavigate(NavigationItem.SettingsGraph))
                             }
+                            .then(state.isLoading, onTrue = { shimmerEffect() })
                     )
                 }
             )
@@ -148,6 +150,7 @@ fun HomeScreenContent(
                     LanguagePreferences(
                         modifier = Modifier.padding(5.dp),
                         text = state.selectedLanguage.langName,
+                        isLoading = state.isLoading,
                         onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(true)) }
                     )
                     Divider(
@@ -155,18 +158,29 @@ fun HomeScreenContent(
                         color = Color.Gray
                     )
                 }
-
                 LazyColumn(
                     modifier = Modifier.padding(8.dp),
                     state = lazyListState
                 ) {
-                    items(state.wordList, key = { item -> item.timeStamp }) { item ->
-                        item.translations[state.selectedLanguage.langCode]?.let {
-                            NoteItem(
-                                originalText = item.word,
-                                translatedText = it
-                            ) {
-                                onEvent(HomeUiEvent.OnItemRemoved(item))
+                    if (state.isLoading) {
+                        items(10) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(70.dp)
+                                    .shimmerEffect()
+                            ) {}
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    } else {
+                        items(state.wordList, key = { item -> item.timeStamp }) { item ->
+                            item.translations[state.selectedLanguage.langCode]?.let {
+                                NoteItem(
+                                    originalText = item.word,
+                                    translatedText = it
+                                ) {
+                                    onEvent(HomeUiEvent.OnItemRemoved(item))
+                                }
                             }
                         }
                     }
@@ -179,7 +193,7 @@ fun HomeScreenContent(
                 exit = fadeOut()
             ) {
                 ScrollToTop {
-                    onScrollToTop()
+                    onEvent(HomeUiEvent.OnScrollToTop)
                 }
             }
 
@@ -195,7 +209,7 @@ fun HomeScreenContent(
                             when (cameraPermissionState?.status) {
                                 PermissionStatus.Granted -> {
                                     val uri = ComposeFileProvider.getImageUri(context = context)
-                                    onCameraIntent(uri)
+                                    onEvent(HomeUiEvent.OnCameraIntentLaunch(uri))
                                 }
 
                                 PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
@@ -208,13 +222,9 @@ fun HomeScreenContent(
                             }
                         }
 
-                        FabNavigation.GALLERY -> {
-                            onMultiplePhotoPickerLaunch()
-                        }
+                        FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
 
-                        FabNavigation.ADD -> {
-                            onClickNavigate(NavigationItem.Add)
-                        }
+                        FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(NavigationItem.Add))
                     }
                 },
                 onIconStateChange = {
@@ -340,26 +350,31 @@ fun HomeScreen(
         state = uiState,
         cameraPermissionState = cameraPermissionState,
         lazyListState = lazyListState,
-        // Events that can be processed in viewModel
-        onEvent = {
-            viewModel.uiEventHandler(it)
-        },
-        onScrollToTop = {
-            coroutineScope.launch {
-                lazyListState.scrollToItem(0)
+        onEvent = { event ->
+            when (event) {
+                HomeUiEvent.OnScrollToTop -> {
+                    coroutineScope.launch {
+                        lazyListState.scrollToItem(0)
+                    }
+                }
+
+                is HomeUiEvent.OnNavigate -> {
+                    onClickNavigate(event.destination)
+                }
+
+                is HomeUiEvent.OnCameraIntentLaunch -> {
+                    imageUri = event.uri
+                    cameraLauncher.launch(event.uri)
+                }
+
+                HomeUiEvent.OnMultiplePhotoPickerLaunch -> {
+                    multiplePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+
+                else -> viewModel.uiEventHandler(event as HomeUiEvent.NonDirect)
             }
-        },
-        onClickNavigate = {
-            onClickNavigate(it)
-        },
-        onCameraIntent = { uri ->
-            imageUri = uri
-            cameraLauncher.launch(uri)
-        },
-        onMultiplePhotoPickerLaunch = {
-            multiplePhotoPickerLauncher.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-            )
         }
     )
 }
@@ -372,10 +387,6 @@ fun HomeScreenPreview() {
         state = HomeState(),
         cameraPermissionState = null,
         lazyListState = rememberLazyListState(),
-        onEvent = {},
-        onScrollToTop = {},
-        onClickNavigate = {},
-        onCameraIntent = {},
-        onMultiplePhotoPickerLaunch = {}
+        onEvent = {}
     )
 }

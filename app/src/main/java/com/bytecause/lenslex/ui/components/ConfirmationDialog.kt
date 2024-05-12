@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import com.bytecause.lenslex.R
 @Composable
 fun ConfirmationDialog(
     modifier: Modifier = Modifier,
+    @StringRes title: Int = -1,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     content: @Composable () -> Unit
@@ -41,7 +43,7 @@ fun ConfirmationDialog(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = stringResource(id = R.string.are_you_sure),
+                    text = stringResource(id = title.takeIf { it != -1 } ?: R.string.are_you_sure),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 10.dp),
                     fontWeight = FontWeight.Bold

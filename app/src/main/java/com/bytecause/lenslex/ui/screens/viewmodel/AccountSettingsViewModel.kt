@@ -5,13 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.models.UserAccountDetails
-import com.bytecause.lenslex.models.uistate.AccountSettingsState
+import com.bytecause.lenslex.domain.models.UserAccountDetails
+import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
 import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
+import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsConfirmationDialog
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.firebase.auth.AuthCredential
@@ -74,10 +75,10 @@ class AccountSettingsViewModel(
     val launchGoogleIntent = _launchGoogleIntent.asStateFlow()
 
     // When the user deletes account this listener will be notified
-    private val authStateListener = FirebaseAuth.AuthStateListener {
-        if (it.currentUser == null) {
-            _uiState.update {
-                it.copy(userDetails = null)
+    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+        if (auth.currentUser == null) {
+            _uiState.update { state ->
+                state.copy(userDetails = null)
             }
         }
     }
@@ -91,30 +92,45 @@ class AccountSettingsViewModel(
         _launchGoogleIntent.value = boolean
     }
 
-    fun uiEventHandler(event: AccountSettingsUiEvent) {
+    fun uiEventHandler(event: AccountSettingsUiEvent.NonDirect) {
         when (event) {
             AccountSettingsUiEvent.OnDeleteAccountButtonClick -> {
                 _uiState.update {
-                    it.copy(showConfirmationDialog = true)
+                    it.copy(showConfirmationDialog = AccountSettingsConfirmationDialog.DeleteAccountWarning)
                 }
             }
 
             AccountSettingsUiEvent.OnConfirmConfirmationDialog -> {
-                _uiState.update {
-                    it.copy(showConfirmationDialog = false)
+                _uiState.value.showConfirmationDialog?.let { dialog ->
+                    when (dialog) {
+                        AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
+                            _uiState.update {
+                                it.copy(showConfirmationDialog = null)
+                            }
+                            deleteAccount()
+                        }
+
+                        AccountSettingsConfirmationDialog.PasswordChangeWarning -> {
+                            _uiState.update {
+                                it.copy(showConfirmationDialog = null)
+                            }
+                        }
+                    }
                 }
-                deleteAccount()
             }
 
             AccountSettingsUiEvent.OnDismissConfirmationDialog -> {
                 _uiState.update {
-                    it.copy(showConfirmationDialog = false)
+                    it.copy(showConfirmationDialog = null)
                 }
             }
 
             is AccountSettingsUiEvent.OnShowCredentialDialog -> {
                 _uiState.update {
-                    it.copy(showCredentialUpdateDialog = event.value)
+                    it.copy(
+                        showCredentialUpdateDialog = event.value,
+                        showConfirmationDialog = if (event.value is CredentialType.Password) AccountSettingsConfirmationDialog.PasswordChangeWarning else it.showConfirmationDialog
+                    )
                 }
             }
 
@@ -194,6 +210,10 @@ class AccountSettingsViewModel(
                     it.copy(credentialValidationResult = ValidationUtil.areCredentialsValid(event.value))
                 }
             }
+
+            /* else -> {
+                 // do nothing, events intercepted in UI
+             }*/
         }
     }
 

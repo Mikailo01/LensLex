@@ -2,6 +2,7 @@ package com.bytecause.lenslex.util
 
 import android.annotation.SuppressLint
 import android.graphics.BlurMaskFilter
+import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -96,8 +97,8 @@ private fun Modifier.thenInternal(
 
 fun Modifier.then(
     condition: Boolean,
-    onTrue: @Composable Modifier.() -> Modifier,
-    onFalse: @Composable Modifier.() -> Modifier
+    onTrue: @Composable (Modifier.() -> Modifier)? = null,
+    onFalse: @Composable (Modifier.() -> Modifier)? = null
 ) = thenInternal(condition, onTrue, onFalse)
 
 fun <T> Flow<T>.mutableStateIn(

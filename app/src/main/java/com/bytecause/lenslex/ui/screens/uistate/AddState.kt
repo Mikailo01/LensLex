@@ -1,7 +1,9 @@
-package com.bytecause.lenslex.models.uistate
+package com.bytecause.lenslex.ui.screens.uistate
 
-import com.bytecause.lenslex.models.SupportedLanguage
+import androidx.compose.runtime.Immutable
+import com.bytecause.lenslex.domain.models.SupportedLanguage
 
+@Immutable
 data class AddState(
     val textValue: String = "",
     val supportedLanguages: List<SupportedLanguage> = emptyList(),

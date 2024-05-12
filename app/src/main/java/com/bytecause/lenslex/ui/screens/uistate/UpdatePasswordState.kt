@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.models.uistate
+package com.bytecause.lenslex.ui.screens.uistate
 
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel

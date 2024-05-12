@@ -4,8 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
-import com.bytecause.lenslex.models.UserData
-import com.bytecause.lenslex.models.uistate.AccountState
+import com.bytecause.lenslex.domain.models.UserData
+import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.bytecause.lenslex.ui.events.AccountUiEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -32,7 +32,7 @@ class AccountViewModel(
     )
     val uiState = _uiState.asStateFlow()
 
-    fun uiEventHandler(event: AccountUiEvent) {
+    fun uiEventHandler(event: AccountUiEvent.NonDirect) {
         when (event) {
             is AccountUiEvent.OnUpdateName -> {
                 _uiState.update {

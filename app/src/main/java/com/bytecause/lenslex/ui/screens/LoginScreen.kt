@@ -46,8 +46,8 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
-import com.bytecause.lenslex.models.SignInResult
-import com.bytecause.lenslex.models.uistate.LoginState
+import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.navigation.NavigationItem
 import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ImageResource
@@ -135,7 +135,6 @@ fun LoginScreenContent(
                     text = stringResource(id = R.string.continue_with_google),
                     contentDescription = ""
                 ) {
-
                     onEvent(LoginUiEvent.OnSignInUsingGoogle)
                 }
 
@@ -339,9 +338,9 @@ fun LoginScreen(
         snackBarHostState = snackBarHostState,
         xTextOffset = xTextOffset,
         xText2offset = xText2offset,
-        onEvent = {
-            when (it) {
-                // Handle view events directly inside composable
+        onEvent = { event ->
+            when (event) {
+                // Intercept events which have to be handled directly in UI
                 is LoginUiEvent.OnForgetPasswordClick -> {
                     onNavigate(NavigationItem.EmailPasswordReset)
                 }
@@ -357,7 +356,7 @@ fun LoginScreen(
                 }
 
                 else -> {
-                    viewModel.uiEventHandler(it)
+                    viewModel.uiEventHandler(event as LoginUiEvent.NonDirect)
                 }
             }
         }

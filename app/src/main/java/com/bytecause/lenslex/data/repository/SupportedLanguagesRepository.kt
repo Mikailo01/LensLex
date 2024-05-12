@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.data.repository
 
 import com.bytecause.lenslex.data.local.SupportedLanguagesLocalDataSource
-import com.bytecause.lenslex.models.SupportedLanguage
+import com.bytecause.lenslex.domain.models.SupportedLanguage
 import java.util.Locale
 
 class SupportedLanguagesRepository {

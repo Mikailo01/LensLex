@@ -10,15 +10,7 @@ private const val PASSWORD_MIN_LENGTH = 8
 
 object ValidationUtil {
 
-    fun generateNonce(): String {
-        val rawNonce = UUID.randomUUID().toString()
-        val bytes = rawNonce.toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
-    }
-
-    fun emailValidator(email: String): Boolean {
+    private fun emailValidator(email: String): Boolean {
         val regex = Regex("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}\$")
         return regex.matches(email)
     }
@@ -27,7 +19,8 @@ object ValidationUtil {
         return when (credentials) {
             is Credentials.Sensitive.SignInCredentials -> {
 
-                val isEmailValid: Boolean = emailValidator(credentials.email.also { Log.d("idk", it) })
+                val isEmailValid: Boolean =
+                    emailValidator(credentials.email.also { Log.d("idk", it) })
                 val isPasswordValid = passwordValidator(password = credentials.password)
 
                 Log.d("idk", isEmailValid.toString())
@@ -118,7 +111,6 @@ private fun passwordValidator(
     val errors = mutableListOf<PasswordErrorType>()
 
     val isPasswordEmpty: Boolean = password.isBlank()
-
     val passwordMatch: Boolean? =
         if (confirmPassword != null) password == confirmPassword else null
     val passwordLengthInRange: Boolean = password.length in PASSWORD_MIN_LENGTH..PASSWORD_MAX_LENGTH
@@ -127,11 +119,13 @@ private fun passwordValidator(
     val containsNumber: Boolean = password.any { it.isDigit() }
 
     if (isPasswordEmpty) errors.add(PasswordErrorType.PASSWORD_EMPTY)
-    if (passwordMatch == false) errors.add(PasswordErrorType.PASSWORD_MISMATCH)
-    if (!passwordLengthInRange) errors.add(PasswordErrorType.LENGTH_OUT_OF_BOUNDS)
-    if (!upperCase) errors.add(PasswordErrorType.MISSING_UPPER_CASE)
-    if (!lowerCase) errors.add(PasswordErrorType.MISSING_LOWER_CASE)
-    if (!containsNumber) errors.add(PasswordErrorType.MISSING_DIGIT)
+    else {
+        if (passwordMatch == false) errors.add(PasswordErrorType.PASSWORD_MISMATCH)
+        if (!passwordLengthInRange) errors.add(PasswordErrorType.LENGTH_OUT_OF_BOUNDS)
+        if (!upperCase) errors.add(PasswordErrorType.MISSING_UPPER_CASE)
+        if (!lowerCase) errors.add(PasswordErrorType.MISSING_LOWER_CASE)
+        if (!containsNumber) errors.add(PasswordErrorType.MISSING_DIGIT)
+    }
 
     return if (errors.isEmpty()) {
         PasswordValidationResult.Valid

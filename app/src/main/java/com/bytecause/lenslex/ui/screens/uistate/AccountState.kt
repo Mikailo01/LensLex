@@ -1,6 +1,6 @@
-package com.bytecause.lenslex.models.uistate
+package com.bytecause.lenslex.ui.screens.uistate
 
-import com.bytecause.lenslex.models.UserData
+import com.bytecause.lenslex.domain.models.UserData
 
 data class AccountState(
     val userData: UserData? = null,

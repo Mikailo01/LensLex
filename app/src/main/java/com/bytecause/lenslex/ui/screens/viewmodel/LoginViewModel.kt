@@ -3,9 +3,9 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.models.SignInResult
-import com.bytecause.lenslex.models.SignInState
-import com.bytecause.lenslex.models.uistate.LoginState
+import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.domain.models.SignInState
+import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.util.CredentialValidationResult
@@ -27,7 +27,7 @@ class LoginViewModel(
     private val _signUiState = MutableStateFlow(SignInState())
     val signUiState = _signUiState.asStateFlow()
 
-    fun uiEventHandler(event: LoginUiEvent) {
+    fun uiEventHandler(event: LoginUiEvent.NonDirect) {
         when (event) {
             is LoginUiEvent.OnCredentialsEntered -> {
                 areCredentialsValid(
@@ -177,10 +177,6 @@ class LoginViewModel(
                         onSignInResult(it)
                     }
                 }
-            }
-
-            else -> {
-                // do nothing
             }
         }
     }

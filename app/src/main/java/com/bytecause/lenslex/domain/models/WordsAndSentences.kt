@@ -1,5 +1,8 @@
-package com.bytecause.lenslex.models
+package com.bytecause.lenslex.domain.models
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class WordsAndSentences(
     val id: String = "",
     val word: String = "",

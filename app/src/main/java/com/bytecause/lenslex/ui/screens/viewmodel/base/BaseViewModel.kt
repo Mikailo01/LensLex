@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.mlkit.TranslationModelManager
-import com.bytecause.lenslex.models.SupportedLanguage
+import com.bytecause.lenslex.domain.models.SupportedLanguage
 import com.bytecause.lenslex.util.capital
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.models
+package com.bytecause.lenslex.domain.models
 
 data class SignInState(
     val isSignInSuccessful: Boolean = false,
