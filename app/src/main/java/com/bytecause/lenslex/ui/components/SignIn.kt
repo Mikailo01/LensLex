@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,7 @@ import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordValidationResult
+import com.bytecause.lenslex.util.TestTags
 
 @Composable
 fun SignIn(
@@ -69,7 +71,7 @@ fun SignIn(
         }
 
         AnnotatedClickableText(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+            modifier = Modifier.align(Alignment.CenterHorizontally).testTag(TestTags.SIGN_IN_ANNOTATED_STRING),
             normalText = R.string.sign_prompt,
             annotatedText = R.string.sign_up,
             annotatedTextColor = MaterialTheme.colorScheme.error,

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface Authenticator {
 
-    val getAuth: FirebaseAuth
+    fun getAuth(): FirebaseAuth
     fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult>
     fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult>
     fun signInAnonymously(): Flow<SignInResult>

@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.ui.events
 
 import android.net.Uri
-import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.navigation.Screen
 
 // I defined Direct and NonDirect sealed interfaces to get rid of else statement in when expressions and make
 // it clear, where should be each event be handled (Direct = directly inside composable, NonDirect = inside viewmodel)
@@ -10,7 +10,7 @@ sealed interface AccountUiEvent {
     sealed interface Direct : AccountUiEvent
     sealed interface NonDirect : AccountUiEvent
 
-    data class OnNavigate(val destination: NavigationItem): Direct
+    data class OnNavigate(val destination: Screen): Direct
     data object OnBackButtonClick: Direct
     data object OnSinglePicturePickerLaunch: Direct
 

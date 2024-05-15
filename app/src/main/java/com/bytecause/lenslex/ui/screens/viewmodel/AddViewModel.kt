@@ -1,31 +1,27 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.local.room.tables.WordAndSentenceEntity
-import com.bytecause.lenslex.data.remote.auth.Authenticator
+import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
-import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
-import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
+import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
-import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.events.AddUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
 class AddViewModel(
-    private val wordsDatabaseRepository: WordsDatabaseRepository,
-    private val firebase: FirebaseFirestore,
-    private val auth: Authenticator,
-    userPrefsRepositoryImpl: UserPrefsRepositoryImpl,
+    private val firestoreRepository: WordsRepositoryImpl,
+    userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
-) : BaseViewModel(userPrefsRepositoryImpl, supportedLanguagesRepository) {
+) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
 
     private val _uiState = MutableStateFlow(AddState())
     val uiState = _uiState.asStateFlow()
@@ -98,14 +94,10 @@ class AddViewModel(
     }
 
     private fun insertWord(word: WordsAndSentences, onSuccess: () -> Unit) {
-        auth.getAuth.currentUser?.uid?.let { userId ->
-            viewModelScope.launch {
-                firebase
-                    .collection("users")
-                    .document(userId)
-                    .collection("WordsAndSentences")
-                    .add(word)
-            }.invokeOnCompletion { onSuccess() }
-        }
+        viewModelScope.launch {
+            firestoreRepository.addWord(word).firstOrNull()?.let {
+                if (it) onSuccess()
+            }
+        }.invokeOnCompletion {  }
     }
 }

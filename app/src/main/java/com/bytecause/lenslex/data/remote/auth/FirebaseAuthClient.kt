@@ -7,14 +7,14 @@ import com.bytecause.lenslex.R
 import com.bytecause.lenslex.domain.models.SignInResult
 import com.bytecause.lenslex.domain.models.UserData
 import com.bytecause.lenslex.util.Util
-import com.bytecause.lenslex.util.ValidationUtil
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,8 +24,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class FirebaseAuthClient : Authenticator {
-
-    override val getAuth: FirebaseAuth = Firebase.auth
 
     override suspend fun getGoogleCredential(context: Context): AuthCredential {
         val credentialManager = CredentialManager.create(context)
@@ -56,10 +54,10 @@ class FirebaseAuthClient : Authenticator {
             val googleCredential = getGoogleCredential(context)
 
             suspendCoroutine {
-                getAuth.signInWithCredential(googleCredential)
+                getAuth().signInWithCredential(googleCredential)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            it.resume(SignInResult(data = getAuth.currentUser?.run {
+                            it.resume(SignInResult(data = getAuth().currentUser?.run {
                                 UserData(
                                     userId = uid,
                                     userName = displayName,
@@ -84,7 +82,7 @@ class FirebaseAuthClient : Authenticator {
     }
 
     override fun signInAnonymously(): Flow<SignInResult> = callbackFlow {
-        getAuth.signInAnonymously().addOnCompleteListener { task ->
+        getAuth().signInAnonymously().addOnCompleteListener { task ->
 
             if (task.isSuccessful) {
                 trySend(
@@ -113,9 +111,11 @@ class FirebaseAuthClient : Authenticator {
         awaitClose { cancel() }
     }
 
+    override fun getAuth(): FirebaseAuth = Firebase.auth
+
     override fun signUpViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            getAuth.createUserWithEmailAndPassword(email, password)
+            getAuth().createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {
@@ -147,7 +147,7 @@ class FirebaseAuthClient : Authenticator {
 
     override fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
         callbackFlow {
-            getAuth.signInWithEmailAndPassword(email, password)
+            getAuth().signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
 
                     if (task.isSuccessful) {

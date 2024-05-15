@@ -22,12 +22,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.components.BottomAppBar
 import com.bytecause.lenslex.ui.components.BottomAppBarItems
 import com.bytecause.lenslex.ui.components.TopAppBar
-import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,13 +86,11 @@ fun RecognizedTextResultScreenContent(
 
 @Composable
 fun RecognizedTextResultScreen(
-    sharedViewModel: TextRecognitionSharedViewModel,
+    text: List<String>,
     onBackButtonClick: () -> Unit
 ) {
-    val text = sharedViewModel.processedTextState.collectAsStateWithLifecycle()
-
     RecognizedTextResultScreenContent(
-        text = text.value.joinToString(System.lineSeparator()),
+        text = text.joinToString(System.lineSeparator()),
         onBackButtonClick = { onBackButtonClick() }
     )
 }

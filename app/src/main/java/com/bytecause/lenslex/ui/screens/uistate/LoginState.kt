@@ -1,8 +1,10 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
+import com.bytecause.lenslex.domain.models.SignInState
 import com.bytecause.lenslex.util.CredentialValidationResult
 
 data class LoginState(
+    val signInState: SignInState = SignInState(),
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",

@@ -83,6 +83,7 @@ fun CircularFloatingActionMenu(
                                     end.linkTo(parent.end)
                                 }
                                 .padding(top = 10.dp, end = 10.dp),
+                            contentDescription = stringResource(id = R.string.launch_camera),
                             navigation = FabNavigation.CAMERA,
                             onClick = {
                                 onIconStateChange(false)
@@ -99,6 +100,7 @@ fun CircularFloatingActionMenu(
                                     start.linkTo(parent.start)
                                 }
                                 .padding(top = 50.dp, start = 35.dp),
+                            contentDescription = stringResource(id = R.string.launch_gallery_image_picker),
                             navigation = FabNavigation.GALLERY,
                             onClick = {
                                 onIconStateChange(false)
@@ -115,6 +117,7 @@ fun CircularFloatingActionMenu(
                                     start.linkTo(parent.start)
                                 }
                                 .padding(top = 10.dp, start = 5.dp),
+                            contentDescription = stringResource(id = R.string.add_new_word_into_the_list),
                             navigation = FabNavigation.ADD,
                             onClick = {
                                 onIconStateChange(false)
@@ -137,7 +140,7 @@ fun CircularFloatingActionMenu(
                 Icon(
                     imageVector =
                     if (!iconState) Icons.Default.Add else Icons.Default.Close,
-                    contentDescription = "",
+                    contentDescription = "Floating action button with destinations",
                     modifier = Modifier.graphicsLayer(
                         rotationZ = animateFloatAsState(
                             targetValue = if (iconState) 180f else 0f,
@@ -157,6 +160,7 @@ fun MiniFab(
     image: ImageResource,
     contentColor: Color,
     text: String,
+    contentDescription: String,
     navigation: FabNavigation,
     onClick: (FabNavigation) -> Unit
 ) {
@@ -175,7 +179,7 @@ fun MiniFab(
                 is ImageResource.Painter -> {
                     Icon(
                         painter = image.painter,
-                        contentDescription = "",
+                        contentDescription = contentDescription,
                         tint = contentColor,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
@@ -184,7 +188,7 @@ fun MiniFab(
                 is ImageResource.ImageVector -> {
                     Icon(
                         imageVector = image.imageVector,
-                        contentDescription = "",
+                        contentDescription = contentDescription,
                         tint = contentColor,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
@@ -208,6 +212,7 @@ fun MiniFabPreview() {
         image = ImageResource.ImageVector(Icons.Filled.AddCircle),
         contentColor = Color.Black,
         text = stringResource(id = R.string.preview),
+        contentDescription = "",
         navigation = FabNavigation.ADD
     ) { }
 }

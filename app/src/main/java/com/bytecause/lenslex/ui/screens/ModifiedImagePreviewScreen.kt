@@ -31,10 +31,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.mlkit.TextRecognizer
-import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.TopAppBar
-import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
@@ -94,11 +93,10 @@ fun ModifiedImagePreviewScreenContent(
 
 @Composable
 fun ModifiedImagePreviewScreen(
-    sharedViewModel: TextRecognitionSharedViewModel,
     originalImageUri: Uri,
     modifiedImageUri: Uri,
     onNavigateBack: () -> Unit,
-    onClickNavigate: (NavigationItem) -> Unit
+    onClickNavigate: (Screen) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -141,9 +139,7 @@ fun ModifiedImagePreviewScreen(
                     ).show()
                     return@runTextRecognition
                 }
-
-                sharedViewModel.updateProcessedTextState(it)
-                onClickNavigate(NavigationItem.TextResult)
+                onClickNavigate(Screen.TextResult(text = it))
             }
         }
     )

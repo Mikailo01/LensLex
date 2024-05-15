@@ -1,19 +1,18 @@
 package com.bytecause.lenslex.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -28,7 +27,7 @@ import com.bytecause.lenslex.ui.theme.disabledBorderColor
 import com.bytecause.lenslex.ui.theme.focusedBorderColor
 import com.bytecause.lenslex.ui.theme.unfocusedBorderColor
 import com.bytecause.lenslex.util.PasswordErrorType
-import com.bytecause.lenslex.util.then
+import com.bytecause.lenslex.util.TestTags
 
 @Composable
 fun PasswordFields(
@@ -80,21 +79,6 @@ fun PasswordFields(
                     tint = Color.Black
                 )
             },
-            trailingIcon = {
-                val iconId =
-                    if (!isPasswordVisible) R.drawable.baseline_visibility_off_24 else R.drawable.baseline_visibility_24
-                val contentDescription =
-                    if (!isPasswordVisible) R.string.password_hidden else R.string.password_shown
-                IconButton(onClick = {
-                    onPasswordVisibilityClick(!isPasswordVisible)
-                }
-                ) {
-                    Image(
-                        painterResource(id = iconId),
-                        contentDescription = stringResource(id = contentDescription)
-                    )
-                }
-            },
             visualTransformation = if (isPasswordVisible) VisualTransformation.None
             else PasswordVisualTransformation(),
             singleLine = true,
@@ -128,7 +112,9 @@ fun PasswordFields(
 
         if (password.isNotEmpty()) {
             PasswordRules(
-                modifier = Modifier.padding(10.dp),
+                modifier = Modifier
+                    .padding(10.dp)
+                    .testTag(TestTags.PASSWORD_RULES),
                 passwordErrors = passwordErrors
             )
         }

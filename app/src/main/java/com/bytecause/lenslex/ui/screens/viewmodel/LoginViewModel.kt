@@ -24,8 +24,8 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginState())
     val uiState = _uiState.asStateFlow()
 
-    private val _signUiState = MutableStateFlow(SignInState())
-    val signUiState = _signUiState.asStateFlow()
+    /*private val _signUiState = MutableStateFlow(SignInState())
+    val signUiState = _signUiState.asStateFlow()*/
 
     fun uiEventHandler(event: LoginUiEvent.NonDirect) {
         when (event) {
@@ -182,10 +182,12 @@ class LoginViewModel(
     }
 
     fun onSignInResult(result: SignInResult) {
-        _signUiState.update {
-            _signUiState.value.copy(
-                isSignInSuccessful = (result.data != null),
-                signInError = result.errorMessage
+        _uiState.update {
+            it.copy(
+                signInState = it.signInState.copy(
+                    isSignInSuccessful = (result.data != null),
+                    signInError = result.errorMessage
+                ),
             )
         }
     }

@@ -12,6 +12,7 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
+import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.VerifyOobRepository
@@ -22,7 +23,6 @@ import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
-import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
@@ -40,10 +40,6 @@ val appModule = module {
 
     // Firebase
     single { FirebaseFirestore.getInstance() }
-
-    single {
-        Firebase.firestore
-    }
 
     single<FirebaseAuthClient> {
         FirebaseAuthClient()
@@ -70,6 +66,13 @@ val appModule = module {
         SupportedLanguagesRepository()
     }
 
+    single<WordsRepositoryImpl> {
+        WordsRepositoryImpl(
+            firestore = Firebase.firestore,
+            auth = FirebaseAuthClient()
+        )
+    }
+
     single<WordsDatabaseRepository> { WordsDatabaseRepository(get()) }
 
     single<UserPrefsRepositoryImpl> {
@@ -85,15 +88,14 @@ val appModule = module {
     }
 
     single<FirebaseCloudRepositoryImpl> {
-        FirebaseCloudRepositoryImpl(get())
+        FirebaseCloudRepositoryImpl(get(), Dispatchers.IO)
     }
 
     // ViewModels
     viewModel {
         HomeViewModel(
-            userPrefsRepositoryImpl = get(),
-            wordsDatabaseRepository = get(),
-            fireStore = get(),
+            wordsRepository = get<WordsRepositoryImpl>(),
+            userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             supportedLanguagesRepository = get(),
             auth = get<FirebaseAuthClient>()
         )
@@ -112,19 +114,13 @@ val appModule = module {
     }
 
     viewModel {
-        TextRecognitionSharedViewModel()
-    }
-
-    viewModel {
         AccountViewModel(get<FirebaseAuthClient>(), get())
     }
 
     viewModel {
         AddViewModel(
-            wordsDatabaseRepository = get(),
-            firebase = get(),
-            auth = get<FirebaseAuthClient>(),
-            userPrefsRepositoryImpl = get(),
+            firestoreRepository = get<WordsRepositoryImpl>(),
+            userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             supportedLanguagesRepository = get()
         )
     }

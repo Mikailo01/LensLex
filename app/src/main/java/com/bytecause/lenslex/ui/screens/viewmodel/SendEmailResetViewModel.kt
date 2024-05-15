@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
@@ -11,7 +10,6 @@ import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +23,7 @@ class SendEmailResetViewModel(
     private val _uiState = MutableStateFlow(SendEmailResetState())
     val uiState = _uiState.asStateFlow()
 
-    private var sendPasswordResetEmailJob: Job? = null
+    private var shouldSendResetPasswordEmail: Boolean = true
 
     fun uiEventHandler(event: SendEmailResetUiEvent) {
         when (event) {
@@ -58,10 +56,6 @@ class SendEmailResetViewModel(
         }
     }
 
-    fun animationLaunched() {
-        _uiState.update { it.copy(animationStarted = true) }
-    }
-
     fun updateRequestResult(result: SimpleResult?) {
         _uiState.update { it.copy(requestResult = result) }
     }
@@ -78,19 +72,19 @@ class SendEmailResetViewModel(
     }
 
     private fun sendPasswordResetEmail(email: String) {
-        if (sendPasswordResetEmailJob != null) return
+        if (!shouldSendResetPasswordEmail) return
+        shouldSendResetPasswordEmail = false
 
-        sendPasswordResetEmailJob = viewModelScope.launch {
-            auth.getAuth.sendPasswordResetEmail(email)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        startTimer()
-                        updateRequestResult(SimpleResult.OnSuccess)
-                    } else {
-                        updateRequestResult(SimpleResult.OnFailure(task.exception))
-                        sendPasswordResetEmailJob = null
-                    }
+        auth.getAuth().sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    startTimer()
+                    updateRequestResult(SimpleResult.OnSuccess)
+                    shouldSendResetPasswordEmail = true
+                } else {
+                    updateRequestResult(SimpleResult.OnFailure(task.exception))
+                    shouldSendResetPasswordEmail = true
                 }
-        }.also { it.invokeOnCompletion { sendPasswordResetEmailJob = null } }
+            }
     }
 }

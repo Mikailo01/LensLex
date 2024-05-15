@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -47,8 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.domain.models.SignInResult
-import com.bytecause.lenslex.ui.screens.uistate.LoginState
-import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
@@ -57,9 +57,11 @@ import com.bytecause.lenslex.ui.components.SignUp
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.LoginUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
+import com.bytecause.lenslex.util.TestTags
 import com.bytecause.lenslex.util.shadowCustom
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -120,10 +122,12 @@ fun LoginScreenContent(
                 if (state.signIn) {
                     SignIn(
                         state = state,
+                        modifier = Modifier.testTag(TestTags.SIGN_IN),
                         onEvent = { onEvent(it) }
                     )
                 } else SignUp(
                     state = state,
+                    modifier = Modifier.testTag(TestTags.SIGN_UP),
                     onEvent = { onEvent(it) }
                 )
 
@@ -228,14 +232,13 @@ fun LoginScreenContent(
 fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel(),
     isExpandedScreen: Boolean,
-    onNavigate: (NavigationItem) -> Unit,
+    onNavigate: (Screen) -> Unit,
     onUserLoggedIn: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val signUiState by viewModel.signUiState.collectAsStateWithLifecycle()
 
     val credentialManager = remember {
         CredentialManager.create(context)
@@ -285,9 +288,9 @@ fun LoginScreen(
          }
      }*/
 
-    LaunchedEffect(key1 = signUiState) {
+    LaunchedEffect(key1 = uiState.signInState) {
         when {
-            signUiState.isSignInSuccessful -> {
+            uiState.signInState.isSignInSuccessful -> {
                 keyboardController?.hide()
                 if (!uiState.signIn) {
                     saveCredential(credentialManager, context, uiState.email, uiState.password)
@@ -295,10 +298,10 @@ fun LoginScreen(
                 onUserLoggedIn()
             }
 
-            !signUiState.signInError.isNullOrEmpty() -> {
+            !uiState.signInState.signInError.isNullOrEmpty() -> {
                 keyboardController?.hide()
                 coroutineScope.launch {
-                    signUiState.signInError?.let {
+                    uiState.signInState.signInError?.let {
                         snackBarHostState.showSnackbar(it)
                         viewModel.onSignInResult(SignInResult(null, null))
                     }
@@ -342,7 +345,7 @@ fun LoginScreen(
             when (event) {
                 // Intercept events which have to be handled directly in UI
                 is LoginUiEvent.OnForgetPasswordClick -> {
-                    onNavigate(NavigationItem.EmailPasswordReset)
+                    onNavigate(Screen.SendEmailPasswordReset)
                 }
 
                 is LoginUiEvent.OnSignInUsingGoogle -> {

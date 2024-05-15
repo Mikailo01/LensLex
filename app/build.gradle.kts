@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
+    id ("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -16,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.bytecause.lenslex.InstrumentationTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -72,9 +73,11 @@ dependencies {
     val roomVersion = "2.6.1"
     val koinVersion = "3.5.3"
 
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    //implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.8.0-beta01")
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
 
     // Retrofit2 library
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
@@ -108,8 +111,10 @@ dependencies {
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
+
     // authentication
     implementation("com.google.firebase:firebase-auth-ktx")
+
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
 
@@ -122,7 +127,7 @@ dependencies {
 
     // Compose
     implementation("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
     //implementation(platform("androidx.compose:compose-bom:2024.04.01"))
     implementation("androidx.compose.ui:ui:1.6.7")
@@ -143,6 +148,7 @@ dependencies {
     implementation("io.insert-koin:koin-android")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("io.insert-koin:koin-test:3.5.3")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.05.00"))

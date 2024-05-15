@@ -20,23 +20,6 @@ class UserPrefsRepositoryImpl(
     private val coroutineDispatcher: CoroutineDispatcher
 ) : UserPrefsRepository {
 
-    override suspend fun saveUserLocale(locale: String) {
-        withContext(coroutineDispatcher) {
-            userDataStorePreferences.edit { preferences ->
-                preferences[USER_LOCALE_KEY] = locale
-            }
-        }
-    }
-
-    override fun loadUserLocale(): Flow<String?> = flow {
-        emit(userDataStorePreferences.data.firstOrNull()?.get(USER_LOCALE_KEY))
-    }
-        .flowOn(coroutineDispatcher)
-        .catch { exception ->
-            if (exception is IOException) emit(null)
-            else throw exception
-        }
-
     override suspend fun saveTranslationOption(langName: String) {
         withContext(coroutineDispatcher) {
             userDataStorePreferences.edit { preferences ->
@@ -55,7 +38,6 @@ class UserPrefsRepositoryImpl(
         }
 
     private companion object {
-        val USER_LOCALE_KEY = stringPreferencesKey("user_locale")
         val TRANSLATION_OPTION_KEY = stringPreferencesKey("translation_option")
     }
 }

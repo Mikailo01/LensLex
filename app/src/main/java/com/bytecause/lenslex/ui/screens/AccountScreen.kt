@@ -55,8 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.screens.uistate.AccountState
-import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.AppLanguageRow
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
 import com.bytecause.lenslex.ui.components.Dialog
@@ -65,7 +64,7 @@ import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AccountUiEvent
-import com.bytecause.lenslex.ui.events.HomeUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
@@ -201,7 +200,7 @@ fun AccountScreenContent(
                         contentDescription = R.string.account_settings,
                         text = R.string.account_settings
                     ) {
-                        onEvent(AccountUiEvent.OnNavigate(NavigationItem.AccountSettings))
+                        onEvent(AccountUiEvent.OnNavigate(Screen.AccountSettings))
                     }
 
                     Divider(thickness = 1, color = Color.Gray)
@@ -349,7 +348,7 @@ fun AccountScreenContent(
 @Composable
 fun AccountScreen(
     viewModel: AccountViewModel = koinViewModel(),
-    onNavigate: (NavigationItem) -> Unit,
+    onNavigate: (Screen) -> Unit,
     onBackButtonClick: () -> Unit,
     onUserLoggedOut: () -> Unit
 ) {

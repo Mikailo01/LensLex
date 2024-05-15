@@ -114,7 +114,7 @@ class UpdatePasswordViewModel(
     }
 
     private fun resetPassword(oobCode: String, password: String) {
-        auth.getAuth.confirmPasswordReset(oobCode, password)
+        auth.getAuth().confirmPasswordReset(oobCode, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateState(SimpleResult.OnSuccess)

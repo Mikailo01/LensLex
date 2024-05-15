@@ -2,7 +2,6 @@ package com.bytecause.lenslex.ui.screens
 
 import android.Manifest
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -33,19 +32,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,10 +53,7 @@ import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.mlkit.TextRecognizer
-import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.domain.models.WordsAndSentences
-import com.bytecause.lenslex.ui.screens.uistate.HomeState
-import com.bytecause.lenslex.navigation.NavigationItem
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
@@ -72,8 +64,8 @@ import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
 import com.bytecause.lenslex.ui.events.HomeUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
-import com.bytecause.lenslex.ui.screens.viewmodel.TextRecognitionSharedViewModel
 import com.bytecause.lenslex.util.isScrollingUp
 import com.bytecause.lenslex.util.shimmerEffect
 import com.bytecause.lenslex.util.then
@@ -128,7 +120,7 @@ fun HomeScreenContent(
                             .clip(CircleShape)
                             .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             .clickable {
-                                onEvent(HomeUiEvent.OnNavigate(NavigationItem.SettingsGraph))
+                                onEvent(HomeUiEvent.OnNavigate(Screen.Account))
                             }
                             .then(state.isLoading, onTrue = { shimmerEffect() })
                     )
@@ -203,7 +195,6 @@ fun HomeScreenContent(
                 fabContentColor = MaterialTheme.colorScheme.onPrimary,
                 expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
                 onInnerContentClick = { fabNavigation ->
-
                     when (fabNavigation) {
                         FabNavigation.CAMERA -> {
                             when (cameraPermissionState?.status) {
@@ -224,7 +215,7 @@ fun HomeScreenContent(
 
                         FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
 
-                        FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(NavigationItem.Add))
+                        FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(Screen.Add))
                     }
                 },
                 onIconStateChange = {
@@ -266,11 +257,9 @@ fun HomeScreenContent(
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    sharedViewModel: TextRecognitionSharedViewModel,
-    onClickNavigate: (NavigationItem) -> Unit,
+    onClickNavigate: (Screen) -> Unit,
     onPhotoTaken: (Uri, Uri) -> Unit
 ) {
-
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -340,8 +329,7 @@ fun HomeScreen(
                     ).show()
                     return@runTextRecognition
                 }
-                sharedViewModel.updateProcessedTextState(it)
-                onClickNavigate(NavigationItem.TextResult)
+                onClickNavigate(Screen.TextResult(it))
             }
         }
     )

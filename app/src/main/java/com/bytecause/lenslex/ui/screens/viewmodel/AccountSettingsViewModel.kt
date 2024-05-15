@@ -33,12 +33,12 @@ class AccountSettingsViewModel(
     private val firebase: FirebaseFirestore,
 ) : ViewModel() {
 
-    private val firebaseAuth = auth.getAuth
+    private val firebaseAuth = auth.getAuth()
 
     private val _uiState =
         MutableStateFlow(
             AccountSettingsState(
-                userDetails = auth.getAuth.currentUser?.run {
+                userDetails = auth.getAuth().currentUser?.run {
                     UserAccountDetails(
                         uid = uid,
                         creationTimeStamp = metadata?.creationTimestamp,
@@ -48,7 +48,7 @@ class AccountSettingsViewModel(
                         isAnonymous = isAnonymous
                     )
                 },
-                linkedProviders = auth.getAuth.currentUser?.run {
+                linkedProviders = auth.getAuth().currentUser?.run {
                     val providers = mutableListOf<Provider>()
 
                     reload()
@@ -236,7 +236,7 @@ class AccountSettingsViewModel(
             _uiState.value.credentialChangeResult as CredentialChangeResult.Failure.ReauthorizationRequired
 
         viewModelScope.launch(Dispatchers.Main) {
-            auth.getAuth.currentUser
+            auth.getAuth().currentUser
                 ?.reauthenticateAndRetrieveData(authCredential)
                 ?.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
@@ -272,7 +272,7 @@ class AccountSettingsViewModel(
     private fun unlinkProvider(provider: Provider) {
         when (provider) {
             Provider.Google -> {
-                auth.getAuth.currentUser
+                auth.getAuth().currentUser
                     ?.unlink(GoogleAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
 
@@ -290,7 +290,7 @@ class AccountSettingsViewModel(
             }
 
             Provider.Email -> {
-                auth.getAuth.currentUser
+                auth.getAuth().currentUser
                     ?.unlink(EmailAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
 
@@ -345,7 +345,7 @@ class AccountSettingsViewModel(
         val credential = (credentials as Credentials.Sensitive.SignInCredentials)
         val emailCredentials =
             EmailAuthProvider.getCredential(credential.email, credential.password)
-        auth.getAuth.currentUser?.linkWithCredential(emailCredentials)
+        auth.getAuth().currentUser?.linkWithCredential(emailCredentials)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
 
@@ -374,10 +374,10 @@ class AccountSettingsViewModel(
 
     // Manual refresh of firebase account details
     private fun reload() {
-        auth.getAuth.currentUser?.reload()
+        auth.getAuth().currentUser?.reload()
 
         _uiState.update {
-            it.copy(userDetails = auth.getAuth.currentUser?.run {
+            it.copy(userDetails = auth.getAuth().currentUser?.run {
                 UserAccountDetails(
                     uid = uid,
                     creationTimeStamp = metadata?.creationTimestamp,
@@ -395,7 +395,7 @@ class AccountSettingsViewModel(
             .setDisplayName(userName)
             .build()
 
-        auth.getAuth.currentUser?.updateProfile(changeRequest)
+        auth.getAuth().currentUser?.updateProfile(changeRequest)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -424,7 +424,7 @@ class AccountSettingsViewModel(
         credentials: Credentials.Sensitive.SignInCredentials
     ) {
         val credential = EmailAuthProvider.getCredential(credentials.email, credentials.password)
-        auth.getAuth.currentUser?.reauthenticate(credential)
+        auth.getAuth().currentUser?.reauthenticate(credential)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     if (_uiState.value.credentialChangeResult is CredentialChangeResult.Failure.ReauthorizationRequired) {
@@ -456,7 +456,7 @@ class AccountSettingsViewModel(
     }
 
     private fun updateEmail(email: String) {
-        auth.getAuth.currentUser?.verifyBeforeUpdateEmail(email)
+        auth.getAuth().currentUser?.verifyBeforeUpdateEmail(email)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -484,7 +484,7 @@ class AccountSettingsViewModel(
     }
 
     private fun updatePassword(password: String) {
-        auth.getAuth.currentUser?.updatePassword(password)
+        auth.getAuth().currentUser?.updatePassword(password)
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     updateCredentialChangeState(
@@ -508,7 +508,7 @@ class AccountSettingsViewModel(
     }
 
     private fun deleteAccount() {
-        val uid = auth.getAuth.currentUser?.uid
+        val uid = auth.getAuth().currentUser?.uid
         uid?.let { userId ->
             viewModelScope.launch {
                 firebase
@@ -517,7 +517,7 @@ class AccountSettingsViewModel(
                     .delete()
                     .addOnCompleteListener { deleteTask ->
                         if (deleteTask.isSuccessful) {
-                            auth.getAuth.currentUser?.delete()
+                            auth.getAuth().currentUser?.delete()
                                 ?.addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
                                         updateCredentialChangeState(

@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
 import com.bytecause.lenslex.domain.models.UserData
@@ -12,13 +13,14 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class AccountViewModel(
     private val auth: Authenticator,
     private val firebaseCloudRepository: FirebaseCloudRepositoryImpl
 ) : ViewModel() {
 
-    private val firebaseAuth = auth.getAuth
+    private val firebaseAuth = auth.getAuth()
 
     private val _uiState = MutableStateFlow(AccountState(userData = firebaseAuth.currentUser?.run {
         UserData(
@@ -102,7 +104,9 @@ class AccountViewModel(
             }
 
             is AccountUiEvent.OnSaveUserProfilePicture -> {
-                firebaseCloudRepository.saveUserProfilePicture(event.value)
+                viewModelScope.launch {
+                    firebaseCloudRepository.saveUserProfilePicture(event.value)
+                }
             }
         }
     }
@@ -131,7 +135,7 @@ class AccountViewModel(
     }
 
     private fun changeFirebaseLanguageCode(langCode: String) =
-        auth.getAuth.setLanguageCode(langCode)
+        auth.getAuth().setLanguageCode(langCode)
 
     init {
         firebaseAuth.addAuthStateListener(authStateListener)
@@ -142,7 +146,7 @@ class AccountViewModel(
             .setDisplayName(name)
             .build()
 
-        auth.getAuth.currentUser?.updateProfile(changeRequest)
+        auth.getAuth().currentUser?.updateProfile(changeRequest)
     }
 
     private fun updateProfilePicture(uri: Uri) {
@@ -150,7 +154,7 @@ class AccountViewModel(
             .setPhotoUri(uri)
             .build()
 
-        auth.getAuth.currentUser?.updateProfile(changeRequest)
+        auth.getAuth().currentUser?.updateProfile(changeRequest)
     }
 
     private fun signOut() = auth.signOut()

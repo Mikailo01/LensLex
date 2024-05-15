@@ -8,10 +8,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.util.TestTags
+import com.bytecause.lenslex.util.then
 
 @Composable
 fun LanguagePreferences(
@@ -34,7 +37,9 @@ fun LanguagePreferences(
         )
         Text(text = "->")
         RoundedText(
-            modifier = modifier.padding(start = 5.dp, end = 5.dp),
+            modifier = modifier
+                .padding(start = 5.dp, end = 5.dp)
+                .testTag(TestTags.SELECT_LANG_OPTION),
             text = text,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
