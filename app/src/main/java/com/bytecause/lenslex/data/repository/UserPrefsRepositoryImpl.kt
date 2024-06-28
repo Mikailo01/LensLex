@@ -19,17 +19,33 @@ class UserPrefsRepositoryImpl(
     private val userDataStorePreferences: DataStore<Preferences>,
     private val coroutineDispatcher: CoroutineDispatcher
 ) : UserPrefsRepository {
-
-    override suspend fun saveTranslationOption(langName: String) {
+    override suspend fun saveOriginTranslationOption(langCode: String) {
         withContext(coroutineDispatcher) {
             userDataStorePreferences.edit { preferences ->
-                preferences[TRANSLATION_OPTION_KEY] = langName
+                preferences[ORIGIN_TRANSLATION_OPTION_KEY] = langCode
             }
         }
     }
 
-    override fun loadTranslationOption(): Flow<String?> = flow {
-        emit(userDataStorePreferences.data.firstOrNull()?.get(TRANSLATION_OPTION_KEY))
+    override fun loadOriginTranslationOption(): Flow<String?> = flow {
+        emit(userDataStorePreferences.data.firstOrNull()?.get(ORIGIN_TRANSLATION_OPTION_KEY))
+    }
+        .flowOn(coroutineDispatcher)
+        .catch { exception ->
+            if (exception is IOException) emit(null)
+            else throw exception
+        }
+
+    override suspend fun saveTargetTranslationOption(langCode: String) {
+        withContext(coroutineDispatcher) {
+            userDataStorePreferences.edit { preferences ->
+                preferences[TARGET_TRANSLATION_OPTION_KEY] = langCode
+            }
+        }
+    }
+
+    override fun loadTargetTranslationOption(): Flow<String?> = flow {
+        emit(userDataStorePreferences.data.firstOrNull()?.get(TARGET_TRANSLATION_OPTION_KEY))
     }
         .flowOn(coroutineDispatcher)
         .catch { exception ->
@@ -38,6 +54,7 @@ class UserPrefsRepositoryImpl(
         }
 
     private companion object {
-        val TRANSLATION_OPTION_KEY = stringPreferencesKey("translation_option")
+        val ORIGIN_TRANSLATION_OPTION_KEY = stringPreferencesKey("origin_translation_option")
+        val TARGET_TRANSLATION_OPTION_KEY = stringPreferencesKey("target_translation_option")
     }
 }

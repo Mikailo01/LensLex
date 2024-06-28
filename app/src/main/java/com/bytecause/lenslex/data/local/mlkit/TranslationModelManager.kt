@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.mlkit
+package com.bytecause.lenslex.data.local.mlkit
 
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.common.model.RemoteModelManager

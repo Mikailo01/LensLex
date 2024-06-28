@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 
 interface UserPrefsRepository {
-    suspend fun saveTranslationOption(langName: String)
-    fun loadTranslationOption(): Flow<String?>
+    suspend fun saveOriginTranslationOption(langCode: String)
+    suspend fun saveTargetTranslationOption(langCode: String)
+    fun loadOriginTranslationOption(): Flow<String?>
+    fun loadTargetTranslationOption(): Flow<String?>
 }

@@ -4,24 +4,26 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.room.Room
-import com.bytecause.lenslex.data.local.room.AppDatabase
-import com.bytecause.lenslex.data.local.room.WordDao
+import com.bytecause.lenslex.data.local.mlkit.TextRecognizer
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
 import com.bytecause.lenslex.data.repository.FirebaseCloudRepositoryImpl
-import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
+import com.bytecause.lenslex.data.repository.TextLanguageRecognitionRepositoryImpl
+import com.bytecause.lenslex.data.repository.TextRecognitionRepositoryImpl
+import com.bytecause.lenslex.data.repository.TranslateRepositoryImpl
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
-import com.bytecause.lenslex.data.repository.VerifyOobRepository
-import com.bytecause.lenslex.data.repository.WordsDatabaseRepository
+import com.bytecause.lenslex.data.repository.VerifyOobRepositoryImpl
+import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.RecognizedTextViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -49,17 +51,9 @@ val appModule = module {
         FirebaseCloudStorage()
     }
 
-    // Database
-    single {
-        Room.databaseBuilder(
-            context = get(),
-            klass = AppDatabase::class.java,
-            name = "app_database"
-        )
-            .build()
+    single<TextRecognizer> {
+        TextRecognizer(androidContext())
     }
-
-    single<WordDao> { get<AppDatabase>().wordDao() }
 
     // Repositories
     single<SupportedLanguagesRepository> {
@@ -73,8 +67,6 @@ val appModule = module {
         )
     }
 
-    single<WordsDatabaseRepository> { WordsDatabaseRepository(get()) }
-
     single<UserPrefsRepositoryImpl> {
         UserPrefsRepositoryImpl(androidContext().userDataStore, Dispatchers.IO)
     }
@@ -83,12 +75,24 @@ val appModule = module {
         VerifyOobCodeRestApiBuilder().getVerifyOobCodeRestApiService()
     }
 
-    single<VerifyOobRepository> {
-        VerifyOobRepository(get(), Dispatchers.IO)
+    single<VerifyOobRepositoryImpl> {
+        VerifyOobRepositoryImpl(get(), Dispatchers.IO)
     }
 
     single<FirebaseCloudRepositoryImpl> {
         FirebaseCloudRepositoryImpl(get(), Dispatchers.IO)
+    }
+
+    single<TranslateRepositoryImpl> {
+        TranslateRepositoryImpl()
+    }
+
+    single<TextRecognitionRepositoryImpl> {
+        TextRecognitionRepositoryImpl(get<TextRecognizer>())
+    }
+
+    single<TextLanguageRecognitionRepositoryImpl> {
+        TextLanguageRecognitionRepositoryImpl()
     }
 
     // ViewModels
@@ -96,13 +100,14 @@ val appModule = module {
         HomeViewModel(
             wordsRepository = get<WordsRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
+            textRecognitionRepository = get<TextRecognitionRepositoryImpl>(),
             supportedLanguagesRepository = get(),
             auth = get<FirebaseAuthClient>()
         )
     }
 
     viewModel {
-        UpdatePasswordViewModel(get<FirebaseAuthClient>(), get())
+        UpdatePasswordViewModel(get<FirebaseAuthClient>(), get<VerifyOobRepositoryImpl>())
     }
 
     viewModel {
@@ -118,8 +123,13 @@ val appModule = module {
     }
 
     viewModel {
+        ModifiedImagePreviewViewModel(get<TextRecognitionRepositoryImpl>())
+    }
+
+    viewModel {
         AddViewModel(
-            firestoreRepository = get<WordsRepositoryImpl>(),
+            wordsRepository = get<WordsRepositoryImpl>(),
+            translateRepository = get<TranslateRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             supportedLanguagesRepository = get()
         )
@@ -127,5 +137,15 @@ val appModule = module {
 
     viewModel {
         AccountSettingsViewModel(get<FirebaseAuthClient>(), get())
+    }
+
+    viewModel {
+        RecognizedTextViewModel(
+            wordsRepository = get<WordsRepositoryImpl>(),
+            translateRepository = get<TranslateRepositoryImpl>(),
+            languageRecognitionRepository = get<TextLanguageRecognitionRepositoryImpl>(),
+            userPrefsRepository = get<UserPrefsRepositoryImpl>(),
+            supportedLanguagesRepository = get()
+        )
     }
 }

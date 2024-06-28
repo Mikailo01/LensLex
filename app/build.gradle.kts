@@ -3,7 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
-    id ("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -57,9 +58,6 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.13"
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -70,14 +68,12 @@ android {
 }
 
 dependencies {
-    val roomVersion = "2.6.1"
     val koinVersion = "3.5.3"
 
-    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    //implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.navigation:navigation-compose:2.8.0-beta01")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
+    implementation("androidx.navigation:navigation-compose:2.8.0-beta04")
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
 
     // Retrofit2 library
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
@@ -89,6 +85,7 @@ dependencies {
     // Blur library
     implementation("jp.wasabeef:blurry:4.0.1")
 
+    // ML Kits
     // Text recognition
     implementation("com.google.mlkit:text-recognition:16.0.0")
     // Text translation
@@ -102,14 +99,14 @@ dependencies {
 // optional - needed for credentials support from play services, for devices running
 // Android 13 and below.
     implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Preferences DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Firebase
     // When using the BoM, don't specify versions in Firebase dependencies
-    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
     implementation("com.google.firebase:firebase-analytics")
 
     // authentication
@@ -118,21 +115,16 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
 
-    implementation("com.google.android.gms:play-services-auth:21.1.1")
-
-    // Room & Dao
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Compose
     implementation("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
     //implementation(platform("androidx.compose:compose-bom:2024.04.01"))
-    implementation("androidx.compose.ui:ui:1.6.7")
-    implementation("androidx.compose.ui:ui-graphics:1.6.7")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.6.7")
+    implementation("androidx.compose.ui:ui:1.6.8")
+    implementation("androidx.compose.ui:ui-graphics:1.6.8")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.material3:material3-window-size-class")
 
@@ -148,10 +140,10 @@ dependencies {
     implementation("io.insert-koin:koin-android")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("io.insert-koin:koin-test:3.5.3")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    testImplementation("io.insert-koin:koin-test:3.5.6")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

@@ -13,15 +13,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.util.TestTags
-import com.bytecause.lenslex.util.then
 
 @Composable
 fun LanguagePreferences(
     modifier: Modifier = Modifier,
-    text: String,
+    originLangName: String,
+    targetLangName: String,
     isLoading: Boolean = false,
-    onClick: () -> Unit
+    onClick: (TranslationOption) -> Unit
 ) {
     Row(
         modifier = modifier,
@@ -30,21 +31,22 @@ fun LanguagePreferences(
     ) {
         RoundedText(
             modifier = modifier.padding(start = 5.dp, end = 5.dp),
-            text = "English",
+            text = originLangName,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            onClick = { }
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            isLoading = isLoading,
+            onClick = { onClick(TranslationOption.Origin()) }
         )
         Text(text = "->")
         RoundedText(
             modifier = modifier
                 .padding(start = 5.dp, end = 5.dp)
                 .testTag(TestTags.SELECT_LANG_OPTION),
-            text = text,
+            text = targetLangName,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             isLoading = isLoading,
-            onClick = { onClick() }
+            onClick = { onClick(TranslationOption.Target()) }
         )
     }
 }
@@ -52,5 +54,8 @@ fun LanguagePreferences(
 @Composable
 @Preview(showBackground = true)
 fun LanguagePreferencesPreview() {
-    LanguagePreferences(text = stringResource(id = R.string.preview)) { }
+    LanguagePreferences(
+        originLangName = stringResource(id = R.string.preview),
+        targetLangName = stringResource(id = R.string.preview)
+    ) { }
 }

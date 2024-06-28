@@ -3,7 +3,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.data.repository.VerifyOobRepository
+import com.bytecause.lenslex.data.repository.abstraction.VerifyOobRepository
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
@@ -12,8 +12,10 @@ import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.NetworkUtil
 import com.bytecause.lenslex.util.ValidationUtil
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,6 +26,9 @@ class UpdatePasswordViewModel(
 
     private val _uiState = MutableStateFlow(UpdatePasswordState())
     val uiState = _uiState.asStateFlow()
+
+    private val _getNewCodeChannel = Channel<Boolean>()
+    val getNewCodeChannel = _getNewCodeChannel.receiveAsFlow()
 
     fun uiEventHandler(event: UpdatePasswordUiEvent) {
         when (event) {
@@ -93,20 +98,13 @@ class UpdatePasswordViewModel(
                 }
             }
 
-            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> _uiState.update {
-                it.copy(
-                    showOobCodeExpiredDialog = false,
-                    getNewCode = true
-                )
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> {
+                _getNewCodeChannel.trySend(true)
             }
 
             UpdatePasswordUiEvent.OnDismiss -> _uiState.update { it.copy(dismissExpiredDialog = true) }
             UpdatePasswordUiEvent.OnResetPasswordResult -> updateState(null)
         }
-    }
-
-    fun resetCodeValidationState() {
-        _uiState.update { it.copy(codeValidationResult = null) }
     }
 
     private fun updateState(state: SimpleResult?) {

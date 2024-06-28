@@ -1,8 +1,11 @@
-package com.bytecause.lenslex.mlkit
+package com.bytecause.lenslex.data.local.mlkit
 
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 object Translator {
 
@@ -16,8 +19,7 @@ object Translator {
         text: String,
         sourceLang: String,
         targetLang: String,
-        onTranslateResult: (TranslationResult) -> Unit
-    ) {
+    ): Flow<TranslationResult> = callbackFlow {
         val options = TranslatorOptions.Builder()
             .setSourceLanguage(sourceLang)
             .setTargetLanguage(targetLang)
@@ -32,15 +34,15 @@ object Translator {
             if (task.isSuccessful) {
                 translator.translate(text).addOnCompleteListener { translateTask ->
                     if (translateTask.isSuccessful) {
-                        onTranslateResult(TranslationResult.TranslationSuccess(translatedText = translateTask.result))
+                        trySend(TranslationResult.TranslationSuccess(translatedText = translateTask.result))
                     } else {
-                        onTranslateResult(TranslationResult.TranslationFailure)
+                        trySend(TranslationResult.TranslationFailure)
                     }
                 }
             } else {
-                onTranslateResult(TranslationResult.ModelDownloadFailure)
+                trySend(TranslationResult.ModelDownloadFailure)
             }
         }
+        awaitClose { close() }
     }
-
 }

@@ -10,13 +10,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.domain.models.SupportedLanguage
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
 @Composable
 fun LanguageDialog(
     modifier: Modifier = Modifier,
+    translationOption: TranslationOption,
     lazyListContent: List<SupportedLanguage>,
     onDismiss: () -> Unit,
-    onConfirm: (SupportedLanguage) -> Unit,
+    onConfirm: (TranslationOption) -> Unit,
     onDownload: (String) -> Unit,
     onRemove: (String) -> Unit
 ) {
@@ -29,6 +31,7 @@ fun LanguageDialog(
             items(lazyListContent, key = { item -> item.langCode }) { item ->
                 LanguageItem(
                     modifier = Modifier.padding(10.dp),
+                    translationOption = translationOption,
                     item = item,
                     onItemClick = {
                         onConfirm(it)
@@ -53,6 +56,7 @@ fun LanguageDialogPreview() {
             SupportedLanguage(langCode = "cs", langName = "Czech"),
             SupportedLanguage(langCode = "en", langName = "English")
         ),
+        translationOption = TranslationOption.Origin(),
         onDismiss = {},
         onConfirm = {},
         onDownload = {},

@@ -1,13 +1,17 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
+import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
+import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
+import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -18,7 +22,8 @@ import kotlinx.coroutines.launch
 
 
 class AddViewModel(
-    private val firestoreRepository: WordsRepositoryImpl,
+    private val wordsRepository: WordsRepository,
+    private val translateRepository: TranslateRepository,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
@@ -26,15 +31,17 @@ class AddViewModel(
     private val _uiState = MutableStateFlow(AddState())
     val uiState = _uiState.asStateFlow()
 
+    private var translateJob: Job? = null
+
     init {
         combine(
             languageOptionFlow,
             supportedLanguages
         ) { selectedLang, supportedLanguages ->
 
-            if (_uiState.value.selectedLanguage != selectedLang) _uiState.update {
+            if (_uiState.value.selectedLanguageOptions != selectedLang) _uiState.update {
                 it.copy(
-                    selectedLanguage = selectedLang
+                    selectedLanguageOptions = selectedLang
                 )
             }
             if (_uiState.value.supportedLanguages != supportedLanguages) _uiState.update {
@@ -52,23 +59,9 @@ class AddViewModel(
                 _uiState.update { it.copy(textValue = event.text) }
             }
 
-            is AddUiEvent.OnInsertWord -> {
-                insertWord(
-                    WordsAndSentences(
-                        id = "${_uiState.value.textValue}_en".lowercase()
-                            .replace(" ", "_"),
-                        word = _uiState.value.textValue,
-                        languageCode = "en",
-                        translations = mapOf(_uiState.value.selectedLanguage.langCode to event.translatedText),
-                        timeStamp = System.currentTimeMillis()
-                    )
-                ) {
-                    _uiState.update { it.copy(shouldNavigateBack = true) }
-                }
-            }
-
             is AddUiEvent.OnConfirmDialog -> {
-                _uiState.update { it.copy(showLanguageDialog = false) }
+                saveTranslationOption(event.value)
+                _uiState.update { it.copy(showLanguageDialog = null) }
             }
 
             is AddUiEvent.OnDownloadLanguage -> {
@@ -80,12 +73,10 @@ class AddViewModel(
             }
 
             is AddUiEvent.OnShowLanguageDialog -> {
-                _uiState.update { it.copy(showLanguageDialog = true) }
+                _uiState.update { it.copy(showLanguageDialog = event.value) }
             }
 
-            AddUiEvent.OnDismissDialog -> {
-                _uiState.update { it.copy(showLanguageDialog = false) }
-            }
+            is AddUiEvent.OnTranslate -> translateText(event.value)
 
             AddUiEvent.OnNavigateBack -> {
                 _uiState.update { it.copy(shouldNavigateBack = true) }
@@ -93,11 +84,54 @@ class AddViewModel(
         }
     }
 
-    private fun insertWord(word: WordsAndSentences, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            firestoreRepository.addWord(word).firstOrNull()?.let {
-                if (it) onSuccess()
+    private fun translateText(text: String) {
+        if (translateJob?.isActive == true) return
+
+        val sourceLang = uiState.value.selectedLanguageOptions.first.lang.langCode
+
+        translateJob = viewModelScope.launch {
+            translateRepository.translate(
+                text = text,
+                sourceLang = sourceLang,
+                targetLang = uiState.value.selectedLanguageOptions.second.lang.langCode
+            ).firstOrNull()?.let { translationResult ->
+                when (translationResult) {
+                    Translator.TranslationResult.ModelDownloadFailure -> {
+                        /* Toast.makeText(
+                             context,
+                             "Model download failed.",
+                             Toast.LENGTH_SHORT
+                         ).show()*/
+                    }
+
+                    is Translator.TranslationResult.TranslationSuccess -> {
+                        insertWord(
+                            WordsAndSentences(
+                                id = "${uiState.value.textValue}_$sourceLang".lowercase()
+                                    .replace(" ", "_"),
+                                word = uiState.value.textValue,
+                                languageCode = uiState.value.selectedLanguageOptions.first.lang.langCode,
+                                translations = mapOf(uiState.value.selectedLanguageOptions.second.lang.langCode to translationResult.translatedText),
+                                timeStamp = System.currentTimeMillis()
+                            )
+                        ).firstOrNull().takeIf { it == true }?.let {
+                            _uiState.update { it.copy(shouldNavigateBack = true) }
+                        }
+                    }
+
+                    Translator.TranslationResult.TranslationFailure -> {
+                        /*Toast.makeText(
+                            context,
+                            "Translation failed.",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()*/
+                    }
+                }
             }
-        }.invokeOnCompletion {  }
+        }
     }
+
+    private fun insertWord(word: WordsAndSentences): Flow<Boolean> =
+        wordsRepository.addWord(word)
 }

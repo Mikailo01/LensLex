@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,7 +46,7 @@ fun CircularFloatingActionMenu(
     onInnerContentClick: (FabNavigation) -> Unit,
     onIconStateChange: (Boolean) -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.wrapContentSize()) {
         AnimatedVisibility(
             visible = iconState, modifier = Modifier
                 .align(Alignment.BottomEnd)

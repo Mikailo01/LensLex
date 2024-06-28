@@ -24,7 +24,7 @@ import com.bytecause.lenslex.util.gradientBackground
 @Composable
 fun UserAuthBackground(
     modifier: Modifier = Modifier,
-    snackBarHostState: SnackbarHostState? = null,
+    snackBarHostState: SnackbarHostState,
     backgroundContent: @Composable () -> Unit = {},
     foregroundContent: @Composable () -> Unit = {},
 ) {
@@ -57,7 +57,6 @@ fun UserAuthBackground(
     ) {
         Column(
             modifier = Modifier
-                //.fillMaxSize()
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .height(IntrinsicSize.Max)
@@ -67,13 +66,10 @@ fun UserAuthBackground(
             foregroundContent()
         }
 
-        if (snackBarHostState != null) {
-            SnackbarHost(
-                hostState = snackBarHostState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    //.align(Alignment.BottomCenter)
-            )
-        }
+        SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier
+                .fillMaxWidth()
+        )
     }
 }

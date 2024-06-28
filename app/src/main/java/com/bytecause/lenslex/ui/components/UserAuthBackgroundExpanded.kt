@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,7 +28,7 @@ import com.bytecause.lenslex.util.gradientBackground
 @Composable
 fun UserAuthBackgroundExpanded(
     modifier: Modifier = Modifier,
-    snackBarHostState: SnackbarHostState? = null,
+    snackBarHostState: SnackbarHostState,
     backgroundContent: @Composable () -> Unit,
     foregroundContent: @Composable () -> Unit
 ) {
@@ -47,17 +48,16 @@ fun UserAuthBackgroundExpanded(
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 backgroundContent()
             }
-            if (snackBarHostState != null) {
-                SnackbarHost(
-                    hostState = snackBarHostState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-            }
+            SnackbarHost(
+                hostState = snackBarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
         }
         Column(
             modifier = Modifier
@@ -80,5 +80,10 @@ fun UserAuthBackgroundExpanded(
 @Composable
 @Preview
 fun UserAuthBackgroundExpandedPreview() {
-    UserAuthBackgroundExpanded(backgroundContent = {}, foregroundContent = {})
+    UserAuthBackgroundExpanded(
+        snackBarHostState = remember {
+            SnackbarHostState()
+        },
+        backgroundContent = {},
+        foregroundContent = {})
 }

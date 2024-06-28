@@ -1,26 +1,31 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
+import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.SupportedLanguage
 import com.bytecause.lenslex.domain.models.WordsAndSentences
-import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.events.HomeUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val wordsRepository: WordsRepository,
-    private val userPrefsRepository: UserPrefsRepository,
+    userPrefsRepository: UserPrefsRepository,
+    private val textRecognitionRepository: TextRecognitionRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository,
     auth: Authenticator
 ) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
@@ -28,6 +33,9 @@ class HomeViewModel(
     private val _uiState =
         MutableStateFlow(HomeState(profilePictureUrl = auth.getAuth().currentUser?.photoUrl.toString()))
     val uiState = _uiState.asStateFlow()
+
+    private val _textResultChannel = Channel<List<String>>()
+    val textResultChannel = _textResultChannel.receiveAsFlow()
 
     init {
         combine(
@@ -39,8 +47,8 @@ class HomeViewModel(
             _uiState.update { state ->
                 state.copy(
                     wordList = words.takeIf { it != state.wordList } ?: state.wordList,
-                    selectedLanguage = selectedLang.takeIf { it != state.selectedLanguage }
-                        ?: state.selectedLanguage,
+                    selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
+                        ?: state.selectedLanguageOptions,
                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
                         ?: state.supportedLanguages,
                     isLoading = words != state.wordList
@@ -64,7 +72,7 @@ class HomeViewModel(
 
             is HomeUiEvent.OnConfirmLanguageDialog -> {
                 saveTranslationOption(event.value)
-                _uiState.update { it.copy(showLanguageDialog = false) }
+                _uiState.update { it.copy(showLanguageDialog = null) }
             }
 
             is HomeUiEvent.OnShowLanguageDialog -> {
@@ -85,6 +93,23 @@ class HomeViewModel(
                 _uiState.update { it.copy(showUndoButton = true) }
             }
 
+            is HomeUiEvent.OnTextRecognition -> {
+                _uiState.update {
+                    it.copy(showProgressBar = true)
+                }
+
+                viewModelScope.launch {
+                    runTextRecognition(event.imagePaths).firstOrNull()?.let { result ->
+                        _uiState.update { state ->
+                            state.copy(showProgressBar = false, isImageTextless = result.isEmpty())
+                        }
+                        if (result.isNotEmpty()) {
+                            _textResultChannel.trySend(result)
+                        }
+                    }
+                }
+            }
+
             HomeUiEvent.OnItemRestored -> {
                 insertWord(deletedItemsStack.last())
                 removeDeletedItemFromStack()
@@ -93,8 +118,8 @@ class HomeViewModel(
         }
     }
 
-    fun showProgressBar(boolean: Boolean) {
-        _uiState.update { it.copy(showProgressBar = boolean) }
+    fun resetImageTextless() {
+        _uiState.update { it.copy(isImageTextless = false) }
     }
 
     /* private fun addWords(list: List<WordsAndSentences>) {
@@ -134,6 +159,9 @@ class HomeViewModel(
         }*/
     }*/
 
+    private fun runTextRecognition(imagePaths: List<Uri>): Flow<List<String>> =
+        textRecognitionRepository.runTextRecognition(imagePaths)
+
     private fun insertWord(word: WordsAndSentences) {
         viewModelScope.launch {
             wordsRepository.addWord(word).firstOrNull()
@@ -156,12 +184,12 @@ class HomeViewModel(
             }
     }
 
-    private fun saveTranslationOption(language: SupportedLanguage) {
-        viewModelScope.launch {
-            userPrefsRepository.saveTranslationOption(language.langCode)
-            super.setLangOption(language = language)
-        }
-    }
+    /* private fun saveTranslationOption(language: SupportedLanguage) {
+         viewModelScope.launch {
+             userPrefsRepository.saveTranslationOption(language.langCode)
+             super.setLangOption(language = language)
+         }
+     }*/
 
     /* fun insertOrUpdateWordAndSentenceEntity(word: WordAndSentenceEntity) {
          viewModelScope.launch {

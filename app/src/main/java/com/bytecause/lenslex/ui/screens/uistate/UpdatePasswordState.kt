@@ -11,7 +11,6 @@ data class UpdatePasswordState(
     val oobCode: String? = null,
     val showOobCodeExpiredDialog: Boolean = false,
     val animationStarted: Boolean = false,
-    val getNewCode: Boolean = false,
     val dismissExpiredDialog: Boolean = false,
     val resetState: SimpleResult? = null,
     val codeValidationResult: UpdatePasswordViewModel.CodeValidationResult? = UpdatePasswordViewModel.CodeValidationResult(

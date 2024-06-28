@@ -1,22 +1,18 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
-import androidx.compose.runtime.Immutable
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Word
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
-@Immutable
-data class HomeState(
-    val wordList: List<WordsAndSentences> = emptyList(),
-    val profilePictureUrl: String = "",
-    val isLoading: Boolean = true,
-    val fabState: Boolean = false,
-    val showProgressBar: Boolean = false,
+data class RecognizedTextState(
+    val isSentence: Boolean = false,
+    val sentence: List<Word> = emptyList(),
+    val words: List<Word> = emptyList(),
+    val selectedWords: Set<Word> = emptySet(),
     val supportedLanguages: List<SupportedLanguage> = emptyList(),
     val selectedLanguageOptions: Pair<TranslationOption.Origin, TranslationOption.Target> = TranslationOption.Origin(
         SupportedLanguage()
     ) to TranslationOption.Target(SupportedLanguage()),
     val showLanguageDialog: TranslationOption? = null,
-    val showUndoButton: Boolean = false,
-    val isImageTextless: Boolean = false
+    val shouldNavigateBack: Boolean = false
 )

@@ -20,12 +20,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.domain.models.SupportedLanguage
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
 @Composable
 fun LanguageItem(
     modifier: Modifier = Modifier,
+    translationOption: TranslationOption,
     item: SupportedLanguage,
-    onItemClick: (SupportedLanguage) -> Unit,
+    onItemClick: (TranslationOption) -> Unit,
     onDownloadClick: (String) -> Unit,
     onRemoveClick: (String) -> Unit
 ) {
@@ -34,7 +36,19 @@ fun LanguageItem(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onItemClick(item) }
+            .clickable {
+                onItemClick(
+                    when (translationOption) {
+                        is TranslationOption.Origin -> {
+                            TranslationOption.Origin(item)
+                        }
+
+                        is TranslationOption.Target -> {
+                            TranslationOption.Target(item)
+                        }
+                    }
+                )
+            }
     ) {
         Text(text = item.langName, modifier = modifier)
 
@@ -76,6 +90,7 @@ fun LanguageItem(
 @Preview(showBackground = true)
 fun LanguageItemPreview() {
     LanguageItem(
+        translationOption = TranslationOption.Origin(),
         item = SupportedLanguage(langName = stringResource(id = R.string.preview)),
         onItemClick = {},
         onDownloadClick = {},

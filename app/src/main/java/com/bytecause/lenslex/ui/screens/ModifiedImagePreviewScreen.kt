@@ -1,26 +1,27 @@
 package com.bytecause.lenslex.ui.screens
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,23 +29,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
+import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
+import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModifiedImagePreviewScreenContent(
-    uri: Uri,
-    isProcessing: Boolean,
-    onLaunchCropLauncher: () -> Unit,
-    onProcessImageClick: () -> Unit,
+    state: ModifiedImagePreviewState,
+    snackbarHostState: SnackbarHostState,
+    onEvent: (ModifiedImagePreviewUiEvent) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -61,31 +65,47 @@ fun ModifiedImagePreviewScreenContent(
                     titleContentColor = MaterialTheme.colorScheme.inversePrimary
                 )
             ) {
-                onLaunchCropLauncher()
+                onEvent(ModifiedImagePreviewUiEvent.OnLaunchCropLauncher)
             }
 
             AsyncImage(
-                model = uri,
+                model = state.modifiedImageUri,
                 contentDescription = stringResource(id = R.string.modified_image_preview),
                 modifier = Modifier
                     .fillMaxSize()
             )
         }
 
-        Button(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 10.dp),
-            onClick = {
-                onProcessImageClick()
-            }
+        Column(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = stringResource(id = R.string.process))
+            Button(
+                modifier = Modifier
+                    .padding(bottom = 10.dp),
+                enabled = state.isButtonEnabled,
+                colors = ButtonDefaults.buttonColors(
+                    disabledContentColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                    disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(0.3f)
+                ),
+                onClick = {
+                    onEvent(ModifiedImagePreviewUiEvent.OnProcessImageClick)
+                }
+            ) {
+                Text(text = stringResource(id = R.string.process))
+            }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
         }
+
         IndeterminateCircularIndicator(
             modifier = Modifier.align(Alignment.Center),
             size = 65.dp,
-            isShowed = isProcessing,
+            isShowed = state.isProcessing,
             subContent = { Text(text = stringResource(id = R.string.processing)) }
         )
     }
@@ -93,25 +113,25 @@ fun ModifiedImagePreviewScreenContent(
 
 @Composable
 fun ModifiedImagePreviewScreen(
+    viewModel: ModifiedImagePreviewViewModel = koinViewModel(),
     originalImageUri: Uri,
     modifiedImageUri: Uri,
     onNavigateBack: () -> Unit,
     onClickNavigate: (Screen) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
+
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
+
     val context = LocalContext.current
-
-    var isProcessing by remember {
-        mutableStateOf(false)
-    }
-
-    var uri by rememberSaveable {
-        mutableStateOf(modifiedImageUri)
-    }
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
             result.uriContent?.let {
-                uri = it
+                viewModel.uiEventHandler(ModifiedImagePreviewUiEvent.OnUpdateImage(it))
             }
         } else {
             // an error occurred cropping
@@ -119,27 +139,35 @@ fun ModifiedImagePreviewScreen(
         }
     }
 
-    ModifiedImagePreviewScreenContent(
-        uri = uri,
-        isProcessing = isProcessing,
-        onLaunchCropLauncher = {
-            val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())
-            imageCropLauncher.launch(cropOptions)
-        },
-        onProcessImageClick = {
-            isProcessing = true
-            TextRecognizer(context).runTextRecognition(listOf(uri)) {
-                isProcessing = false
+    LaunchedEffect(key1 = uiState.isImageTextless) {
+        if (uiState.isImageTextless) {
+            snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
+        }
+    }
 
-                if (it.isEmpty()) {
-                    Toast.makeText(
-                        context,
-                        "This image doesn't contain any text.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@runTextRecognition
+    LaunchedEffect(key1 = Unit) {
+        if (uiState.modifiedImageUri == Uri.EMPTY) viewModel.uiEventHandler(
+            ModifiedImagePreviewUiEvent.OnUpdateImage(modifiedImageUri)
+        )
+    }
+
+    LaunchedEffect(key1 = textResult) {
+        if (textResult.isNotEmpty()) onClickNavigate(Screen.TextResult(textResult))
+    }
+
+    ModifiedImagePreviewScreenContent(
+        state = uiState,
+        snackbarHostState = snackbarHostState,
+        onEvent = { event ->
+            when (event) {
+                ModifiedImagePreviewUiEvent.OnLaunchCropLauncher -> {
+                    val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())
+                    imageCropLauncher.launch(cropOptions)
                 }
-                onClickNavigate(Screen.TextResult(text = it))
+
+                else -> {
+                    viewModel.uiEventHandler(event as ModifiedImagePreviewUiEvent.NonDirect)
+                }
             }
         }
     )
@@ -149,9 +177,10 @@ fun ModifiedImagePreviewScreen(
 @Preview(showBackground = true)
 fun ModifiedImageScreenPreview() {
     ModifiedImagePreviewScreenContent(
-        uri = Uri.EMPTY,
-        isProcessing = false,
-        onLaunchCropLauncher = {},
-        onProcessImageClick = {}
+        state = ModifiedImagePreviewState(),
+        snackbarHostState = remember {
+            SnackbarHostState()
+        },
+        onEvent = {}
     )
 }

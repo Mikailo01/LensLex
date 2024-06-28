@@ -1,49 +1,115 @@
 package com.bytecause.lenslex.ui.screens.viewmodel.base
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.mlkit.TranslationModelManager
-import com.bytecause.lenslex.util.capital
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 abstract class BaseViewModel(
-    userPrefsRepository: UserPrefsRepository,
+    private val userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : ViewModel() {
 
-    private val translationDataStoreLangOption: Flow<String?> =
-        userPrefsRepository.loadTranslationOption()
+    private val translationDataStoreOriginLangOption: Flow<String?> =
+        userPrefsRepository.loadOriginTranslationOption()
 
-    private val translationLangOption: MutableStateFlow<SupportedLanguage> = MutableStateFlow(
-        SupportedLanguage()
-    )
+    private val translationDataStoreTargetLangOption: Flow<String?> =
+        userPrefsRepository.loadTargetTranslationOption()
 
-    val languageOptionFlow: Flow<SupportedLanguage> = combine(
-        translationDataStoreLangOption,
-        translationLangOption
-    ) { dataStoreValue, defaultValue ->
-        defaultValue.takeIf { it != SupportedLanguage() }
-            ?: dataStoreValue?.let {
-                SupportedLanguage(
-                    langCode = it,
-                    langName = Locale(it).displayName.split(" ")[0].capital()
+    private val translationLangOption: MutableStateFlow<Pair<TranslationOption.Origin, TranslationOption.Target>> =
+        MutableStateFlow(
+            TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
+                SupportedLanguage()
+            )
+        )
+
+    val languageOptionFlow: Flow<Pair<TranslationOption.Origin, TranslationOption.Target>> =
+        combine(
+            translationDataStoreOriginLangOption,
+            translationDataStoreTargetLangOption,
+            translationLangOption
+        ) { originOption, targetOption, defaultValue ->
+            defaultValue.takeIf {
+                // take only if state doesn't equal to initial state
+                it != TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
+                    SupportedLanguage()
                 )
             }
-            ?: SupportedLanguage(
-                langCode = Locale.getDefault().language,
-                langName = Locale.getDefault().displayName.split(" ")[0].capital()
-            )
+                ?: originOption?.let { origin ->
+                    targetOption?.let { target ->
+
+                        // Sync state in translationLangOption state flow
+                        translationLangOption.update {
+                            TranslationOption.Origin(
+                                SupportedLanguage(
+                                    origin,
+                                    Locale(origin).displayName
+                                )
+                            ) to TranslationOption.Target(
+                                SupportedLanguage(
+                                    target,
+                                    Locale(target).displayName
+                                )
+                            )
+                        }
+
+                        TranslationOption.Origin(
+                            SupportedLanguage(
+                                langCode = origin,
+                                langName = Locale(origin).displayName
+                            )
+                        ) to TranslationOption.Target(
+                            SupportedLanguage(
+                                langCode = target,
+                                langName = Locale(target).displayName
+                            )
+                        )
+                    }
+                }
+                ?: (TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
+                    SupportedLanguage()
+                ))
+        }
+
+    private fun setLangOption(language: TranslationOption) {
+        translationLangOption.update {
+            when (language) {
+                is TranslationOption.Origin -> {
+                    it.copy(first = language)
+                }
+
+                is TranslationOption.Target -> {
+                    it.copy(second = language)
+                }
+            }
+        }
     }
 
-    fun setLangOption(language: SupportedLanguage) {
-        translationLangOption.value = language
+    fun saveTranslationOption(language: TranslationOption) {
+        viewModelScope.launch {
+            // Check which language option changed
+            when (language) {
+                is TranslationOption.Origin -> {
+                    userPrefsRepository.saveOriginTranslationOption(language.lang.langCode)
+                }
+
+                is TranslationOption.Target -> {
+                    userPrefsRepository.saveTargetTranslationOption(language.lang.langCode)
+                }
+            }
+            setLangOption(language = language)
+        }
     }
 
     private fun getDownloadedModels() {

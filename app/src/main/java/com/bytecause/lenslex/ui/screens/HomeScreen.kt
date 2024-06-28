@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -30,13 +31,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
@@ -52,7 +57,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
-import com.bytecause.lenslex.mlkit.TextRecognizer
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.Divider
@@ -87,6 +91,7 @@ fun HomeScreenContent(
     state: HomeState,
     cameraPermissionState: PermissionState?,
     lazyListState: LazyListState,
+    snackbarHostState: SnackbarHostState,
     onEvent: (HomeUiEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -105,7 +110,7 @@ fun HomeScreenContent(
                                     onEvent(HomeUiEvent.OnItemRestored)
                                 },
                             painter = painterResource(id = R.drawable.baseline_undo_24),
-                            contentDescription = "Undo remove"
+                            contentDescription = stringResource(id = R.string.undo_changes)
                         )
                     }
 
@@ -141,9 +146,10 @@ fun HomeScreenContent(
                 ) {
                     LanguagePreferences(
                         modifier = Modifier.padding(5.dp),
-                        text = state.selectedLanguage.langName,
+                        originLangName = state.selectedLanguageOptions.first.lang.langName,
+                        targetLangName = state.selectedLanguageOptions.second.lang.langName,
                         isLoading = state.isLoading,
-                        onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(true)) }
+                        onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(it)) }
                     )
                     Divider(
                         thickness = 3,
@@ -165,8 +171,10 @@ fun HomeScreenContent(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     } else {
+                        if (state.wordList.none { it.languageCode == state.selectedLanguageOptions.first.lang.langCode }) return@LazyColumn
+
                         items(state.wordList, key = { item -> item.timeStamp }) { item ->
-                            item.translations[state.selectedLanguage.langCode]?.let {
+                            item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
                                 NoteItem(
                                     originalText = item.word,
                                     translatedText = it
@@ -179,6 +187,52 @@ fun HomeScreenContent(
                 }
             }
 
+            Column(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .align(Alignment.BottomEnd),
+                horizontalAlignment = Alignment.End
+            ) {
+                Column(modifier = Modifier.wrapContentSize()) {
+                    CircularFloatingActionMenu(
+                        iconState = state.fabState,
+                        fabColor = MaterialTheme.colorScheme.primary,
+                        fabContentColor = MaterialTheme.colorScheme.onPrimary,
+                        expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                        onInnerContentClick = { fabNavigation ->
+                            when (fabNavigation) {
+                                FabNavigation.CAMERA -> {
+                                    when (cameraPermissionState?.status) {
+                                        PermissionStatus.Granted -> {
+                                            val uri =
+                                                ComposeFileProvider.getImageUri(context = context)
+                                            onEvent(HomeUiEvent.OnCameraIntentLaunch(uri))
+                                        }
+
+                                        PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
+                                            context = context
+                                        )
+
+                                        else -> {
+                                            cameraPermissionState?.launchPermissionRequest()
+                                        }
+                                    }
+                                }
+
+                                FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
+
+                                FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(Screen.Add))
+                            }
+                        },
+                        onIconStateChange = {
+                            onEvent(HomeUiEvent.OnIconStateChange(it))
+                        }
+                    )
+                }
+
+                SnackbarHost(hostState = snackbarHostState, Modifier.fillMaxWidth())
+            }
+
             AnimatedVisibility(
                 visible = !lazyListState.isScrollingUp(),
                 enter = fadeIn(),
@@ -189,48 +243,15 @@ fun HomeScreenContent(
                 }
             }
 
-            CircularFloatingActionMenu(
-                iconState = state.fabState,
-                fabColor = MaterialTheme.colorScheme.primary,
-                fabContentColor = MaterialTheme.colorScheme.onPrimary,
-                expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                onInnerContentClick = { fabNavigation ->
-                    when (fabNavigation) {
-                        FabNavigation.CAMERA -> {
-                            when (cameraPermissionState?.status) {
-                                PermissionStatus.Granted -> {
-                                    val uri = ComposeFileProvider.getImageUri(context = context)
-                                    onEvent(HomeUiEvent.OnCameraIntentLaunch(uri))
-                                }
-
-                                PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
-                                    context = context
-                                )
-
-                                else -> {
-                                    cameraPermissionState?.launchPermissionRequest()
-                                }
-                            }
-                        }
-
-                        FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
-
-                        FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(Screen.Add))
-                    }
-                },
-                onIconStateChange = {
-                    onEvent(HomeUiEvent.OnIconStateChange(it))
-                }
-            )
-
-            if (state.showLanguageDialog) {
+            if (state.showLanguageDialog != null) {
                 LanguageDialog(
                     lazyListContent = state.supportedLanguages,
+                    translationOption = state.showLanguageDialog,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(500.dp)
                         .padding(16.dp),
-                    onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(false)) },
+                    onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(null)) },
                     onConfirm = { language ->
                         onEvent(HomeUiEvent.OnConfirmLanguageDialog(language))
                     },
@@ -264,12 +285,16 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
     }
 
     val lazyListState = rememberLazyListState()
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -317,27 +342,26 @@ fun HomeScreen(
                 return@rememberLauncherForActivityResult
             }
 
-            viewModel.showProgressBar(true)
-
-            TextRecognizer(context).runTextRecognition(imagePaths = uris) {
-                viewModel.showProgressBar(false)
-                if (it.isEmpty()) {
-                    Toast.makeText(
-                        context,
-                        "This image doesn't contain any text.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@runTextRecognition
-                }
-                onClickNavigate(Screen.TextResult(it))
-            }
+            viewModel.uiEventHandler(HomeUiEvent.OnTextRecognition(uris))
         }
     )
+
+    LaunchedEffect(key1 = uiState.isImageTextless) {
+        if (uiState.isImageTextless) {
+            snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
+            viewModel.resetImageTextless()
+        }
+    }
+
+    LaunchedEffect(key1 = textResult) {
+        if (textResult.isNotEmpty()) onClickNavigate(Screen.TextResult(textResult))
+    }
 
     HomeScreenContent(
         state = uiState,
         cameraPermissionState = cameraPermissionState,
         lazyListState = lazyListState,
+        snackbarHostState = snackbarHostState,
         onEvent = { event ->
             when (event) {
                 HomeUiEvent.OnScrollToTop -> {
@@ -375,6 +399,9 @@ fun HomeScreenPreview() {
         state = HomeState(),
         cameraPermissionState = null,
         lazyListState = rememberLazyListState(),
+        snackbarHostState = remember {
+            SnackbarHostState()
+        },
         onEvent = {}
     )
 }

@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.data.repository
 
-import android.util.Log
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
@@ -16,7 +15,7 @@ class WordsRepositoryImpl(
 ) : WordsRepository {
 
     override fun getWords(): Flow<List<WordsAndSentences>> = callbackFlow {
-        auth.getAuth()?.currentUser?.uid?.let { userId ->
+        auth.getAuth().currentUser?.uid?.let { userId ->
             val listener = firestore
                 .collection("users")
                 .document(userId)
@@ -54,10 +53,6 @@ class WordsRepositoryImpl(
     override fun addWord(word: WordsAndSentences): Flow<Boolean> = callbackFlow {
         auth.getAuth().currentUser?.uid?.let { userId ->
             firestore
-                /*.collection("users")
-                .document(userId)
-                .collection("WordsAndSentences")
-                .add(word)*/
                 .collection("users")
                 .document(userId)
                 .collection("WordsAndSentences")

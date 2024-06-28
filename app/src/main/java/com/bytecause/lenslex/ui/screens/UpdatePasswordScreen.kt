@@ -364,6 +364,7 @@ fun UpdatePasswordScreen(
     onGetNewResetCodeClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val getNewCodeChannel by viewModel.getNewCodeChannel.collectAsStateWithLifecycle(initialValue = false)
 
     val snackBarHostState = remember {
         SnackbarHostState()
@@ -423,8 +424,8 @@ fun UpdatePasswordScreen(
         }
     }
 
-    LaunchedEffect(key1 = uiState.getNewCode) {
-        if (uiState.getNewCode) onGetNewResetCodeClick()
+    LaunchedEffect(key1 = getNewCodeChannel) {
+        if (getNewCodeChannel) onGetNewResetCodeClick()
     }
 
     LaunchedEffect(key1 = uiState.dismissExpiredDialog) {

@@ -107,8 +107,8 @@ fun AccountSettingsScreenContent(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
-
             if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
                 Column(
                     modifier = Modifier.fillMaxSize()
@@ -312,7 +312,6 @@ fun AccountSettingsScreenContent(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Card(

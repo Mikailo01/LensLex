@@ -74,6 +74,7 @@ fun AppNavHost(
                     }
                 )
             ) { backStackEntry ->
+
                 val oobCode: String = backStackEntry.toRoute<Screen.ResetPassword>().oobCode
 
                 UpdatePasswordScreen(
@@ -88,11 +89,7 @@ fun AppNavHost(
                         }
                     },
                     onGetNewResetCodeClick = {
-                        navController.navigate(Screen.SendEmailPasswordReset) {
-                            popUpTo(Screen.ResetPassword) {
-                                inclusive = true
-                            }
-                        }
+                        navController.navigate(Screen.SendEmailPasswordReset)
                     }
                 )
             }
@@ -135,7 +132,14 @@ fun AppNavHost(
 
                 RecognizedTextResultScreen(
                     text = text,
-                    onBackButtonClick = { navController.popBackStackOnce() }
+                    onBackButtonClick = { navController.popBackStackOnce() },
+                    onDone = {
+                        navController.navigate(Screen.Home) {
+                            popUpTo<Screen.Home> {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             }
         }
