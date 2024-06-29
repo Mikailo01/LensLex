@@ -16,9 +16,9 @@ LensLex is an Android application designed to assist users in translating and st
 - **Kotlin**
 - **MVI architecture**
 - **Clean Architecture**
-- **[Coroutines]**(https://developer.android.com/kotlin/coroutines)
-- **[Flow]**(https://developer.android.com/kotlin/flow)
-- **[Koin]**(https://insert-koin.io/docs/quickstart/android/)
+- **[Coroutines](https://developer.android.com/kotlin/coroutines)**
+- **[Flow](https://developer.android.com/kotlin/flow)**
+- **[Koin](https://insert-koin.io/docs/quickstart/android/)**
 - **Jetpack DataStore**: Data storage solution from the Android Jetpack libraries.
 - **Retrofit**: A type-safe HTTP client for Android and Java.
 - **Firebase**
