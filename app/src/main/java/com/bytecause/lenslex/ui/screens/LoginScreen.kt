@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -47,9 +48,8 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
-import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.navigation.Screen
-import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
 import com.bytecause.lenslex.ui.components.SignIn
@@ -76,7 +76,7 @@ fun LoginScreenContent(
     xText2offset: Animatable<Float, AnimationVector1D>,
     onEvent: (LoginUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
+    if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
         UserAuthBackground(
             snackBarHostState = snackBarHostState,
             backgroundContent = {
@@ -131,7 +131,7 @@ fun LoginScreenContent(
                     onEvent = { onEvent(it) }
                 )
 
-                Divider(thickness = 2, color = Color.Gray)
+                HorizontalDivider(thickness = 2.dp, color = Color.Gray)
 
                 LoginOptionRow(
                     modifier = Modifier.padding(top = 10.dp),
@@ -205,7 +205,7 @@ fun LoginScreenContent(
                     onEvent = { onEvent(it) }
                 )
 
-                Divider(thickness = 2, color = Color.Gray)
+                HorizontalDivider(thickness = 2.dp, color = Color.Gray)
 
                 LoginOptionRow(
                     modifier = Modifier.padding(top = 10.dp),

@@ -22,6 +22,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -54,7 +55,6 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.ui.components.AccountInfoItem
 import com.bytecause.lenslex.ui.components.AccountInfoType
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
-import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.LinkAccountItem
 import com.bytecause.lenslex.ui.components.PasswordField
@@ -109,7 +109,7 @@ fun AccountSettingsScreenContent(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
+            if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -138,8 +138,8 @@ fun AccountSettingsScreenContent(
                             }
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -180,8 +180,8 @@ fun AccountSettingsScreenContent(
                             isAnonymous = state.userDetails?.isAnonymous,
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -198,8 +198,8 @@ fun AccountSettingsScreenContent(
                             isAnonymous = state.userDetails?.isAnonymous
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -220,8 +220,8 @@ fun AccountSettingsScreenContent(
                             }
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -251,8 +251,8 @@ fun AccountSettingsScreenContent(
                             }
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -338,8 +338,8 @@ fun AccountSettingsScreenContent(
                                 }
                             )
 
-                            Divider(
-                                thickness = 1,
+                            HorizontalDivider(
+                                thickness = 1.dp,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                             )
@@ -405,8 +405,8 @@ fun AccountSettingsScreenContent(
                             isAnonymous = state.userDetails?.isAnonymous,
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -423,8 +423,8 @@ fun AccountSettingsScreenContent(
                             isAnonymous = state.userDetails?.isAnonymous
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -445,8 +445,8 @@ fun AccountSettingsScreenContent(
                             }
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )
@@ -476,8 +476,8 @@ fun AccountSettingsScreenContent(
                             }
                         )
 
-                        Divider(
-                            thickness = 1,
+                        HorizontalDivider(
+                            thickness = 1.dp,
                             color = Color.Gray,
                             modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                         )

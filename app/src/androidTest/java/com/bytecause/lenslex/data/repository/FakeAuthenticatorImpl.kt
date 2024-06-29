@@ -2,7 +2,7 @@ package com.bytecause.lenslex.data.repository
 
 import android.content.Context
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.ui.models.SignInResult
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.Firebase

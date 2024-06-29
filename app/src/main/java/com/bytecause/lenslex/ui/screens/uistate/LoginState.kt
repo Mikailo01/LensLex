@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
-import com.bytecause.lenslex.domain.models.SignInState
+import com.bytecause.lenslex.ui.models.SignInState
 import com.bytecause.lenslex.util.CredentialValidationResult
 
 data class LoginState(

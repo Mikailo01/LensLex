@@ -8,7 +8,7 @@ import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.domain.models.Word
+import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.RecognizedTextUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
@@ -75,21 +75,23 @@ class RecognizedTextViewModel(
     }
 
     private fun onWordClickHandler(word: Word) {
-        _uiState.update {
+        _uiState.update { state ->
             if (!uiState.value.isSentence) {
-                it.copy(
-                    selectedWords = if (it.selectedWords.contains(word)) {
-                        it.selectedWords - word
+                state.copy(
+                    selectedWords = if (state.selectedWords.any { it.text == word.text }) {
+                        state.selectedWords.find { it.text == word.text }?.let {
+                            state.selectedWords - it
+                        } ?: return
                     } else {
-                        it.selectedWords + word
+                        state.selectedWords + word
                     }
                 )
             } else {
-                it.copy(
-                    sentence = if (it.sentence.contains(word)) {
-                        it.sentence - word
+                state.copy(
+                    sentence = if (state.sentence.contains(word)) {
+                        state.sentence - word
                     } else {
-                        it.sentence + word
+                        state.sentence + word
                     }
                 )
             }
@@ -129,18 +131,19 @@ class RecognizedTextViewModel(
 
     private fun onUnselectAllWordsHandler() {
         _uiState.update {
-            it.copy(selectedWords = emptySet())
+            // Remove all selected single words and leave sentences only
+            it.copy(selectedWords = it.selectedWords - it.words.toSet())
         }
     }
 
     private fun onSelectAllWordsHandler() {
         _uiState.update {
-            it.copy(selectedWords = it.words.toSet())
+            it.copy(selectedWords = it.selectedWords + it.words.toSet())
         }
     }
 
     private fun onShowLanguageDialogHandler(option: TranslationOption?) {
-        if (option is TranslationOption.Target) {
+        if (option is TranslationOption.Target || option == null) {
             _uiState.update {
                 it.copy(showLanguageDialog = option)
             }

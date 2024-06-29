@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.domain.models.Word
+import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
 data class RecognizedTextState(

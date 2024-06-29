@@ -1,6 +1,6 @@
 package com.bytecause.lenslex.ui.events
 
-import com.bytecause.lenslex.domain.models.Word
+import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
 sealed interface RecognizedTextUiEvent {
@@ -23,7 +23,6 @@ sealed interface RecognizedTextUiEvent {
     data object OnFabActionButtonClick : NonDirect
 
     data object OnBackButtonClick : Direct
-    data object OnStartShareIntent : Direct
     data object OnCopyContent : Direct
 
 }

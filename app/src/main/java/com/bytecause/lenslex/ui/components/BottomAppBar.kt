@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,8 +21,7 @@ import com.bytecause.lenslex.R
 enum class BottomAppBarItems {
     SELECT_ALL,
     UNSELECT_ALL,
-    COPY,
-    SHARE
+    COPY
 }
 
 @Composable
@@ -72,28 +70,6 @@ fun BottomAppBar(
                     )
                     Text(
                         text = stringResource(id = R.string.unselect_all),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterVertically)
-                    .weight(1f)
-            ) {
-                Column(
-                    Modifier
-                        .align(Alignment.Center)
-                        .clickable { onItemClick(BottomAppBarItems.SHARE) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = stringResource(id = R.string.share_result),
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                    Text(
-                        text = stringResource(id = R.string.share),
                         textAlign = TextAlign.Center
                     )
                 }

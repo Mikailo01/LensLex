@@ -38,13 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
+import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.LocalOrientationMode
@@ -66,8 +66,7 @@ fun UpdatePasswordScreenContent(
     yImageOffset: Animatable<Float, AnimationVector1D>,
     onEvent: (UpdatePasswordUiEvent) -> Unit
 ) {
-
-    if (!isExpandedScreen && LocalOrientationMode.invoke() != OrientationMode.Landscape) {
+    if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
         UserAuthBackground(
             modifier = modifier.padding(top = 70.dp),
             snackBarHostState = snackBarHostState,

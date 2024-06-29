@@ -28,7 +28,7 @@ fun TopAppBar(
         titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ),
     navigationIcon: ImageVector? = null,
-    actionIcon: @Composable () -> Unit = {},
+    actionIcons: List<@Composable () -> Unit> = emptyList(),
     onNavigationIconClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
@@ -47,7 +47,9 @@ fun TopAppBar(
             }
         },
         actions = {
-            actionIcon()
+            actionIcons.forEach {
+                it()
+            }
         }
     )
 }

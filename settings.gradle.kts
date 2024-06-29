@@ -15,6 +15,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "LensLex"
 include(":app")
-include(":buildsrc")
-include(":data")
-include(":core")

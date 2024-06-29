@@ -12,10 +12,11 @@ sealed interface HomeUiEvent {
     sealed interface Direct : HomeUiEvent
     sealed interface NonDirect : HomeUiEvent
 
-    data class OnCameraIntentLaunch(val uri: Uri) : Direct
+    data object OnCameraIntentLaunch : Direct
     data class OnNavigate(val destination: Screen) : Direct
     data object OnMultiplePhotoPickerLaunch : Direct
     data object OnScrollToTop : Direct
+    data object OnPermissionDialogLaunch : Direct
 
     data class OnIconStateChange(val value: Boolean) : NonDirect
     data class OnConfirmLanguageDialog(val value: TranslationOption) : NonDirect

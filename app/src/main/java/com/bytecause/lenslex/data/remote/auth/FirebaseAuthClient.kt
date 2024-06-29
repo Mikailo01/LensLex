@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.domain.models.SignInResult
+import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.domain.models.UserData
 import com.bytecause.lenslex.util.Util
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -12,7 +12,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.cancel

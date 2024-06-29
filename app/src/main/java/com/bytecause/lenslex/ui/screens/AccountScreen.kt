@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +60,6 @@ import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.AppLanguageRow
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
 import com.bytecause.lenslex.ui.components.Dialog
-import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
@@ -136,7 +136,7 @@ fun AccountScreenContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Divider(thickness = 1, color = Color.Gray)
+                HorizontalDivider(thickness = 1.dp, color = Color.Gray)
 
                 Row(
                     modifier = Modifier
@@ -175,7 +175,7 @@ fun AccountScreenContent(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Divider(thickness = 2, color = MaterialTheme.colorScheme.primary)
+                HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary)
 
                 Column(
                     modifier = Modifier
@@ -192,7 +192,7 @@ fun AccountScreenContent(
                         onEvent(AccountUiEvent.OnShowLanguageDialog(true))
                     }
 
-                    Divider(thickness = 1, color = Color.Gray)
+                    HorizontalDivider(thickness = 1.dp, color = Color.Gray)
 
                     RowItem(
                         modifier = Modifier.fillMaxWidth(),
@@ -203,7 +203,7 @@ fun AccountScreenContent(
                         onEvent(AccountUiEvent.OnNavigate(Screen.AccountSettings))
                     }
 
-                    Divider(thickness = 1, color = Color.Gray)
+                    HorizontalDivider(thickness = 1.dp, color = Color.Gray)
 
                     RowItem(
                         modifier = Modifier.fillMaxWidth(),

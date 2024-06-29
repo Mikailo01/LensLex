@@ -1,9 +1,6 @@
 package com.bytecause.lenslex.di
 
-import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
+import com.bytecause.lenslex.data.local.datastore.userDataStore
 import com.bytecause.lenslex.data.local.mlkit.TextRecognizer
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
@@ -33,10 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
-
-val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "user_preferences"
-)
 
 val appModule = module {
 

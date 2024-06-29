@@ -3,8 +3,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.domain.models.SignInResult
-import com.bytecause.lenslex.domain.models.SignInState
+import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials

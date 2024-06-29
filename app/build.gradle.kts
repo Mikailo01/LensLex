@@ -1,10 +1,10 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
-    id("com.google.gms.google-services")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -29,9 +29,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            isMinifyEnabled = false
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -68,83 +65,50 @@ android {
 }
 
 dependencies {
-    val koinVersion = "3.5.3"
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.navigation.compose)
+    implementation(libs.core.ktx)
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.ui.progressIndicators)
+    implementation(libs.retrofit)
+    implementation(libs.coil)
+    implementation(libs.blurry)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
-    implementation("androidx.navigation:navigation-compose:2.8.0-beta04")
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.translate)
+    implementation(libs.mlkit.language.id)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.identity.googleid)
+    implementation(libs.preferences.datastore)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.play.services.auth)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.constraintlayout.compose)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material3.window.sizeClass)
+    implementation(libs.image.cropper)
+    implementation(libs.accompanist.permissions)
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.android)
 
-    // Retrofit2 library
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-
-    // AsyncImage loader library
-    implementation("io.coil-kt:coil-compose:2.6.0")
-
-    // Blur library
-    implementation("jp.wasabeef:blurry:4.0.1")
-
-    // ML Kits
-    // Text recognition
-    implementation("com.google.mlkit:text-recognition:16.0.0")
-    // Text translation
-    implementation("com.google.mlkit:translate:17.0.2")
-    // Text language recognition
-    implementation("com.google.mlkit:language-id:17.0.5")
-
-    //Credentials support
-    implementation("androidx.credentials:credentials:1.2.2")
-
-// optional - needed for credentials support from play services, for devices running
-// Android 13 and below.
-    implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-
-    // Preferences DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-    // Firebase
-    // When using the BoM, don't specify versions in Firebase dependencies
-    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
-    implementation("com.google.firebase:firebase-analytics")
-
-    // authentication
-    implementation("com.google.firebase:firebase-auth-ktx")
-
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-storage")
-
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-
-    // Compose
-    implementation("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    //implementation(platform("androidx.compose:compose-bom:2024.04.01"))
-    implementation("androidx.compose.ui:ui:1.6.8")
-    implementation("androidx.compose.ui:ui-graphics:1.6.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
-    implementation("androidx.compose.material3:material3:1.2.1")
-    implementation("androidx.compose.material3:material3-window-size-class")
-
-    implementation("com.vanniktech:android-image-cropper:4.5.0")
-
-    // Accompanist runtime permissions.
-    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
-
-    // Koin DI library
-    implementation(platform("io.insert-koin:koin-bom:$koinVersion"))
-    implementation("io.insert-koin:koin-core")
-    implementation("io.insert-koin:koin-androidx-compose")
-    implementation("io.insert-koin:koin-android")
-
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("io.insert-koin:koin-test:3.5.6")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation(libs.junit)
+    testImplementation(libs.koin.test)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

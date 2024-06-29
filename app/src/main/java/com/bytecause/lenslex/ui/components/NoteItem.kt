@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,7 +29,7 @@ fun NoteItem(
     ) {
         Text(text = originalText, fontWeight = FontWeight.ExtraBold)
         Text(text = translatedText, fontStyle = FontStyle.Italic)
-        Divider(thickness = 2, color = Color.Gray)
+        HorizontalDivider(thickness = 2.dp, color = Color.Gray)
     }
 }
 

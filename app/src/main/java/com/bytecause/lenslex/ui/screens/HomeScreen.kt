@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -59,7 +60,6 @@ import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
-import com.bytecause.lenslex.ui.components.Divider
 import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
@@ -94,13 +94,11 @@ fun HomeScreenContent(
     snackbarHostState: SnackbarHostState,
     onEvent: (HomeUiEvent) -> Unit
 ) {
-    val context = LocalContext.current
-
     Scaffold(
         topBar = {
             TopAppBar(
                 titleRes = R.string.app_name,
-                actionIcon = {
+                actionIcons = listOf {
                     if (state.showUndoButton) {
                         Image(
                             modifier = Modifier
@@ -151,8 +149,8 @@ fun HomeScreenContent(
                         isLoading = state.isLoading,
                         onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(it)) }
                     )
-                    Divider(
-                        thickness = 3,
+                    HorizontalDivider(
+                        thickness = 3.dp,
                         color = Color.Gray
                     )
                 }
@@ -204,14 +202,10 @@ fun HomeScreenContent(
                                 FabNavigation.CAMERA -> {
                                     when (cameraPermissionState?.status) {
                                         PermissionStatus.Granted -> {
-                                            val uri =
-                                                ComposeFileProvider.getImageUri(context = context)
-                                            onEvent(HomeUiEvent.OnCameraIntentLaunch(uri))
+                                            onEvent(HomeUiEvent.OnCameraIntentLaunch)
                                         }
 
-                                        PermissionStatus.Denied(true) -> launchPermissionRationaleDialog(
-                                            context = context
-                                        )
+                                        PermissionStatus.Denied(true) -> onEvent(HomeUiEvent.OnPermissionDialogLaunch)
 
                                         else -> {
                                             cameraPermissionState?.launchPermissionRequest()
@@ -375,8 +369,11 @@ fun HomeScreen(
                 }
 
                 is HomeUiEvent.OnCameraIntentLaunch -> {
-                    imageUri = event.uri
-                    cameraLauncher.launch(event.uri)
+                    val uri =
+                        ComposeFileProvider.getImageUri(context = context)
+
+                    imageUri = uri
+                    cameraLauncher.launch(uri)
                 }
 
                 HomeUiEvent.OnMultiplePhotoPickerLaunch -> {
@@ -384,6 +381,8 @@ fun HomeScreen(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
                 }
+
+                HomeUiEvent.OnPermissionDialogLaunch -> launchPermissionRationaleDialog(context = context)
 
                 else -> viewModel.uiEventHandler(event as HomeUiEvent.NonDirect)
             }

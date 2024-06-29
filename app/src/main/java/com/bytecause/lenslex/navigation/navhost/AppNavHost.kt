@@ -132,6 +132,7 @@ fun AppNavHost(
 
                 RecognizedTextResultScreen(
                     text = text,
+                    isExpandedScreen = isExpandedScreen,
                     onBackButtonClick = { navController.popBackStackOnce() },
                     onDone = {
                         navController.navigate(Screen.Home) {
