@@ -3,7 +3,9 @@ package com.bytecause.lenslex.ui.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +19,7 @@ import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordValidationResult
+import com.ehsanmsz.mszprogressindicator.progressindicator.BallClipRotateProgressIndicator
 
 @Composable
 fun SignUp(
@@ -58,7 +61,11 @@ fun SignUp(
                 .padding(top = 15.dp, bottom = 15.dp),
             onClick = { onEvent(LoginUiEvent.OnCredentialsEntered) }
         ) {
-            if (state.isLoading) IndeterminateCircularIndicator(isShowed = true)
+            if (state.isLoading) CircularProgressIndicator(
+                modifier = Modifier
+                    .size(20.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
             else Text(text = stringResource(id = R.string.sign_up))
         }
 

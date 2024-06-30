@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
@@ -186,7 +187,12 @@ class RecognizedTextViewModel(
         }
     }
 
+    // TODO("Fix edge cases, no network available, translation error")
     private fun translateAllText() {
+        if (uiState.value.isLoading) return
+
+        _uiState.update { it.copy(isLoading = true) }
+
         val textSet = uiState.value.selectedWords
 
         viewModelScope.launch {
@@ -200,11 +206,10 @@ class RecognizedTextViewModel(
                 ).firstOrNull()?.let { result ->
                     when (result) {
                         Translator.TranslationResult.ModelDownloadFailure -> {
-                            /* Toast.makeText(
-                                 context,
-                                 "Model download failed.",
-                                 Toast.LENGTH_SHORT
-                             ).show()*/
+                            Log.d("idk", "download failure")
+                            _uiState.update {
+                                it.copy(isLoading = false)
+                            }
                         }
 
                         is Translator.TranslationResult.TranslationSuccess -> {
@@ -227,12 +232,8 @@ class RecognizedTextViewModel(
                         }
 
                         Translator.TranslationResult.TranslationFailure -> {
-                            /*Toast.makeText(
-                                context,
-                                "Translation failed.",
-                                Toast.LENGTH_SHORT
-                            )
-                                .show()*/
+                            Log.d("idk", "translation failure")
+                            _uiState.update { it.copy(isLoading = false) }
                         }
                     }
                 }

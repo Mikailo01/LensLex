@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -48,7 +49,6 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
-import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
@@ -57,11 +57,12 @@ import com.bytecause.lenslex.ui.components.SignUp
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.LoginUiEvent
+import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
-import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.TestTags
+import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.shadowCustom
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -76,7 +77,7 @@ fun LoginScreenContent(
     xText2offset: Animatable<Float, AnimationVector1D>,
     onEvent: (LoginUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
+    if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
         UserAuthBackground(
             snackBarHostState = snackBarHostState,
             backgroundContent = {

@@ -60,7 +60,6 @@ import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
-import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NoteItem
@@ -76,6 +75,7 @@ import com.bytecause.lenslex.util.then
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
+import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
@@ -258,12 +258,9 @@ fun HomeScreenContent(
                 )
             }
 
-            IndeterminateCircularIndicator(
-                modifier = Modifier.align(Center),
-                size = 65.dp,
-                isShowed = state.showProgressBar,
-                subContent = { Text(text = stringResource(id = R.string.processing)) }
-            )
+            if (state.showProgressBar) {
+                BallGridPulseProgressIndicator(modifier = Modifier.align(Center))
+            }
         }
     }
 }
@@ -349,6 +346,13 @@ fun HomeScreen(
 
     LaunchedEffect(key1 = textResult) {
         if (textResult.isNotEmpty()) onClickNavigate(Screen.TextResult(textResult))
+    }
+
+    // Scroll to top of the lazy list if wordList changes
+    LaunchedEffect(key1 = uiState.wordList) {
+        if (uiState.wordList.isNotEmpty()) {
+            lazyListState.scrollToItem(0)
+        }
     }
 
     HomeScreenContent(

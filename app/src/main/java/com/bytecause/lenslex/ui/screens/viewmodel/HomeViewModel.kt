@@ -9,6 +9,7 @@ import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.HomeUiEvent
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import kotlinx.coroutines.channels.Channel
@@ -66,55 +67,14 @@ class HomeViewModel(
 
     fun uiEventHandler(event: HomeUiEvent.NonDirect) {
         when (event) {
-            is HomeUiEvent.OnIconStateChange -> {
-                _uiState.update { it.copy(fabState = event.value) }
-            }
-
-            is HomeUiEvent.OnConfirmLanguageDialog -> {
-                saveTranslationOption(event.value)
-                _uiState.update { it.copy(showLanguageDialog = null) }
-            }
-
-            is HomeUiEvent.OnShowLanguageDialog -> {
-                _uiState.update { it.copy(showLanguageDialog = event.value) }
-            }
-
-            is HomeUiEvent.OnDownloadLanguage -> {
-                downloadModel(event.langCode)
-            }
-
-            is HomeUiEvent.OnRemoveLanguage -> {
-                removeModel(event.langCode)
-            }
-
-            is HomeUiEvent.OnItemRemoved -> {
-                addDeletedItemToStack(event.word)
-                deleteWord(event.word.id)
-                _uiState.update { it.copy(showUndoButton = true) }
-            }
-
-            is HomeUiEvent.OnTextRecognition -> {
-                _uiState.update {
-                    it.copy(showProgressBar = true)
-                }
-
-                viewModelScope.launch {
-                    runTextRecognition(event.imagePaths).firstOrNull()?.let { result ->
-                        _uiState.update { state ->
-                            state.copy(showProgressBar = false, isImageTextless = result.isEmpty())
-                        }
-                        if (result.isNotEmpty()) {
-                            _textResultChannel.trySend(result)
-                        }
-                    }
-                }
-            }
-
-            HomeUiEvent.OnItemRestored -> {
-                insertWord(deletedItemsStack.last())
-                removeDeletedItemFromStack()
-                _uiState.update { it.copy(showUndoButton = deletedItemsStack.isNotEmpty()) }
-            }
+            is HomeUiEvent.OnIconStateChange -> onIconStateChange(event.value)
+            is HomeUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialogHandler(event.value)
+            is HomeUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
+            is HomeUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
+            is HomeUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
+            is HomeUiEvent.OnItemRemoved -> onItemRemovedHandler(event.word)
+            is HomeUiEvent.OnTextRecognition -> onTextRecognitionHandler(event.imagePaths)
+            HomeUiEvent.OnItemRestored -> onItemRestoredHandler()
         }
     }
 
@@ -122,12 +82,42 @@ class HomeViewModel(
         _uiState.update { it.copy(isImageTextless = false) }
     }
 
-    /* private fun addWords(list: List<WordsAndSentences>) {
-         _uiState.update {
-             it.copy(wordList = list)
-         }
-     }*/
+    private fun onShowLanguageDialogHandler(option: TranslationOption?) {
+        _uiState.update { it.copy(showLanguageDialog = option) }
+    }
 
+    private fun onIconStateChange(boolean: Boolean) {
+        _uiState.update { it.copy(fabState = boolean) }
+    }
+
+    private fun onItemRemovedHandler(word: WordsAndSentences) {
+        addDeletedItemToStack(word)
+        deleteWord(word.id)
+        _uiState.update { it.copy(showUndoButton = true) }
+    }
+
+    private fun onItemRestoredHandler() {
+        insertWord(deletedItemsStack.last())
+        removeDeletedItemFromStack()
+        _uiState.update { it.copy(showUndoButton = deletedItemsStack.isNotEmpty()) }
+    }
+
+    private fun onTextRecognitionHandler(uris: List<Uri>) {
+        _uiState.update {
+            it.copy(showProgressBar = true)
+        }
+
+        viewModelScope.launch {
+            runTextRecognition(uris).firstOrNull()?.let { result ->
+                _uiState.update { state ->
+                    state.copy(showProgressBar = false, isImageTextless = result.isEmpty())
+                }
+                if (result.isNotEmpty()) {
+                    _textResultChannel.trySend(result)
+                }
+            }
+        }
+    }
 
     /*private fun addSnapShotListener() {
         viewModelScope.launch {
@@ -162,6 +152,11 @@ class HomeViewModel(
     private fun runTextRecognition(imagePaths: List<Uri>): Flow<List<String>> =
         textRecognitionRepository.runTextRecognition(imagePaths)
 
+    private fun onConfirmLanguageDialogHandler(language: TranslationOption) {
+        saveTranslationOption(language)
+        _uiState.update { it.copy(showLanguageDialog = null) }
+    }
+
     private fun insertWord(word: WordsAndSentences) {
         viewModelScope.launch {
             wordsRepository.addWord(word).firstOrNull()
@@ -183,26 +178,4 @@ class HomeViewModel(
                 removeLast()
             }
     }
-
-    /* private fun saveTranslationOption(language: SupportedLanguage) {
-         viewModelScope.launch {
-             userPrefsRepository.saveTranslationOption(language.langCode)
-             super.setLangOption(language = language)
-         }
-     }*/
-
-    /* fun insertOrUpdateWordAndSentenceEntity(word: WordAndSentenceEntity) {
-         viewModelScope.launch {
-             wordsDatabaseRepository.insertOrUpdateWordAndSentenceEntity(word)
-         }
-     }
-
-     val getAllWords: Flow<List<WordAndSentenceEntity>> =
-         wordsDatabaseRepository.getAllWords
-
-     fun deleteWordById(id: Long) {
-         viewModelScope.launch {
-             wordsDatabaseRepository.deleteWordById(id)
-         }
-     }*/
 }

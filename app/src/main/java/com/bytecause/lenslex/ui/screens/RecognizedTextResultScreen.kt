@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,7 +59,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.components.BottomAppBar
 import com.bytecause.lenslex.ui.components.BottomAppBarItems
 import com.bytecause.lenslex.ui.components.ImageButtonWithText
@@ -66,10 +66,12 @@ import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.RecognizedTextUiEvent
+import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
 import com.bytecause.lenslex.ui.screens.viewmodel.RecognizedTextViewModel
-import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
+import com.bytecause.lenslex.util.getOrientationMode
+import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import org.koin.androidx.compose.koinViewModel
 
 private const val ROW_WIDTH_SCALE_FACTOR = 0.6
@@ -202,6 +204,9 @@ fun RecognizedTextResultScreenContent(
                 )
             }
 
+            if (state.isLoading) {
+                BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
         }
     }
 }
@@ -333,7 +338,7 @@ fun RecognizedTextResultScreen(
 
     RecognizedTextResultScreenContent(
         state = uiState,
-        isExpandedScreen = isExpandedScreen || LocalOrientationMode() == OrientationMode.Landscape,
+        isExpandedScreen = isExpandedScreen || getOrientationMode(LocalConfiguration.current) == OrientationMode.Landscape,
         onEvent = { event ->
             when (event) {
                 RecognizedTextUiEvent.OnBackButtonClick -> onBackButtonClick()

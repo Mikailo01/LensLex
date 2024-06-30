@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,9 +48,9 @@ import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
-import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.PasswordValidationResult
+import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.shimmerEffect
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ fun UpdatePasswordScreenContent(
     yImageOffset: Animatable<Float, AnimationVector1D>,
     onEvent: (UpdatePasswordUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
+    if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
         UserAuthBackground(
             modifier = modifier.padding(top = 70.dp),
             snackBarHostState = snackBarHostState,

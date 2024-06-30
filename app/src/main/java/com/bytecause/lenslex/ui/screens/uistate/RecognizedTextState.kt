@@ -13,6 +13,7 @@ data class RecognizedTextState(
     val selectedLanguageOptions: Pair<TranslationOption.Origin, TranslationOption.Target> = TranslationOption.Origin(
         SupportedLanguage()
     ) to TranslationOption.Target(SupportedLanguage()),
+    val isLoading: Boolean = false,
     val showLanguageDialog: TranslationOption? = null,
     val shouldNavigateBack: Boolean = false
 )

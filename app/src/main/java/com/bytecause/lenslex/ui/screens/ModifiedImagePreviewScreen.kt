@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.navigation.Screen
-import com.bytecause.lenslex.ui.components.IndeterminateCircularIndicator
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
@@ -41,6 +40,7 @@ import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
+import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,12 +102,9 @@ fun ModifiedImagePreviewScreenContent(
             )
         }
 
-        IndeterminateCircularIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            size = 65.dp,
-            isShowed = state.isProcessing,
-            subContent = { Text(text = stringResource(id = R.string.processing)) }
-        )
+        if (state.isProcessing) {
+            BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
     }
 }
 

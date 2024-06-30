@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -69,10 +70,10 @@ import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsConfirmationDialo
 import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
-import com.bytecause.lenslex.util.LocalOrientationMode
 import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
+import com.bytecause.lenslex.util.getOrientationMode
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -109,7 +110,7 @@ fun AccountSettingsScreenContent(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            if (!isExpandedScreen && LocalOrientationMode() != OrientationMode.Landscape) {
+            if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {

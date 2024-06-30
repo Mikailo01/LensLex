@@ -24,7 +24,9 @@ class TextRecognizer(private val applicationContext: Context) {
             recognizer.process(image)
                 .addOnSuccessListener { texts ->
                     if (texts.text.isNotBlank()) allRecognizedText.add(texts.text)
+
                     imagesProcessed++
+
                     if (imagesProcessed == imagePaths.size) {
                         trySend(allRecognizedText)
                     }
