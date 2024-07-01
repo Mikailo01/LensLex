@@ -1,9 +1,6 @@
 package com.bytecause.lenslex.util
 
-import android.util.Log
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import java.security.MessageDigest
-import java.util.UUID
 
 private const val PASSWORD_MAX_LENGTH = 24
 private const val PASSWORD_MIN_LENGTH = 8
@@ -20,10 +17,8 @@ object ValidationUtil {
             is Credentials.Sensitive.SignInCredentials -> {
 
                 val isEmailValid: Boolean =
-                    emailValidator(credentials.email.also { Log.d("idk", it) })
+                    emailValidator(credentials.email)
                 val isPasswordValid = passwordValidator(password = credentials.password)
-
-                Log.d("idk", isEmailValid.toString())
 
                 if (isEmailValid && isPasswordValid is PasswordValidationResult.Valid) CredentialValidationResult.Valid
                 else CredentialValidationResult.Invalid(

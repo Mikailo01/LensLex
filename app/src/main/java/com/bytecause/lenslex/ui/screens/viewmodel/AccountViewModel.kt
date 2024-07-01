@@ -36,78 +36,87 @@ class AccountViewModel(
 
     fun uiEventHandler(event: AccountUiEvent.NonDirect) {
         when (event) {
-            is AccountUiEvent.OnUpdateName -> {
-                _uiState.update {
-                    it.copy(userData = it.userData?.copy(userName = event.value))
-                }
-                updateName(event.value)
-            }
+            is AccountUiEvent.OnUpdateName -> onUpdateNameHandler(event.value)
+            is AccountUiEvent.OnUpdateProfilePicture -> onUpdateProfilePictureHandler(event.value)
+            AccountUiEvent.OnEditChange -> onEditChangeHandler()
+            is AccountUiEvent.OnChangeFirebaseLanguage -> changeFirebaseLanguageCode(event.value)
+            is AccountUiEvent.OnShowConfirmationDialog -> onShowConfirmationDialogHandler(event.value)
+            is AccountUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
+            is AccountUiEvent.OnShowBottomSheet -> onShowBottomSheetHandler(event.value)
+            is AccountUiEvent.OnShowUrlDialog -> onShowUrlDialogHandler(event.value)
+            AccountUiEvent.OnSignOut -> onSignOutHandler()
+            is AccountUiEvent.OnNameTextFieldValueChange -> onNameTextFieldValueChangeHandler(event.value)
+            is AccountUiEvent.OnUrlTextFieldValueChange -> onUrlTextFieldValueChange(event.value)
+            is AccountUiEvent.OnSaveUserProfilePicture -> onSaveUserProfilePictureHandler(event.value)
+        }
+    }
 
-            is AccountUiEvent.OnUpdateProfilePicture -> {
-                _uiState.update {
-                    it.copy(userData = it.userData?.copy(profilePictureUrl = event.value))
-                }
-                updateProfilePicture(Uri.parse(event.value))
-            }
+    private fun onUpdateNameHandler(userName: String) {
+        _uiState.update {
+            it.copy(userData = it.userData?.copy(userName = userName))
+        }
+        updateName(userName)
+    }
 
-            AccountUiEvent.OnEditChange -> {
-                _uiState.update {
-                    it.copy(isEditing = !it.isEditing)
-                }
-            }
+    private fun onUpdateProfilePictureHandler(profilePictureUrl: String) {
+        _uiState.update {
+            it.copy(userData = it.userData?.copy(profilePictureUrl = profilePictureUrl))
+        }
+        updateProfilePicture(Uri.parse(profilePictureUrl))
+    }
 
-            is AccountUiEvent.OnChangeFirebaseLanguage -> {
-                changeFirebaseLanguageCode(event.value)
-            }
+    private fun onEditChangeHandler() {
+        _uiState.update {
+            it.copy(isEditing = !it.isEditing)
+        }
+    }
 
-            is AccountUiEvent.OnShowConfirmationDialog -> {
-                _uiState.update {
-                    it.copy(showConfirmationDialog = event.value)
-                }
-            }
+    private fun onShowConfirmationDialogHandler(boolean: Boolean) {
+        _uiState.update {
+            it.copy(showConfirmationDialog = boolean)
+        }
+    }
 
-            is AccountUiEvent.OnShowLanguageDialog -> {
-                _uiState.update {
-                    it.copy(showLanguageDialog = event.value)
-                }
-            }
+    private fun onShowLanguageDialogHandler(boolean: Boolean) {
+        _uiState.update {
+            it.copy(showLanguageDialog = boolean)
+        }
+    }
 
-            is AccountUiEvent.OnShowBottomSheet -> {
-                _uiState.update {
-                    it.copy(showBottomSheet = event.value)
-                }
-            }
+    private fun onShowBottomSheetHandler(boolean: Boolean) {
+        _uiState.update {
+            it.copy(showBottomSheet = boolean)
+        }
+    }
 
-            is AccountUiEvent.OnShowUrlDialog -> {
-                _uiState.update {
-                    it.copy(showUrlDialog = event.value)
-                }
-            }
+    private fun onShowUrlDialogHandler(boolean: Boolean) {
+        _uiState.update {
+            it.copy(showUrlDialog = boolean)
+        }
+    }
 
-            AccountUiEvent.OnSignOut -> {
-                signOut()
-                _uiState.update {
-                    it.copy(signedOutSuccess = true)
-                }
-            }
+    private fun onSignOutHandler() {
+        signOut()
+        _uiState.update {
+            it.copy(signedOutSuccess = true)
+        }
+    }
 
-            is AccountUiEvent.OnNameTextFieldValueChange -> {
-                _uiState.update {
-                    it.copy(userData = it.userData?.copy(userName = event.value))
-                }
-            }
+    private fun onNameTextFieldValueChangeHandler(userName: String) {
+        _uiState.update {
+            it.copy(userData = it.userData?.copy(userName = userName))
+        }
+    }
 
-            is AccountUiEvent.OnUrlTextFieldValueChange -> {
-                _uiState.update {
-                    it.copy(urlValue = event.value)
-                }
-            }
+    private fun onUrlTextFieldValueChange(url: String) {
+        _uiState.update {
+            it.copy(urlValue = url)
+        }
+    }
 
-            is AccountUiEvent.OnSaveUserProfilePicture -> {
-                viewModelScope.launch {
-                    firebaseCloudRepository.saveUserProfilePicture(event.value)
-                }
-            }
+    private fun onSaveUserProfilePictureHandler(imageUri: Uri) {
+        viewModelScope.launch {
+            firebaseCloudRepository.saveUserProfilePicture(imageUri)
         }
     }
 
@@ -158,4 +167,9 @@ class AccountViewModel(
     }
 
     private fun signOut() = auth.signOut()
+
+    override fun onCleared() {
+        super.onCleared()
+        firebaseAuth.removeAuthStateListener(authStateListener)
+    }
 }

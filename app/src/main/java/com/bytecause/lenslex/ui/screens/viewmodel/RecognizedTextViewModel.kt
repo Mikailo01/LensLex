@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TextLanguageRecognitionRepository
@@ -30,9 +31,10 @@ class RecognizedTextViewModel(
     private val wordsRepository: WordsRepository,
     private val translateRepository: TranslateRepository,
     private val languageRecognitionRepository: TextLanguageRecognitionRepository,
+    translationModelManager: TranslationModelManager,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
-) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
+) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
 
     private val _uiState = MutableStateFlow(RecognizedTextState())
     val uiState: StateFlow<RecognizedTextState> = _uiState.asStateFlow()

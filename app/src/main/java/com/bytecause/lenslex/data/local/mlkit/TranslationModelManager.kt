@@ -6,7 +6,7 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.TranslateRemoteModel
 import java.lang.Exception
 
-object TranslationModelManager {
+class TranslationModelManager {
 
     private val modelManager = RemoteModelManager.getInstance()
 

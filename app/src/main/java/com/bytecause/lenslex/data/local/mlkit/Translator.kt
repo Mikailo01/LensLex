@@ -7,7 +7,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-object Translator {
+class Translator {
 
     sealed class TranslationResult {
         data class TranslationSuccess(val translatedText: String) : TranslationResult()
@@ -30,19 +30,23 @@ object Translator {
             .requireWifi()
             .build()
 
-        translator.downloadModelIfNeeded(conditions).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                translator.translate(text).addOnCompleteListener { translateTask ->
-                    if (translateTask.isSuccessful) {
-                        trySend(TranslationResult.TranslationSuccess(translatedText = translateTask.result))
-                    } else {
-                        trySend(TranslationResult.TranslationFailure)
-                    }
+        translator.downloadModelIfNeeded(conditions).addOnSuccessListener {
+            // Download successful, translate text
+            translator.translate(text)
+                .addOnSuccessListener { translatedText ->
+                    trySend(TranslationResult.TranslationSuccess(translatedText = translatedText))
                 }
-            } else {
+                .addOnFailureListener {
+                    trySend(TranslationResult.TranslationFailure)
+                }
+        }
+            .addOnFailureListener {
+                // Download failed
                 trySend(TranslationResult.ModelDownloadFailure)
             }
+
+        awaitClose {
+            translator.close()
         }
-        awaitClose { close() }
     }
 }

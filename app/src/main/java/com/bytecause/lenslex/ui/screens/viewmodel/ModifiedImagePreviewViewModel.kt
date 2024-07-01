@@ -26,29 +26,32 @@ class ModifiedImagePreviewViewModel(
 
     fun uiEventHandler(event: ModifiedImagePreviewUiEvent.NonDirect) {
         when (event) {
-            is ModifiedImagePreviewUiEvent.OnUpdateImage -> {
-                _uiState.update { it.copy(modifiedImageUri = event.uri, isButtonEnabled = true) }
+            is ModifiedImagePreviewUiEvent.OnUpdateImage -> onUpdateImageHandler(event.uri)
+            is ModifiedImagePreviewUiEvent.OnProcessImageClick -> onProcessImageClickHandler()
+        }
+    }
+
+    private fun onUpdateImageHandler(imageUri: Uri) {
+        _uiState.update { it.copy(modifiedImageUri = imageUri, isButtonEnabled = true) }
+    }
+
+    private fun onProcessImageClickHandler() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isProcessing = true)
             }
 
-            is ModifiedImagePreviewUiEvent.OnProcessImageClick -> {
-                viewModelScope.launch {
+            runTextRecognition(listOf(_uiState.value.modifiedImageUri)).firstOrNull()
+                ?.let { result ->
                     _uiState.update {
-                        it.copy(isProcessing = true)
+                        it.copy(
+                            isProcessing = false,
+                            isButtonEnabled = result.isNotEmpty(),
+                            isImageTextless = result.isEmpty()
+                        )
                     }
-
-                    runTextRecognition(listOf(_uiState.value.modifiedImageUri)).firstOrNull()
-                        ?.let { result ->
-                            _uiState.update {
-                                it.copy(
-                                    isProcessing = false,
-                                    isButtonEnabled = result.isNotEmpty(),
-                                    isImageTextless = result.isEmpty()
-                                )
-                            }
-                            _textResultChannel.trySend(result)
-                        }
+                    _textResultChannel.trySend(result)
                 }
-            }
         }
     }
 

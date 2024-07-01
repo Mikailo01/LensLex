@@ -2,6 +2,8 @@ package com.bytecause.lenslex.di
 
 import com.bytecause.lenslex.data.local.datastore.userDataStore
 import com.bytecause.lenslex.data.local.mlkit.TextRecognizer
+import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
+import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
@@ -44,6 +46,14 @@ val appModule = module {
         FirebaseCloudStorage()
     }
 
+    single<TranslationModelManager> {
+        TranslationModelManager()
+    }
+
+    single<Translator> {
+        Translator()
+    }
+
     single<TextRecognizer> {
         TextRecognizer(androidContext())
     }
@@ -77,7 +87,7 @@ val appModule = module {
     }
 
     single<TranslateRepositoryImpl> {
-        TranslateRepositoryImpl()
+        TranslateRepositoryImpl(get())
     }
 
     single<TextRecognitionRepositoryImpl> {
@@ -95,6 +105,7 @@ val appModule = module {
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             textRecognitionRepository = get<TextRecognitionRepositoryImpl>(),
             supportedLanguagesRepository = get(),
+            translationModelManager = get<TranslationModelManager>(),
             auth = get<FirebaseAuthClient>()
         )
     }
@@ -124,6 +135,7 @@ val appModule = module {
             wordsRepository = get<WordsRepositoryImpl>(),
             translateRepository = get<TranslateRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
+            translationModelManager = get<TranslationModelManager>(),
             supportedLanguagesRepository = get()
         )
     }
@@ -138,6 +150,7 @@ val appModule = module {
             translateRepository = get<TranslateRepositoryImpl>(),
             languageRecognitionRepository = get<TextLanguageRecognitionRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
+            translationModelManager = get<TranslationModelManager>(),
             supportedLanguagesRepository = get()
         )
     }

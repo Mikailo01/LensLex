@@ -1,18 +1,17 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.domain.models.UserAccountDetails
-import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
 import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
 import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsConfirmationDialog
+import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.firebase.auth.AuthCredential
@@ -27,6 +26,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val FirebaseProviderId = "firebase"
 
 class AccountSettingsViewModel(
     private val auth: Authenticator,
@@ -94,126 +95,136 @@ class AccountSettingsViewModel(
 
     fun uiEventHandler(event: AccountSettingsUiEvent.NonDirect) {
         when (event) {
-            AccountSettingsUiEvent.OnDeleteAccountButtonClick -> {
-                _uiState.update {
-                    it.copy(showConfirmationDialog = AccountSettingsConfirmationDialog.DeleteAccountWarning)
+            AccountSettingsUiEvent.OnDeleteAccountButtonClick -> onDeleteAccountClickHandler()
+            AccountSettingsUiEvent.OnConfirmConfirmationDialog -> onConfirmConfirmationDialogHandler()
+            AccountSettingsUiEvent.OnDismissConfirmationDialog -> onDismissConfirmationDialogHandler()
+            is AccountSettingsUiEvent.OnShowCredentialDialog -> onShowCredentialDialogHandler(event.value)
+            is AccountSettingsUiEvent.OnLinkButtonClick -> onLinkButtonClickHandler(event.value)
+            is AccountSettingsUiEvent.OnEnteredCredential -> onEnteredCredentialHandler(event.value)
+            is AccountSettingsUiEvent.OnCredentialsDialogDismiss -> onCredentialsDialogDismissHandler(
+                event.value
+            )
+
+            is AccountSettingsUiEvent.OnDialogCredentialChanged -> onDialogCredentialChangedHandler(
+                event.value
+            )
+        }
+    }
+
+    private fun onDeleteAccountClickHandler() {
+        _uiState.update {
+            it.copy(showConfirmationDialog = AccountSettingsConfirmationDialog.DeleteAccountWarning)
+        }
+    }
+
+    private fun onConfirmConfirmationDialogHandler() {
+        _uiState.value.showConfirmationDialog?.let { dialog ->
+            when (dialog) {
+                AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
+                    _uiState.update {
+                        it.copy(showConfirmationDialog = null)
+                    }
+                    deleteAccount()
                 }
-            }
 
-            AccountSettingsUiEvent.OnConfirmConfirmationDialog -> {
-                _uiState.value.showConfirmationDialog?.let { dialog ->
-                    when (dialog) {
-                        AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
-                            _uiState.update {
-                                it.copy(showConfirmationDialog = null)
-                            }
-                            deleteAccount()
-                        }
-
-                        AccountSettingsConfirmationDialog.PasswordChangeWarning -> {
-                            _uiState.update {
-                                it.copy(showConfirmationDialog = null)
-                            }
-                        }
+                AccountSettingsConfirmationDialog.PasswordChangeWarning -> {
+                    _uiState.update {
+                        it.copy(showConfirmationDialog = null)
                     }
                 }
             }
+        }
+    }
 
-            AccountSettingsUiEvent.OnDismissConfirmationDialog -> {
-                _uiState.update {
-                    it.copy(showConfirmationDialog = null)
+    private fun onDismissConfirmationDialogHandler() {
+        _uiState.update {
+            it.copy(showConfirmationDialog = null)
+        }
+    }
+
+    private fun onShowCredentialDialogHandler(credentialType: CredentialType) {
+        _uiState.update {
+            it.copy(
+                showCredentialUpdateDialog = credentialType,
+                showConfirmationDialog = if (credentialType is CredentialType.Password) AccountSettingsConfirmationDialog.PasswordChangeWarning else it.showConfirmationDialog
+            )
+        }
+    }
+
+    private fun onLinkButtonClickHandler(provider: Provider) {
+        when (provider) {
+            Provider.Email -> {
+                if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
+                    provider
+                )
+                else _uiState.update { it.copy(showCredentialUpdateDialog = CredentialType.AccountLink) }
+            }
+
+            Provider.Google ->
+                if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
+                    provider
+                )
+                else _launchGoogleIntent.value = true
+        }
+    }
+
+    private fun onEnteredCredentialHandler(credentials: Credentials) {
+        val validationResult = _uiState.value.credentialValidationResult
+
+        when (_uiState.value.showCredentialUpdateDialog) {
+            is CredentialType.Reauthorization -> {
+                if (validationResult is CredentialValidationResult.Valid) {
+                    val signInCredentials =
+                        credentials as Credentials.Sensitive.SignInCredentials
+                    reauthenticateUsingEmailAndPassword(signInCredentials)
                 }
             }
 
-            is AccountSettingsUiEvent.OnShowCredentialDialog -> {
-                _uiState.update {
-                    it.copy(
-                        showCredentialUpdateDialog = event.value,
-                        showConfirmationDialog = if (event.value is CredentialType.Password) AccountSettingsConfirmationDialog.PasswordChangeWarning else it.showConfirmationDialog
+            is CredentialType.AccountLink -> {
+                if (validationResult is CredentialValidationResult.Valid) {
+                    linkEmailProvider(
+                        credentials as Credentials.Sensitive
                     )
                 }
             }
 
-            is AccountSettingsUiEvent.OnLinkButtonClick -> {
-                when (event.value) {
-                    Provider.Email -> {
-                        if (_uiState.value.linkedProviders.contains(event.value)) unlinkProvider(
-                            event.value
-                        )
-                        else _uiState.update { it.copy(showCredentialUpdateDialog = CredentialType.AccountLink) }
+            is CredentialType.Username -> {
+                (credentials as Credentials.Insensitive.UsernameUpdate)
+                    .takeIf { user -> user.username.isNotBlank() }
+                    ?.let { user ->
+                        updateUserName(user.username)
                     }
+                _uiState.update { it.copy(showCredentialUpdateDialog = null) }
+            }
 
-                    Provider.Google ->
-                        if (_uiState.value.linkedProviders.contains(event.value)) unlinkProvider(
-                            event.value
-                        )
-                        else _launchGoogleIntent.value = true
+            is CredentialType.Email -> {
+                if (validationResult is CredentialValidationResult.Valid) {
+                    updateEmail((credentials as Credentials.Sensitive.EmailCredential).email)
                 }
             }
 
-            is AccountSettingsUiEvent.OnEnteredCredential -> {
-                val validationResult = _uiState.value.credentialValidationResult
-
-                when (_uiState.value.showCredentialUpdateDialog) {
-                    is CredentialType.Reauthorization -> {
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            val credentials =
-                                event.value as Credentials.Sensitive.SignInCredentials
-                            reauthenticateUsingEmailAndPassword(credentials)
-                        }
-                    }
-
-                    is CredentialType.AccountLink -> {
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            linkEmailProvider(
-                                event.value as Credentials.Sensitive
-                            )
-                        }
-                    }
-
-                    is CredentialType.Username -> {
-                        (event.value as Credentials.Insensitive.UsernameUpdate)
-                            .takeIf { user -> user.username.isNotBlank() }
-                            ?.let { user ->
-                                updateUserName(user.username)
-                            }
-                        _uiState.update { it.copy(showCredentialUpdateDialog = null) }
-                    }
-
-                    is CredentialType.Email -> {
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            updateEmail((event.value as Credentials.Sensitive.EmailCredential).email)
-                        }
-                    }
-
-                    is CredentialType.Password -> {
-                        if (validationResult is CredentialValidationResult.Valid) {
-                            updatePassword((event.value as Credentials.Sensitive.PasswordCredential).password)
-                        }
-                    }
-
-                    else -> {
-                        // do nothing
-                    }
+            is CredentialType.Password -> {
+                if (validationResult is CredentialValidationResult.Valid) {
+                    updatePassword((credentials as Credentials.Sensitive.PasswordCredential).password)
                 }
             }
 
-            is AccountSettingsUiEvent.OnCredentialsDialogDismiss -> {
-                if (event.value is CredentialType.Reauthorization) resetCredentialChangeState()
-                _uiState.update {
-                    it.copy(showCredentialUpdateDialog = null)
-                }
+            else -> {
+                // do nothing
             }
+        }
+    }
 
-            is AccountSettingsUiEvent.OnDialogCredentialChanged -> {
-                _uiState.update {
-                    it.copy(credentialValidationResult = ValidationUtil.areCredentialsValid(event.value))
-                }
-            }
+    private fun onCredentialsDialogDismissHandler(credentialType: CredentialType) {
+        if (credentialType is CredentialType.Reauthorization) resetCredentialChangeState()
+        _uiState.update {
+            it.copy(showCredentialUpdateDialog = null)
+        }
+    }
 
-            /* else -> {
-                 // do nothing, events intercepted in UI
-             }*/
+    private fun onDialogCredentialChangedHandler(credentials: Credentials.Sensitive) {
+        _uiState.update {
+            it.copy(credentialValidationResult = ValidationUtil.areCredentialsValid(credentials))
         }
     }
 
@@ -381,9 +392,9 @@ class AccountSettingsViewModel(
                 UserAccountDetails(
                     uid = uid,
                     creationTimeStamp = metadata?.creationTimestamp,
-                    userName = displayName?.takeIf { it.isNotBlank() } ?: "Not set",
-                    email = providerData.find { it.providerId == "firebase" }?.email.takeIf { it?.isNotBlank() == true }
-                        ?: providerData.find { it.email?.isNotBlank() == true }?.email ?: "Not set",
+                    userName = displayName?.takeIf { it.isNotBlank() },
+                    email = providerData.find { it.providerId == FirebaseProviderId }?.email.takeIf { it?.isNotBlank() == true }
+                        ?: providerData.find { it.email?.isNotBlank() == true }?.email,
                     isAnonymous = isAnonymous
                 )
             })
@@ -525,7 +536,6 @@ class AccountSettingsViewModel(
                                         )
                                     } else {
                                         task.exception?.let innerLet@{
-                                            Log.d("idk", it.message.toString())
                                             if (it is FirebaseAuthRecentLoginRequiredException) {
                                                 updateCredentialChangeState(
                                                     CredentialChangeResult.Failure.ReauthorizationRequired(
@@ -541,11 +551,14 @@ class AccountSettingsViewModel(
                                         }
                                     }
                                 }
-                        } else {
-                            Log.d("idk", deleteTask.exception?.message.toString())
                         }
                     }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        firebaseAuth.removeAuthStateListener(authStateListener)
     }
 }

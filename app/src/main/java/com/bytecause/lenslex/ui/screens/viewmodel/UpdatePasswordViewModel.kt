@@ -32,79 +32,99 @@ class UpdatePasswordViewModel(
 
     fun uiEventHandler(event: UpdatePasswordUiEvent) {
         when (event) {
-            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> _uiState.update {
-                it.copy(
-                    passwordVisible = !it.passwordVisible
-                )
-            }
+            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> onPasswordVisibilityClickHandler()
+            is UpdatePasswordUiEvent.OnPasswordValueChange -> onPasswordValueChangeHandler(event.password)
+            is UpdatePasswordUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChangeHandler(
+                event.confirmPassword
+            )
 
-            is UpdatePasswordUiEvent.OnPasswordValueChange -> {
-                _uiState.update {
-                    it.copy(
-                        password = event.password,
-                        credentialValidationResult = ValidationUtil.areCredentialsValid(
-                            Credentials.Sensitive.PasswordCredential(
-                                password = event.password,
-                                confirmPassword = _uiState.value.confirmationPassword
-                            )
-                        )
-                    )
-                }
-            }
-
-            is UpdatePasswordUiEvent.OnConfirmPasswordValueChange -> {
-                _uiState.update {
-                    it.copy(
-                        confirmationPassword = event.confirmPassword,
-                        credentialValidationResult = ValidationUtil.areCredentialsValid(
-                            Credentials.Sensitive.PasswordCredential(
-                                password = _uiState.value.password,
-                                confirmPassword = event.confirmPassword
-                            )
-                        )
-                    )
-                }
-            }
-
-            is UpdatePasswordUiEvent.OnVerifyOob -> {
-                _uiState.update {
-                    it.copy(oobCode = event.oobCode)
-                }
-                verifyOob(event.oobCode)
-            }
-
-            UpdatePasswordUiEvent.OnResetPasswordClick -> {
-                ValidationUtil.areCredentialsValid(
-                    Credentials.Sensitive.PasswordCredential(
-                        password = _uiState.value.password,
-                        confirmPassword = _uiState.value.confirmationPassword
-                    )
-                ).let { validationResult ->
-
-                    _uiState.update { it.copy(credentialValidationResult = validationResult) }
-
-                    if (validationResult is CredentialValidationResult.Valid) {
-                        _uiState.value.oobCode?.let { code ->
-                            resetPassword(code, _uiState.value.password)
-                        }
-                    }
-                }
-            }
-
-            UpdatePasswordUiEvent.OnAnimationStarted -> _uiState.update { it.copy(animationStarted = true) }
-            UpdatePasswordUiEvent.OnTryAgainClick -> {
-                _uiState.value.oobCode?.let { code ->
-                    verifyOob(code)
-                }
-            }
-
-            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> {
-                _getNewCodeChannel.trySend(true)
-            }
-
-            UpdatePasswordUiEvent.OnDismiss -> _uiState.update { it.copy(dismissExpiredDialog = true) }
+            is UpdatePasswordUiEvent.OnVerifyOob -> onVerifyOobHandler(event.oobCode)
+            UpdatePasswordUiEvent.OnResetPasswordClick -> onResetPasswordClickHandler()
+            UpdatePasswordUiEvent.OnAnimationStarted -> onAnimationStartedHandler()
+            UpdatePasswordUiEvent.OnTryAgainClick -> onTryAgainClickHandler()
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> onGetNewResetCodeClickHandler()
+            UpdatePasswordUiEvent.OnDismiss -> onDismissHandler()
             UpdatePasswordUiEvent.OnResetPasswordResult -> updateState(null)
         }
+    }
+
+    private fun onPasswordVisibilityClickHandler() {
+        _uiState.update {
+            it.copy(
+                passwordVisible = !it.passwordVisible
+            )
+        }
+    }
+
+    private fun onPasswordValueChangeHandler(password: String) {
+        _uiState.update {
+            it.copy(
+                password = password,
+                credentialValidationResult = ValidationUtil.areCredentialsValid(
+                    Credentials.Sensitive.PasswordCredential(
+                        password = password,
+                        confirmPassword = _uiState.value.confirmationPassword
+                    )
+                )
+            )
+        }
+    }
+
+    private fun onConfirmPasswordValueChangeHandler(password: String) {
+        _uiState.update {
+            it.copy(
+                confirmationPassword = password,
+                credentialValidationResult = ValidationUtil.areCredentialsValid(
+                    Credentials.Sensitive.PasswordCredential(
+                        password = _uiState.value.password,
+                        confirmPassword = password
+                    )
+                )
+            )
+        }
+    }
+
+    private fun onVerifyOobHandler(oobCode: String) {
+        _uiState.update {
+            it.copy(oobCode = oobCode)
+        }
+        verifyOob(oobCode)
+    }
+
+    private fun onGetNewResetCodeClickHandler() {
+        _getNewCodeChannel.trySend(true)
+    }
+
+    private fun onResetPasswordClickHandler() {
+        ValidationUtil.areCredentialsValid(
+            Credentials.Sensitive.PasswordCredential(
+                password = _uiState.value.password,
+                confirmPassword = _uiState.value.confirmationPassword
+            )
+        ).let { validationResult ->
+
+            _uiState.update { it.copy(credentialValidationResult = validationResult) }
+
+            if (validationResult is CredentialValidationResult.Valid) {
+                _uiState.value.oobCode?.let { code ->
+                    resetPassword(code, _uiState.value.password)
+                }
+            }
+        }
+    }
+
+    private fun onAnimationStartedHandler() {
+        _uiState.update { it.copy(animationStarted = true) }
+    }
+
+    private fun onTryAgainClickHandler() {
+        _uiState.value.oobCode?.let { code ->
+            verifyOob(code)
+        }
+    }
+
+    private fun onDismissHandler() {
+        _uiState.update { it.copy(dismissExpiredDialog = true) }
     }
 
     private fun updateState(state: SimpleResult?) {

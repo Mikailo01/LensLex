@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
@@ -8,6 +9,7 @@ import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.AddUiEvent
+import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import kotlinx.coroutines.Job
@@ -24,9 +26,10 @@ import kotlinx.coroutines.launch
 class AddViewModel(
     private val wordsRepository: WordsRepository,
     private val translateRepository: TranslateRepository,
+    translationModelManager: TranslationModelManager,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
-) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
+) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
 
     private val _uiState = MutableStateFlow(AddState())
     val uiState = _uiState.asStateFlow()
@@ -55,33 +58,31 @@ class AddViewModel(
 
     fun uiEventHandler(event: AddUiEvent) {
         when (event) {
-            is AddUiEvent.OnTextValueChange -> {
-                _uiState.update { it.copy(textValue = event.text) }
-            }
-
-            is AddUiEvent.OnConfirmDialog -> {
-                saveTranslationOption(event.value)
-                _uiState.update { it.copy(showLanguageDialog = null) }
-            }
-
-            is AddUiEvent.OnDownloadLanguage -> {
-                downloadModel(event.langCode)
-            }
-
-            is AddUiEvent.OnRemoveLanguage -> {
-                removeModel(event.langCode)
-            }
-
-            is AddUiEvent.OnShowLanguageDialog -> {
-                _uiState.update { it.copy(showLanguageDialog = event.value) }
-            }
-
+            is AddUiEvent.OnTextValueChange -> onTextValueChangeHandler(event.text)
+            is AddUiEvent.OnConfirmDialog -> onConfirmDialogHandler(event.value)
+            is AddUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
+            is AddUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
+            is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
             is AddUiEvent.OnTranslate -> translateText(event.value)
-
-            AddUiEvent.OnNavigateBack -> {
-                _uiState.update { it.copy(shouldNavigateBack = true) }
-            }
+            AddUiEvent.OnNavigateBack -> onNavigateBackHandler()
         }
+    }
+
+    private fun onTextValueChangeHandler(text: String) {
+        _uiState.update { it.copy(textValue = text) }
+    }
+
+    private fun onConfirmDialogHandler(translationOption: TranslationOption) {
+        saveTranslationOption(translationOption)
+        _uiState.update { it.copy(showLanguageDialog = null) }
+    }
+
+    private fun onShowLanguageDialogHandler(translationOption: TranslationOption?) {
+        _uiState.update { it.copy(showLanguageDialog = translationOption) }
+    }
+
+    private fun onNavigateBackHandler() {
+        _uiState.update { it.copy(shouldNavigateBack = true) }
     }
 
     private fun translateText(text: String) {

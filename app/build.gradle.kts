@@ -103,12 +103,12 @@ dependencies {
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.android)
 
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.junit)
     testImplementation(libs.koin.test)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
-    debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.compose.ui.test.manifest)
 }

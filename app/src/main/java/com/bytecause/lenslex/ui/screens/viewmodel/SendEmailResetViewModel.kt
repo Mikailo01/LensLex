@@ -27,33 +27,37 @@ class SendEmailResetViewModel(
 
     fun uiEventHandler(event: SendEmailResetUiEvent) {
         when (event) {
-            is SendEmailResetUiEvent.OnEmailValueChanged -> {
-                _uiState.update {
-                    it.copy(
-                        email = event.value,
-                        isEmailError = ValidationUtil.areCredentialsValid(
-                            Credentials.Sensitive.EmailCredential(event.value)
-                        ) is CredentialValidationResult.Invalid
-                    )
-                }
-            }
-
-            SendEmailResetUiEvent.OnSendEmailClick -> {
-                val result = ValidationUtil.areCredentialsValid(
-                    Credentials.Sensitive.EmailCredential(_uiState.value.email)
-                )
-
-                if (result is CredentialValidationResult.Valid) {
-                    sendPasswordResetEmail(_uiState.value.email)
-                } else {
-                    _uiState.update { it.copy(isEmailError = true) }
-                }
-            }
-
-            SendEmailResetUiEvent.OnAnimationStarted -> {
-                _uiState.update { it.copy(animationStarted = true) }
-            }
+            is SendEmailResetUiEvent.OnEmailValueChanged -> onEmailValueChangedHandler(event.value)
+            SendEmailResetUiEvent.OnSendEmailClick -> onSendEmailClickHandler()
+            SendEmailResetUiEvent.OnAnimationStarted -> onAnimationStartedHandler()
         }
+    }
+
+    private fun onEmailValueChangedHandler(email: String) {
+        _uiState.update {
+            it.copy(
+                email = email,
+                isEmailError = ValidationUtil.areCredentialsValid(
+                    Credentials.Sensitive.EmailCredential(email)
+                ) is CredentialValidationResult.Invalid
+            )
+        }
+    }
+
+    private fun onSendEmailClickHandler() {
+        val result = ValidationUtil.areCredentialsValid(
+            Credentials.Sensitive.EmailCredential(_uiState.value.email)
+        )
+
+        if (result is CredentialValidationResult.Valid) {
+            sendPasswordResetEmail(_uiState.value.email)
+        } else {
+            _uiState.update { it.copy(isEmailError = true) }
+        }
+    }
+
+    private fun onAnimationStartedHandler() {
+        _uiState.update { it.copy(animationStarted = true) }
     }
 
     fun updateRequestResult(result: SimpleResult?) {

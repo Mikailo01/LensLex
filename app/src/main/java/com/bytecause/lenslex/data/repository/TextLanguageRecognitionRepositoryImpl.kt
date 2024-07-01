@@ -18,6 +18,6 @@ class TextLanguageRecognitionRepositoryImpl : TextLanguageRecognitionRepository 
                 // Model couldn’t be loaded or other internal error.
                 // ...
             }
-        awaitClose { close() }
+        awaitClose { languageIdentifier.close() }
     }
 }

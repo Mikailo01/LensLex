@@ -96,18 +96,18 @@ class FirebaseAuthClient : Authenticator {
                         },
                         errorMessage = null
                     )
-                ).isSuccess
+                )
             } else {
                 trySend(
                     SignInResult(
                         data = null,
                         errorMessage = task.exception?.message
                     )
-                ).isSuccess
+                )
             }
         }
 
-        awaitClose { cancel() }
+        awaitClose {}
     }
 
     override fun getAuth(): FirebaseAuth = Firebase.auth
@@ -130,18 +130,18 @@ class FirebaseAuthClient : Authenticator {
                                 },
                                 errorMessage = null
                             )
-                        ).isSuccess
+                        )
                     } else {
                         trySend(
                             SignInResult(
                                 data = null,
                                 errorMessage = task.exception?.message
                             )
-                        ).isSuccess
+                        )
                     }
                 }
 
-            awaitClose { cancel() }
+            awaitClose {}
         }
 
     override fun signInViaEmailAndPassword(email: String, password: String): Flow<SignInResult> =
@@ -162,18 +162,18 @@ class FirebaseAuthClient : Authenticator {
                                 },
                                 errorMessage = null
                             )
-                        ).isSuccess
+                        )
                     } else {
                         trySend(
                             SignInResult(
                                 data = null,
                                 errorMessage = task.exception?.message
                             )
-                        ).isSuccess
+                        )
                     }
                 }
 
-            awaitClose { cancel() }
+            awaitClose {}
         }
 
     override fun signOut() {

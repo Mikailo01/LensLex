@@ -23,159 +23,167 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginState())
     val uiState = _uiState.asStateFlow()
 
-    /*private val _signUiState = MutableStateFlow(SignInState())
-    val signUiState = _signUiState.asStateFlow()*/
-
     fun uiEventHandler(event: LoginUiEvent.NonDirect) {
         when (event) {
-            is LoginUiEvent.OnCredentialsEntered -> {
-                areCredentialsValid(
-                    if (_uiState.value.signIn) Credentials.Sensitive.SignInCredentials(
-                        _uiState.value.email,
-                        _uiState.value.password
-                    ) else Credentials.Sensitive.SignUpCredentials(
-                        email = _uiState.value.email,
-                        password = _uiState.value.password,
-                        confirmPassword = _uiState.value.confirmPassword
-                    )
-                ).let { validationResult ->
+            is LoginUiEvent.OnCredentialsEntered -> onCredentialsEnteredHandler()
+            is LoginUiEvent.OnEmailValueChange -> onEmailValueChangeHandler(event.email)
+            is LoginUiEvent.OnPasswordValueChange -> onPasswordValueChangeHandler(event.password)
+            is LoginUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChangeHandler(
+                event.confirmationPassword
+            )
 
-                    _uiState.update {
-                        it.copy(credentialValidationResult = validationResult)
-                    }
+            LoginUiEvent.OnPasswordsVisibilityChange -> onPasswordsVisibilityChangeHandler()
+            LoginUiEvent.OnAnnotatedStringClick -> onAnnotatedStringClickHandler()
+            LoginUiEvent.OnSignInAnonymously -> onSignInAnonymouslyHandler()
+        }
+    }
 
-                    if (validationResult is CredentialValidationResult.Valid) {
-                        viewModelScope.launch {
-                            when (_uiState.value.signIn) {
-                                true -> {
-                                    _uiState.update {
-                                        it.copy(isLoading = true)
-                                    }
+    private fun onCredentialsEnteredHandler() {
+        areCredentialsValid(
+            if (_uiState.value.signIn) Credentials.Sensitive.SignInCredentials(
+                _uiState.value.email,
+                _uiState.value.password
+            ) else Credentials.Sensitive.SignUpCredentials(
+                email = _uiState.value.email,
+                password = _uiState.value.password,
+                confirmPassword = _uiState.value.confirmPassword
+            )
+        ).let { validationResult ->
 
-                                    signInUsingEmailAndPassword(
-                                        Credentials.Sensitive.SignInCredentials(
-                                            email = _uiState.value.email,
-                                            password = _uiState.value.password
-                                        )
-                                    ).firstOrNull()?.let {
-                                        if (it.errorMessage != null) {
-                                            _uiState.update { state ->
-                                                state.copy(isLoading = false)
-                                            }
-                                        }
-                                        onSignInResult(it)
-                                    }
-                                }
+            _uiState.update {
+                it.copy(credentialValidationResult = validationResult)
+            }
 
-                                false -> {
-                                    _uiState.update {
-                                        it.copy(isLoading = true)
-                                    }
+            if (validationResult is CredentialValidationResult.Valid) {
+                viewModelScope.launch {
+                    when (_uiState.value.signIn) {
+                        true -> {
+                            _uiState.update {
+                                it.copy(isLoading = true)
+                            }
 
-                                    signUpViaEmailAndPassword(
-                                        Credentials.Sensitive.SignUpCredentials(
-                                            email = _uiState.value.email,
-                                            password = _uiState.value.password,
-                                            confirmPassword = _uiState.value.confirmPassword
-                                        )
-                                    ).firstOrNull()?.let {
-                                        if (it.errorMessage != null) {
-                                            _uiState.update { state ->
-                                                state.copy(isLoading = false)
-                                            }
-                                        }
-                                        onSignInResult(it)
+                            signInUsingEmailAndPassword(
+                                Credentials.Sensitive.SignInCredentials(
+                                    email = _uiState.value.email,
+                                    password = _uiState.value.password
+                                )
+                            ).firstOrNull()?.let {
+                                if (it.errorMessage != null) {
+                                    _uiState.update { state ->
+                                        state.copy(isLoading = false)
                                     }
                                 }
+                                onSignInResult(it)
+                            }
+                        }
+
+                        false -> {
+                            _uiState.update {
+                                it.copy(isLoading = true)
+                            }
+
+                            signUpViaEmailAndPassword(
+                                Credentials.Sensitive.SignUpCredentials(
+                                    email = _uiState.value.email,
+                                    password = _uiState.value.password,
+                                    confirmPassword = _uiState.value.confirmPassword
+                                )
+                            ).firstOrNull()?.let {
+                                if (it.errorMessage != null) {
+                                    _uiState.update { state ->
+                                        state.copy(isLoading = false)
+                                    }
+                                }
+                                onSignInResult(it)
                             }
                         }
                     }
                 }
             }
+        }
+    }
 
-            is LoginUiEvent.OnEmailValueChange -> {
-                _uiState.update {
-                    it.copy(
-                        email = event.email,
-                        credentialValidationResult = areCredentialsValid(
-                            if (_uiState.value.signIn) {
-                                Credentials.Sensitive.SignInCredentials(
-                                    email = event.email,
-                                    password = _uiState.value.password
-                                )
-                            } else {
-                                Credentials.Sensitive.SignUpCredentials(
-                                    email = event.email,
-                                    password = _uiState.value.password,
-                                    confirmPassword = _uiState.value.confirmPassword
-                                )
-                            }
+    private fun onEmailValueChangeHandler(email: String) {
+        _uiState.update {
+            it.copy(
+                email = email,
+                credentialValidationResult = areCredentialsValid(
+                    if (_uiState.value.signIn) {
+                        Credentials.Sensitive.SignInCredentials(
+                            email = email,
+                            password = _uiState.value.password
                         )
-                    )
-                }
-            }
-
-            is LoginUiEvent.OnPasswordValueChange -> {
-                _uiState.update {
-                    it.copy(
-                        password = event.password,
-                        credentialValidationResult = areCredentialsValid(
-                            if (_uiState.value.signIn) {
-                                Credentials.Sensitive.SignInCredentials(
-                                    email = _uiState.value.email,
-                                    password = event.password
-                                )
-                            } else {
-                                Credentials.Sensitive.SignUpCredentials(
-                                    email = _uiState.value.email,
-                                    password = event.password,
-                                    confirmPassword = _uiState.value.confirmPassword
-                                )
-                            }
+                    } else {
+                        Credentials.Sensitive.SignUpCredentials(
+                            email = email,
+                            password = _uiState.value.password,
+                            confirmPassword = _uiState.value.confirmPassword
                         )
-                    )
-                }
-            }
-
-            is LoginUiEvent.OnConfirmPasswordValueChange -> {
-                _uiState.update {
-                    it.copy(
-                        confirmPassword = event.confirmationPassword,
-                        credentialValidationResult = areCredentialsValid(
-                            Credentials.Sensitive.SignUpCredentials(
-                                email = _uiState.value.email,
-                                password = _uiState.value.password,
-                                confirmPassword = event.confirmationPassword
-                            )
-                        )
-                    )
-                }
-            }
-
-            LoginUiEvent.OnPasswordsVisibilityChange -> {
-                _uiState.update {
-                    it.copy(passwordVisible = !it.passwordVisible)
-                }
-            }
-
-            LoginUiEvent.OnAnnotatedStringClick -> {
-                _uiState.update {
-                    it.copy(
-                        email = "",
-                        password = "",
-                        confirmPassword = "",
-                        credentialValidationResult = null,
-                        signIn = !it.signIn
-                    )
-                }
-            }
-
-            LoginUiEvent.OnSignInAnonymously -> {
-                viewModelScope.launch {
-                    signInAnonymously().firstOrNull()?.let {
-                        onSignInResult(it)
                     }
-                }
+                )
+            )
+        }
+    }
+
+    private fun onPasswordValueChangeHandler(password: String) {
+        _uiState.update {
+            it.copy(
+                password = password,
+                credentialValidationResult = areCredentialsValid(
+                    if (_uiState.value.signIn) {
+                        Credentials.Sensitive.SignInCredentials(
+                            email = _uiState.value.email,
+                            password = password
+                        )
+                    } else {
+                        Credentials.Sensitive.SignUpCredentials(
+                            email = _uiState.value.email,
+                            password = password,
+                            confirmPassword = _uiState.value.confirmPassword
+                        )
+                    }
+                )
+            )
+        }
+    }
+
+    private fun onConfirmPasswordValueChangeHandler(password: String) {
+        _uiState.update {
+            it.copy(
+                confirmPassword = password,
+                credentialValidationResult = areCredentialsValid(
+                    Credentials.Sensitive.SignUpCredentials(
+                        email = _uiState.value.email,
+                        password = _uiState.value.password,
+                        confirmPassword = password
+                    )
+                )
+            )
+        }
+    }
+
+    private fun onPasswordsVisibilityChangeHandler() {
+        _uiState.update {
+            it.copy(passwordVisible = !it.passwordVisible)
+        }
+    }
+
+    private fun onAnnotatedStringClickHandler() {
+        _uiState.update {
+            it.copy(
+                email = "",
+                password = "",
+                confirmPassword = "",
+                credentialValidationResult = null,
+                signIn = !it.signIn
+            )
+        }
+    }
+
+    private fun onSignInAnonymouslyHandler() {
+        viewModelScope.launch {
+            signInAnonymously().firstOrNull()?.let {
+                onSignInResult(it)
             }
         }
     }

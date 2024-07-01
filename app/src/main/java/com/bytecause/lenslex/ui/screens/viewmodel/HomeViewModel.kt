@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
@@ -25,11 +26,12 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val wordsRepository: WordsRepository,
-    userPrefsRepository: UserPrefsRepository,
     private val textRecognitionRepository: TextRecognitionRepository,
+    translationModelManager: TranslationModelManager,
+    userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository,
     auth: Authenticator
-) : BaseViewModel(userPrefsRepository, supportedLanguagesRepository) {
+) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
 
     private val _uiState =
         MutableStateFlow(HomeState(profilePictureUrl = auth.getAuth().currentUser?.photoUrl.toString()))

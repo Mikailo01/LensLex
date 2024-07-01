@@ -17,9 +17,10 @@ class TextRecognizer(private val applicationContext: Context) {
         val allRecognizedText = mutableListOf<String>()
         var imagesProcessed = 0
 
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.Builder().build())
+
         for (imagePath in imagePaths) {
             val image = InputImage.fromFilePath(applicationContext, imagePath)
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.Builder().build())
 
             recognizer.process(image)
                 .addOnSuccessListener { texts ->
@@ -34,8 +35,16 @@ class TextRecognizer(private val applicationContext: Context) {
                 .addOnFailureListener { e ->
                     e.printStackTrace()
                     Log.e("TextRecognition", e.message.toString())
+
+                    imagesProcessed++
+                    if (imagesProcessed == imagePaths.size) {
+                        trySend(allRecognizedText)
+                    }
                 }
         }
-        awaitClose { close() }
+
+        awaitClose {
+            recognizer.close()
+        }
     }
 }

@@ -18,6 +18,7 @@ import java.util.Locale
 
 abstract class BaseViewModel(
     private val userPrefsRepository: UserPrefsRepository,
+    private val translationModelManager: TranslationModelManager,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : ViewModel() {
 
@@ -113,7 +114,7 @@ abstract class BaseViewModel(
     }
 
     private fun getDownloadedModels() {
-        TranslationModelManager.getModels { modelSet ->
+        translationModelManager.getModels { modelSet ->
             _supportedLanguages.value.map { language ->
                 language.copy(isDownloaded = modelSet.any { it.language == language.langCode })
             }.let {
@@ -123,7 +124,7 @@ abstract class BaseViewModel(
     }
 
     fun removeModel(langCode: String) {
-        TranslationModelManager.deleteModel(langCode) {
+        translationModelManager.deleteModel(langCode) {
             getDownloadedModels()
         }
     }
@@ -140,7 +141,7 @@ abstract class BaseViewModel(
     ) {
         setIsModelDownloading(langCode, true)
 
-        TranslationModelManager.downloadModel(
+        translationModelManager.downloadModel(
             languageTag = langCode,
             onDownloadSuccess = {
                 getDownloadedModels()

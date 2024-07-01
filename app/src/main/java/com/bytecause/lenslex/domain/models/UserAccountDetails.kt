@@ -4,7 +4,7 @@ package com.bytecause.lenslex.domain.models
 data class UserAccountDetails(
     val uid: String,
     val creationTimeStamp: Long?,
-    val userName: String,
-    val email: String,
+    val userName: String?,
+    val email: String?,
     val isAnonymous: Boolean
 )
