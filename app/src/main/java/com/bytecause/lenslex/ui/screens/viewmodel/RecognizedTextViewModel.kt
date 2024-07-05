@@ -10,12 +10,15 @@ import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.RecognizedTextUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
+import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
+import com.bytecause.lenslex.util.NetworkUtil
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +70,8 @@ class RecognizedTextViewModel(
             RecognizedTextUiEvent.OnSentenceCancelled -> onSentenceCancelledHandler()
             RecognizedTextUiEvent.OnSentenceDone -> onSentenceDoneHandler()
             RecognizedTextUiEvent.OnUnselectAllWords -> onUnselectAllWordsHandler()
+            RecognizedTextUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialogHandler()
+            RecognizedTextUiEvent.OnTryAgainClick -> onTryAgainClickHandler()
             is RecognizedTextUiEvent.OnWordClick -> onWordClickHandler(event.word)
             is RecognizedTextUiEvent.OnWordLongClick -> onWordLongClickHandler(event.word)
             is RecognizedTextUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
@@ -74,6 +79,32 @@ class RecognizedTextViewModel(
             is RecognizedTextUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
             is RecognizedTextUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
             is RecognizedTextUiEvent.OnAddWords -> onAddWordsHandler(event.words)
+        }
+    }
+
+    private fun onTryAgainClickHandler() {
+        viewModelScope.launch {
+            if (NetworkUtil.isOnline()) {
+                _uiState.update {
+                    it.copy(
+                        showNetworkErrorDialog = false,
+                        showNetworkErrorMessage = false
+                    )
+                }
+                translateAllText()
+            } else {
+                if (uiState.value.showNetworkErrorMessage) {
+                    _uiState.update { it.copy(showNetworkErrorMessage = false) }
+                    delay(300)
+                    _uiState.update { it.copy(showNetworkErrorMessage = true) }
+                } else _uiState.update { it.copy(showNetworkErrorMessage = true) }
+            }
+        }
+    }
+
+    private fun onDismissNetworkErrorDialogHandler() {
+        _uiState.update {
+            it.copy(showNetworkErrorDialog = false)
         }
     }
 
@@ -189,15 +220,23 @@ class RecognizedTextViewModel(
         }
     }
 
-    // TODO("Fix edge cases, no network available, translation error")
     private fun translateAllText() {
         if (uiState.value.isLoading) return
 
-        _uiState.update { it.copy(isLoading = true) }
-
-        val textSet = uiState.value.selectedWords
-
         viewModelScope.launch {
+            // if language models are not downloaded and the user is offline, show network error dialog
+            if (!areModelsReady(
+                    origin = uiState.value.selectedLanguageOptions.first,
+                    target = uiState.value.selectedLanguageOptions.second
+                ) && !NetworkUtil.isOnline()
+            ) {
+                _uiState.update { it.copy(showNetworkErrorDialog = true) }
+                return@launch
+            }
+
+            _uiState.update { it.copy(isLoading = true) }
+
+            val textSet = uiState.value.selectedWords
             val sourceLang = uiState.value.selectedLanguageOptions.first.lang.langCode
 
             textSet.forEachIndexed { index, text ->
@@ -208,7 +247,6 @@ class RecognizedTextViewModel(
                 ).firstOrNull()?.let { result ->
                     when (result) {
                         Translator.TranslationResult.ModelDownloadFailure -> {
-                            Log.d("idk", "download failure")
                             _uiState.update {
                                 it.copy(isLoading = false)
                             }
@@ -234,7 +272,6 @@ class RecognizedTextViewModel(
                         }
 
                         Translator.TranslationResult.TranslationFailure -> {
-                            Log.d("idk", "translation failure")
                             _uiState.update { it.copy(isLoading = false) }
                         }
                     }

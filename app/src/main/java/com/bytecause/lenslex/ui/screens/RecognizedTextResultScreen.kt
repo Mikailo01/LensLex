@@ -29,6 +29,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +48,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -64,6 +67,7 @@ import com.bytecause.lenslex.ui.components.BottomAppBarItems
 import com.bytecause.lenslex.ui.components.ImageButtonWithText
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
+import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.RecognizedTextUiEvent
 import com.bytecause.lenslex.ui.models.Word
@@ -204,6 +208,20 @@ fun RecognizedTextResultScreenContent(
                 )
             }
 
+            SnackbarHost(
+                hostState = state.snackbarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            )
+
+            if (state.showNetworkErrorDialog) {
+                NetworkUnavailableDialog(
+                    text = stringResource(id = R.string.models_missing),
+                    onTryAgainClick = { onEvent(RecognizedTextUiEvent.OnTryAgainClick) },
+                    onDismiss = { onEvent(RecognizedTextUiEvent.OnDismissNetworkErrorDialog) })
+            }
+
             if (state.isLoading) {
                 BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
@@ -244,13 +262,13 @@ fun SentenceModeLayout(
 
             Column {
                 Text(
-                    text = "Sentence mode activated.",
+                    text = stringResource(id = R.string.sentence_construction),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = "Selected words will be assembled into a sentence.",
+                    text = stringResource(id = R.string.sentence_construction_message),
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -324,6 +342,8 @@ fun RecognizedTextResultScreen(
         mutableStateOf(text.joinToString(System.lineSeparator()))
     }
 
+    val context = LocalContext.current
+
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(key1 = uiState.shouldNavigateBack) {
@@ -333,6 +353,12 @@ fun RecognizedTextResultScreen(
     LaunchedEffect(key1 = uiState.words) {
         if (uiState.words.isEmpty()) {
             viewModel.uiEventHandler(RecognizedTextUiEvent.OnAddWords(textListToWordList(text)))
+        }
+    }
+
+    LaunchedEffect(key1 = uiState.showNetworkErrorMessage) {
+        if (uiState.showNetworkErrorMessage) {
+            uiState.snackbarHostState.showSnackbar(context.getString(R.string.network_unavailable))
         }
     }
 
@@ -468,14 +494,16 @@ fun List<Word>.chunkedByWidth(maxWidth: Int): List<List<Word>> {
 @Preview(showBackground = true)
 fun RecognizedTextResultScreenPreview() {
     RecognizedTextResultScreenContent(
-        state = RecognizedTextState(words = stringResource(id = R.string.dummy_text)
-            .split(" ")
-            .mapIndexed { index, s ->
-                Word(
-                    id = index,
-                    text = s
-                )
-            }),
+        state = RecognizedTextState(
+            words = stringResource(id = R.string.dummy_text)
+                .split(" ")
+                .mapIndexed { index, s ->
+                    Word(
+                        id = index,
+                        text = s
+                    )
+                }
+        ),
         isExpandedScreen = false,
         onEvent = {}
     )

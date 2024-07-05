@@ -53,12 +53,11 @@ fun SendEmailResetScreenContent(
     state: SendEmailResetState,
     xOffset: Animatable<Float, AnimationVector1D>,
     yOffset: Animatable<Float, AnimationVector1D>,
-    snackBarHostState: SnackbarHostState,
     onEvent: (SendEmailResetUiEvent) -> Unit
 ) {
     if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
         UserAuthBackground(
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
                     text = stringResource(id = R.string.reset_password_request),
@@ -121,7 +120,7 @@ fun SendEmailResetScreenContent(
         )
     } else {
         UserAuthBackgroundExpanded(
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
                     text = stringResource(id = R.string.reset_password_request),
@@ -191,10 +190,6 @@ fun SendEmailResetScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val snackBarHostState = remember {
-        SnackbarHostState()
-    }
-
     val context = LocalContext.current
 
     val xOffset = remember { Animatable(if (!uiState.animationStarted) -1050f else 0f) }
@@ -228,12 +223,12 @@ fun SendEmailResetScreen(
     LaunchedEffect(key1 = uiState.requestResult) {
         when (uiState.requestResult) {
             SimpleResult.OnSuccess -> {
-                snackBarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
+                uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
                 viewModel.updateRequestResult(null)
             }
 
             is SimpleResult.OnFailure -> {
-                snackBarHostState.showSnackbar(
+                uiState.snackbarHostState.showSnackbar(
                     message = (uiState.requestResult as SimpleResult.OnFailure)
                         .exception?.message.toString()
                 )
@@ -251,7 +246,6 @@ fun SendEmailResetScreen(
         state = uiState,
         xOffset = xOffset,
         yOffset = yOffset,
-        snackBarHostState = snackBarHostState,
         onEvent = viewModel::uiEventHandler
     )
 }
@@ -268,7 +262,6 @@ fun SendEmailResetScreenContentPreview() {
         yOffset = remember {
             Animatable(0f)
         },
-        snackBarHostState = SnackbarHostState(),
         onEvent = {}
     )
 }

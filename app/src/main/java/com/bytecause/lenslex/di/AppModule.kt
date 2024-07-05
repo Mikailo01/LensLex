@@ -14,6 +14,7 @@ import com.bytecause.lenslex.data.repository.TextLanguageRecognitionRepositoryIm
 import com.bytecause.lenslex.data.repository.TextRecognitionRepositoryImpl
 import com.bytecause.lenslex.data.repository.TranslateRepositoryImpl
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
+import com.bytecause.lenslex.data.repository.UserRepositoryImpl
 import com.bytecause.lenslex.data.repository.VerifyOobRepositoryImpl
 import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
@@ -26,8 +27,9 @@ import com.bytecause.lenslex.ui.screens.viewmodel.RecognizedTextViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED
+import com.google.firebase.firestore.PersistentCacheSettings
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -36,7 +38,19 @@ import org.koin.dsl.module
 val appModule = module {
 
     // Firebase
-    single { FirebaseFirestore.getInstance() }
+    single<FirebaseFirestore> {
+        FirebaseFirestore.getInstance().apply {
+            val cacheSettings = PersistentCacheSettings.newBuilder()
+                .setSizeBytes(CACHE_SIZE_UNLIMITED)
+                .build()
+
+            val settings = FirebaseFirestoreSettings.Builder()
+                .setLocalCacheSettings(cacheSettings)
+                .build()
+
+            firestoreSettings = settings
+        }
+    }
 
     single<FirebaseAuthClient> {
         FirebaseAuthClient()
@@ -63,10 +77,17 @@ val appModule = module {
         SupportedLanguagesRepository()
     }
 
+    single<UserRepositoryImpl> {
+        UserRepositoryImpl(
+            auth = get<FirebaseAuthClient>(),
+            firestore = get<FirebaseFirestore>()
+        )
+    }
+
     single<WordsRepositoryImpl> {
         WordsRepositoryImpl(
-            firestore = Firebase.firestore,
-            auth = FirebaseAuthClient()
+            firestore = get<FirebaseFirestore>(),
+            auth = get<FirebaseAuthClient>()
         )
     }
 
@@ -104,9 +125,9 @@ val appModule = module {
             wordsRepository = get<WordsRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             textRecognitionRepository = get<TextRecognitionRepositoryImpl>(),
+            userRepository = get<UserRepositoryImpl>(),
             supportedLanguagesRepository = get(),
             translationModelManager = get<TranslationModelManager>(),
-            auth = get<FirebaseAuthClient>()
         )
     }
 
@@ -123,7 +144,11 @@ val appModule = module {
     }
 
     viewModel {
-        AccountViewModel(get<FirebaseAuthClient>(), get())
+        AccountViewModel(
+            auth = get<FirebaseAuthClient>(),
+            firebaseCloudRepository = get<FirebaseCloudRepositoryImpl>(),
+            userRepository = get<UserRepositoryImpl>()
+        )
     }
 
     viewModel {
@@ -141,7 +166,10 @@ val appModule = module {
     }
 
     viewModel {
-        AccountSettingsViewModel(get<FirebaseAuthClient>(), get())
+        AccountSettingsViewModel(
+            auth = get<FirebaseAuthClient>(),
+            userRepository = get<UserRepositoryImpl>()
+        )
     }
 
     viewModel {

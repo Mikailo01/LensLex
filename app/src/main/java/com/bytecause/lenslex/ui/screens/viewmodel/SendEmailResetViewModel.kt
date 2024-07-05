@@ -2,7 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.remote.auth.Authenticator
+import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SendEmailResetViewModel(
-    private val auth: Authenticator
+    private val auth: FirebaseAuthClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SendEmailResetState())

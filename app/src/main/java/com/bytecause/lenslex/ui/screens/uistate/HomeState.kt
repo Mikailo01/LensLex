@@ -1,11 +1,10 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
-import androidx.compose.runtime.Immutable
+import androidx.compose.material3.SnackbarHostState
 import com.bytecause.lenslex.domain.models.SupportedLanguage
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
-@Immutable
 data class HomeState(
     val wordList: List<WordsAndSentences> = emptyList(),
     val profilePictureUrl: String = "",
@@ -18,5 +17,6 @@ data class HomeState(
     ) to TranslationOption.Target(SupportedLanguage()),
     val showLanguageDialog: TranslationOption? = null,
     val showUndoButton: Boolean = false,
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val isImageTextless: Boolean = false
 )

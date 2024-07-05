@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -26,12 +27,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
+import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.util.Util.readJsonAsMapFromAssets
+import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import org.koin.androidx.compose.koinViewModel
+
+private const val AbbreviationsJsonName = "abbreviations_wordlist.json"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +91,7 @@ fun AddScreenContent(
                         onClick = {
                             // Returns Map with abbreviation words.
                             val jsonContent =
-                                readJsonAsMapFromAssets(context, "abbreviations_wordlist.json")
+                                readJsonAsMapFromAssets(context, AbbreviationsJsonName)
 
                             onEvent(
                                 AddUiEvent.OnTranslate(
@@ -98,7 +103,33 @@ fun AddScreenContent(
                     }
                 }
             }
+            if (state.isLoading) {
+                BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+
+            SnackbarHost(
+                hostState = state.snackbarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            )
         }
+    }
+
+    if (state.showNetworkErrorDialog) {
+        NetworkUnavailableDialog(
+            text = stringResource(id = R.string.models_missing),
+            onTryAgainClick = {
+                val jsonContent =
+                    readJsonAsMapFromAssets(context, AbbreviationsJsonName)
+
+                onEvent(
+                    AddUiEvent.OnTryAgainClick(
+                        jsonContent?.get(state.textValue.lowercase()) ?: state.textValue
+                    )
+                )
+            },
+            onDismiss = { onEvent(AddUiEvent.OnDismissNetworkErrorDialog) })
     }
 
     if (state.showLanguageDialog != null) {
@@ -130,8 +161,16 @@ fun AddScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+
     LaunchedEffect(key1 = uiState.shouldNavigateBack) {
         if (uiState.shouldNavigateBack) onNavigateBack()
+    }
+
+    LaunchedEffect(key1 = uiState.showNetworkErrorMessage) {
+        if (uiState.showNetworkErrorMessage) {
+            uiState.snackbarHostState.showSnackbar(context.getString(R.string.network_unavailable))
+        }
     }
 
     AddScreenContent(

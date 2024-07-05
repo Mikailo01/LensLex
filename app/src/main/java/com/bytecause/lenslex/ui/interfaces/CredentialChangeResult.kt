@@ -11,6 +11,6 @@ sealed interface CredentialChangeResult {
             val deleteAccount: Boolean = false
         ) : Failure()
 
-        data class Error(val exception: Exception) : Failure()
+        data class Error(val exception: Throwable) : Failure()
     }
 }

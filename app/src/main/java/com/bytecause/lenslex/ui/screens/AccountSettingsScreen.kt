@@ -88,7 +88,6 @@ import java.util.Date
 fun AccountSettingsScreenContent(
     isExpandedScreen: Boolean,
     state: AccountSettingsState,
-    snackBarHostState: SnackbarHostState,
     onEvent: (AccountSettingsUiEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -566,7 +565,7 @@ fun AccountSettingsScreenContent(
             }
 
             SnackbarHost(
-                hostState = snackBarHostState,
+                hostState = state.snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter)
             ) { snackBarData ->
                 Snackbar(
@@ -585,9 +584,7 @@ fun AccountSettingsScreen(
     onNavigateBack: () -> Unit,
     onUserLoggedOut: () -> Unit
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val launchGoogleIntent by viewModel.launchGoogleIntent.collectAsStateWithLifecycle()
 
     var isGoogleIntentLaunched by rememberSaveable {
         mutableStateOf(false)
@@ -595,17 +592,15 @@ fun AccountSettingsScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val snackBarHostState = remember { SnackbarHostState() }
-
     val context = LocalContext.current
 
     LaunchedEffect(key1 = uiState.userDetails) {
         if (uiState.userDetails == null) onUserLoggedOut()
     }
 
-    LaunchedEffect(key1 = launchGoogleIntent) {
+    LaunchedEffect(key1 = uiState.launchGoogleIntent) {
         if (!isGoogleIntentLaunched) {
-            if (launchGoogleIntent) {
+            if (uiState.launchGoogleIntent) {
                 try {
                     forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
                     isGoogleIntentLaunched = true
@@ -620,7 +615,7 @@ fun AccountSettingsScreen(
                 }
                 forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
             }
-        } else isGoogleIntentLaunched = true
+        }
     }
 
     LaunchedEffect(uiState.credentialChangeResult) {
@@ -629,7 +624,7 @@ fun AccountSettingsScreen(
                 coroutineScope.launch {
                     val messageId =
                         (uiState.credentialChangeResult as CredentialChangeResult.Success).message
-                    snackBarHostState.showSnackbar(
+                    uiState.snackbarHostState.showSnackbar(
                         context.getString(messageId)
                     )
                 }.invokeOnCompletion {
@@ -677,7 +672,7 @@ fun AccountSettingsScreen(
                     is FirebaseAuthInvalidUserException -> {
                         castedError.message?.let {
                             coroutineScope.launch {
-                                snackBarHostState.showSnackbar(it)
+                                uiState.snackbarHostState.showSnackbar(it)
                             }.invokeOnCompletion {
                                 viewModel.resetCredentialChangeState()
                             }
@@ -687,7 +682,7 @@ fun AccountSettingsScreen(
                     is FirebaseAuthInvalidCredentialsException -> {
                         castedError.message?.let {
                             coroutineScope.launch {
-                                snackBarHostState.showSnackbar(it)
+                                uiState.snackbarHostState.showSnackbar(it)
                             }.invokeOnCompletion {
                                 viewModel.resetCredentialChangeState()
                             }
@@ -697,7 +692,7 @@ fun AccountSettingsScreen(
                     is FirebaseAuthUserCollisionException -> {
                         castedError.message?.let {
                             coroutineScope.launch {
-                                snackBarHostState.showSnackbar(it)
+                                uiState.snackbarHostState.showSnackbar(it)
                             }.invokeOnCompletion {
                                 viewModel.resetCredentialChangeState()
                             }
@@ -707,7 +702,7 @@ fun AccountSettingsScreen(
                     is FirebaseAuthException -> {
                         castedError.message?.let {
                             coroutineScope.launch {
-                                snackBarHostState.showSnackbar(it)
+                                uiState.snackbarHostState.showSnackbar(it)
                             }.invokeOnCompletion {
                                 viewModel.resetCredentialChangeState()
                             }
@@ -725,12 +720,11 @@ fun AccountSettingsScreen(
     AccountSettingsScreenContent(
         isExpandedScreen = isExpandedScreen,
         state = uiState,
-        snackBarHostState = snackBarHostState,
         onEvent = { event ->
             when (event) {
                 is AccountSettingsUiEvent.OnShowSnackBar -> {
                     coroutineScope.launch {
-                        snackBarHostState.showSnackbar(event.message)
+                        uiState.snackbarHostState.showSnackbar(event.message)
                     }
                 }
 
@@ -758,7 +752,6 @@ fun AccountSettingsScreenPreview() {
     AccountSettingsScreenContent(
         isExpandedScreen = false,
         state = AccountSettingsState(),
-        snackBarHostState = SnackbarHostState(),
         onEvent = {}
     )
 }

@@ -6,13 +6,16 @@ import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
+import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
+import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,7 +67,35 @@ class AddViewModel(
             is AddUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
             is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
             is AddUiEvent.OnTranslate -> translateText(event.value)
+            is AddUiEvent.OnTryAgainClick -> onTryAgainClickHandler(event.value)
             AddUiEvent.OnNavigateBack -> onNavigateBackHandler()
+            AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialogHandler()
+        }
+    }
+
+    private fun onTryAgainClickHandler(text: String) {
+        viewModelScope.launch {
+            if (NetworkUtil.isOnline()) {
+                _uiState.update {
+                    it.copy(
+                        showNetworkErrorDialog = false,
+                        showNetworkErrorMessage = false
+                    )
+                }
+                translateText(text)
+            } else {
+                if (uiState.value.showNetworkErrorMessage) {
+                    _uiState.update { it.copy(showNetworkErrorMessage = false) }
+                    delay(300)
+                    _uiState.update { it.copy(showNetworkErrorMessage = true) }
+                } else _uiState.update { it.copy(showNetworkErrorMessage = true) }
+            }
+        }
+    }
+
+    private fun onDismissNetworkErrorDialogHandler() {
+        _uiState.update {
+            it.copy(showNetworkErrorDialog = false)
         }
     }
 
@@ -88,9 +119,23 @@ class AddViewModel(
     private fun translateText(text: String) {
         if (translateJob?.isActive == true) return
 
-        val sourceLang = uiState.value.selectedLanguageOptions.first.lang.langCode
+        uiState.value.textValue
 
         translateJob = viewModelScope.launch {
+            // if language models are not downloaded and the user is offline, show network error dialog
+            if (!areModelsReady(
+                    origin = uiState.value.selectedLanguageOptions.first,
+                    target = uiState.value.selectedLanguageOptions.second
+                ) && !NetworkUtil.isOnline()
+            ) {
+                _uiState.update { it.copy(showNetworkErrorDialog = true) }
+                return@launch
+            }
+
+            _uiState.update { it.copy(isLoading = true) }
+
+            val sourceLang = uiState.value.selectedLanguageOptions.first.lang.langCode
+
             translateRepository.translate(
                 text = text,
                 sourceLang = sourceLang,
@@ -98,11 +143,7 @@ class AddViewModel(
             ).firstOrNull()?.let { translationResult ->
                 when (translationResult) {
                     Translator.TranslationResult.ModelDownloadFailure -> {
-                        /* Toast.makeText(
-                             context,
-                             "Model download failed.",
-                             Toast.LENGTH_SHORT
-                         ).show()*/
+                        _uiState.update { it.copy(isLoading = false) }
                     }
 
                     is Translator.TranslationResult.TranslationSuccess -> {
@@ -121,12 +162,7 @@ class AddViewModel(
                     }
 
                     Translator.TranslationResult.TranslationFailure -> {
-                        /*Toast.makeText(
-                            context,
-                            "Translation failed.",
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()*/
+                        _uiState.update { it.copy(isLoading = false) }
                     }
                 }
             }

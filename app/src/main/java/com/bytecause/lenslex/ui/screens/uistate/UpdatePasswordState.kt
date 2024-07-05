@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
+import androidx.compose.material3.SnackbarHostState
 import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
@@ -16,5 +17,6 @@ data class UpdatePasswordState(
     val codeValidationResult: UpdatePasswordViewModel.CodeValidationResult? = UpdatePasswordViewModel.CodeValidationResult(
         isLoading = true
     ),
-    val credentialValidationResult: CredentialValidationResult? = null
+    val credentialValidationResult: CredentialValidationResult? = null,
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 )

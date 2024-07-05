@@ -2,7 +2,6 @@ package com.bytecause.lenslex.util
 
 import android.annotation.SuppressLint
 import android.graphics.BlurMaskFilter
-import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -21,10 +20,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 
 fun String.capital(): String = this.replaceFirstChar { it.uppercase() }
 
@@ -100,16 +95,3 @@ fun Modifier.then(
     onTrue: @Composable (Modifier.() -> Modifier)? = null,
     onFalse: @Composable (Modifier.() -> Modifier)? = null
 ) = thenInternal(condition, onTrue, onFalse)
-
-fun <T> Flow<T>.mutableStateIn(
-    scope: CoroutineScope,
-    initialValue: T
-): MutableStateFlow<T> {
-    val flow = MutableStateFlow(initialValue)
-
-    scope.launch {
-        this@mutableStateIn.collect(flow)
-    }
-
-    return flow
-}

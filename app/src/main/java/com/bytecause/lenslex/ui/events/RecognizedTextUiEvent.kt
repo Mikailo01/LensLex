@@ -21,6 +21,8 @@ sealed interface RecognizedTextUiEvent {
     data object OnUnselectAllWords : NonDirect
     data object OnHintActionIconClick : NonDirect
     data object OnFabActionButtonClick : NonDirect
+    data object OnDismissNetworkErrorDialog : NonDirect
+    data object OnTryAgainClick : NonDirect
 
     data object OnBackButtonClick : Direct
     data object OnCopyContent : Direct

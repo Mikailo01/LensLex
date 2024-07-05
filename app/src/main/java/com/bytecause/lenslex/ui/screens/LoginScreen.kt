@@ -64,6 +64,7 @@ import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.TestTags
 import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.shadowCustom
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -72,14 +73,13 @@ import org.koin.androidx.compose.koinViewModel
 fun LoginScreenContent(
     isExpandedScreen: Boolean,
     state: LoginState,
-    snackBarHostState: SnackbarHostState,
     xTextOffset: Animatable<Float, AnimationVector1D>,
     xText2offset: Animatable<Float, AnimationVector1D>,
     onEvent: (LoginUiEvent) -> Unit
 ) {
     if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
         UserAuthBackground(
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Spacer(modifier = Modifier.height(30.dp))
                 Text(
@@ -155,7 +155,7 @@ fun LoginScreenContent(
 
     } else {
         UserAuthBackgroundExpanded(
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Spacer(modifier = Modifier.height(30.dp))
                 Text(
@@ -250,9 +250,6 @@ fun LoginScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val snackBarHostState = remember {
-        SnackbarHostState()
-    }
 
     var animationStarted by rememberSaveable { mutableStateOf(false) }
 
@@ -303,7 +300,7 @@ fun LoginScreen(
                 keyboardController?.hide()
                 coroutineScope.launch {
                     uiState.signInState.signInError?.let {
-                        snackBarHostState.showSnackbar(it)
+                        uiState.snackbarHostState.showSnackbar(it)
                         viewModel.onSignInResult(SignInResult(null, null))
                     }
                 }
@@ -339,7 +336,6 @@ fun LoginScreen(
     LoginScreenContent(
         isExpandedScreen = isExpandedScreen,
         state = uiState,
-        snackBarHostState = snackBarHostState,
         xTextOffset = xTextOffset,
         xText2offset = xText2offset,
         onEvent = { event ->
@@ -351,11 +347,10 @@ fun LoginScreen(
 
                 is LoginUiEvent.OnSignInUsingGoogle -> {
                     coroutineScope.launch {
-                        viewModel.onSignInResult(
-                            FirebaseAuthClient().signInUsingGoogleCredential(
-                                context
-                            )
-                        )
+                        FirebaseAuthClient().signInUsingGoogleCredential(context).firstOrNull()
+                            ?.let { result ->
+                                viewModel.onSignInResult(result)
+                            }
                     }
                 }
 
@@ -379,7 +374,6 @@ private suspend fun saveCredential(
             context = context,
             request = CreatePasswordRequest(username, password)
         )
-        Log.v("CredentialTest", "Credentials successfully added")
     } catch (e: CreateCredentialCancellationException) {
         // do nothing, the user chose not to save the credential
         Log.v("CredentialTest", "User cancelled the save")
@@ -422,7 +416,6 @@ fun LoginScreenPreview() {
     LoginScreenContent(
         isExpandedScreen = false,
         state = LoginState(),
-        snackBarHostState = SnackbarHostState(),
         xTextOffset = remember {
             Animatable(0f)
         },

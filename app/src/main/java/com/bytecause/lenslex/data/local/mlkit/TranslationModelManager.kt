@@ -1,39 +1,46 @@
 package com.bytecause.lenslex.data.local.mlkit
 
+import android.util.Log
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.common.model.RemoteModelManager
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.TranslateRemoteModel
-import java.lang.Exception
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 class TranslationModelManager {
 
     private val modelManager = RemoteModelManager.getInstance()
 
-    fun getModels(onResult: (Set<TranslateRemoteModel>) -> Unit) {
+    fun getModels(): Flow<Result<Set<TranslateRemoteModel>>> = callbackFlow {
         modelManager.getDownloadedModels(TranslateRemoteModel::class.java)
             .addOnSuccessListener { models ->
-                onResult(models)
+                Log.d("idk", models.first().language)
+                Log.d("idk", models.joinToString())
+                trySend(Result.success(models))
             }
-            .addOnFailureListener {
-                // Error.
+            .addOnFailureListener { exception ->
+                trySend(Result.failure(exception))
             }
+        awaitClose()
     }
 
-    fun deleteModel(languageTag: String, onRemoveSuccess: () -> Unit) {
+    fun deleteModel(languageTag: String): Flow<Result<Unit>> = callbackFlow {
         TranslateLanguage.fromLanguageTag(languageTag)?.let { langTag ->
             val model = TranslateRemoteModel.Builder(langTag).build()
             modelManager.deleteDownloadedModel(model)
                 .addOnSuccessListener {
-                    onRemoveSuccess()
+                    trySend(Result.success(Unit))
                 }
-                .addOnFailureListener {
-                    // Error.
+                .addOnFailureListener { exception ->
+                    trySend(Result.failure(exception))
                 }
         }
+        awaitClose()
     }
 
-    fun downloadModel(languageTag: String, onDownloadSuccess: () -> Unit, onDownloadFailure: (Exception) -> Unit) {
+    fun downloadModel(languageTag: String): Flow<Result<Unit>> = callbackFlow {
         TranslateLanguage.fromLanguageTag(languageTag)?.let { langTag ->
             val model = TranslateRemoteModel.Builder(langTag).build()
             val conditions = DownloadConditions.Builder()
@@ -41,11 +48,12 @@ class TranslationModelManager {
                 .build()
             modelManager.download(model, conditions)
                 .addOnSuccessListener {
-                    onDownloadSuccess()
+                    trySend(Result.success(Unit))
                 }
-                .addOnFailureListener {
-                    onDownloadFailure(it)
+                .addOnFailureListener { exception ->
+                    trySend(Result.failure(exception))
                 }
         }
+        awaitClose()
     }
 }

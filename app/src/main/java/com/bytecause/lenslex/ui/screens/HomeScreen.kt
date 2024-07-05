@@ -91,7 +91,6 @@ fun HomeScreenContent(
     state: HomeState,
     cameraPermissionState: PermissionState?,
     lazyListState: LazyListState,
-    snackbarHostState: SnackbarHostState,
     onEvent: (HomeUiEvent) -> Unit
 ) {
     Scaffold(
@@ -224,7 +223,7 @@ fun HomeScreenContent(
                     )
                 }
 
-                SnackbarHost(hostState = snackbarHostState, Modifier.fillMaxWidth())
+                SnackbarHost(hostState = state.snackbarHostState, Modifier.fillMaxWidth())
             }
 
             AnimatedVisibility(
@@ -283,9 +282,6 @@ fun HomeScreen(
     }
 
     val lazyListState = rememberLazyListState()
-    val snackbarHostState = remember {
-        SnackbarHostState()
-    }
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -337,9 +333,13 @@ fun HomeScreen(
         }
     )
 
+    LaunchedEffect(key1 = Unit) {
+        viewModel.reload()
+    }
+
     LaunchedEffect(key1 = uiState.isImageTextless) {
         if (uiState.isImageTextless) {
-            snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
+            uiState.snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
             viewModel.resetImageTextless()
         }
     }
@@ -359,7 +359,6 @@ fun HomeScreen(
         state = uiState,
         cameraPermissionState = cameraPermissionState,
         lazyListState = lazyListState,
-        snackbarHostState = snackbarHostState,
         onEvent = { event ->
             when (event) {
                 HomeUiEvent.OnScrollToTop -> {
@@ -402,9 +401,6 @@ fun HomeScreenPreview() {
         state = HomeState(),
         cameraPermissionState = null,
         lazyListState = rememberLazyListState(),
-        snackbarHostState = remember {
-            SnackbarHostState()
-        },
         onEvent = {}
     )
 }

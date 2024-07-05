@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,11 +26,11 @@ fun Dialog(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit
 ) {
-
     androidx.compose.ui.window.Dialog(onDismissRequest = { onDismiss() }) {
         Card(
             modifier = modifier,
             shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -51,8 +53,10 @@ fun Dialog(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(15.dp)
                 ) {
                     content()
                 }

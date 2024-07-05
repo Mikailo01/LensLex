@@ -3,8 +3,8 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.data.remote.auth.Authenticator
-import com.bytecause.lenslex.domain.models.UserAccountDetails
+import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
+import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
 import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
@@ -15,23 +15,18 @@ import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.firebase.auth.AuthCredential
-import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val FirebaseProviderId = "firebase"
 
 class AccountSettingsViewModel(
-    private val auth: Authenticator,
-    private val firebase: FirebaseFirestore,
+    private val auth: FirebaseAuthClient,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val firebaseAuth = auth.getAuth()
@@ -39,41 +34,11 @@ class AccountSettingsViewModel(
     private val _uiState =
         MutableStateFlow(
             AccountSettingsState(
-                userDetails = auth.getAuth().currentUser?.run {
-                    UserAccountDetails(
-                        uid = uid,
-                        creationTimeStamp = metadata?.creationTimestamp,
-                        userName = displayName?.takeIf { it.isNotBlank() } ?: "",
-                        email = email?.takeIf { it.isNotBlank() }
-                            ?: providerData.find { it.email?.isNotBlank() == true }?.email ?: "",
-                        isAnonymous = isAnonymous
-                    )
-                },
-                linkedProviders = auth.getAuth().currentUser?.run {
-                    val providers = mutableListOf<Provider>()
-
-                    reload()
-
-                    // Check for email
-                    if (providerData.find { it.providerId == EmailAuthProvider.PROVIDER_ID } != null) {
-                        providers.add(Provider.Email)
-                    }
-
-                    // Check for Google provider directly
-                    if (providerData.find { it.providerId == GoogleAuthProvider.PROVIDER_ID } != null) {
-                        providers.add(Provider.Google)
-                    }
-
-                    providers.toList()
-                } ?: emptyList()
+                userDetails = userRepository.getUserData(),
+                linkedProviders = userRepository.linkedProviders()
             )
         )
     val uiState = _uiState.asStateFlow()
-
-    // Credential Manager needs context instance, so I created this StateFlow to notify the UI, that
-    // intent should be launched
-    private val _launchGoogleIntent = MutableStateFlow(false)
-    val launchGoogleIntent = _launchGoogleIntent.asStateFlow()
 
     // When the user deletes account this listener will be notified
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
@@ -90,7 +55,9 @@ class AccountSettingsViewModel(
     }
 
     fun shouldLaunchGoogleIntent(boolean: Boolean) {
-        _launchGoogleIntent.value = boolean
+        _uiState.update {
+            it.copy(launchGoogleIntent = boolean)
+        }
     }
 
     fun uiEventHandler(event: AccountSettingsUiEvent.NonDirect) {
@@ -164,7 +131,7 @@ class AccountSettingsViewModel(
                 if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
                     provider
                 )
-                else _launchGoogleIntent.value = true
+                else shouldLaunchGoogleIntent(true)
         }
     }
 
@@ -243,14 +210,13 @@ class AccountSettingsViewModel(
     fun reauthenticateWithGoogle(
         authCredential: AuthCredential
     ) {
-        val credentialChangeResult =
-            _uiState.value.credentialChangeResult as CredentialChangeResult.Failure.ReauthorizationRequired
+        viewModelScope.launch {
+            val credentialChangeResult =
+                _uiState.value.credentialChangeResult as CredentialChangeResult.Failure.ReauthorizationRequired
 
-        viewModelScope.launch(Dispatchers.Main) {
-            auth.getAuth().currentUser
-                ?.reauthenticateAndRetrieveData(authCredential)
-                ?.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
+            auth.reauthenticateWithGoogle(authCredential).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
                         when {
                             credentialChangeResult.email != null -> {
                                 updateEmail(credentialChangeResult.email)
@@ -262,16 +228,14 @@ class AccountSettingsViewModel(
 
                             credentialChangeResult.deleteAccount -> deleteAccount()
                         }
-
                         reload()
-                    } else {
-                        task.exception?.let {
-                            updateCredentialChangeState(
-                                CredentialChangeResult.Failure.Error(it)
-                            )
-                        }
                     }
-                }
+                    .onFailure { exception ->
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Failure.Error(exception)
+                        )
+                    }
+            }
         }.invokeOnCompletion {
             resetCredentialChangeState()
             _uiState.update {
@@ -281,61 +245,65 @@ class AccountSettingsViewModel(
     }
 
     private fun unlinkProvider(provider: Provider) {
-        when (provider) {
-            Provider.Google -> {
-                auth.getAuth().currentUser
-                    ?.unlink(GoogleAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
+        viewModelScope.launch {
+            when (provider) {
+                Provider.Google -> {
+                    userRepository.unlinkGoogleProvider().firstOrNull()?.let { result ->
+                        result
+                            .onSuccess {
+                                _uiState.update {
+                                    it.copy(linkedProviders = it.linkedProviders.filter { provider -> provider != Provider.Google })
+                                }
 
-                            _uiState.update {
-                                it.copy(linkedProviders = it.linkedProviders.filter { provider -> provider != Provider.Google })
+                                reload()
                             }
-
-                            reload()
-                        } else {
-                            task.exception?.let {
-                                updateCredentialChangeState(CredentialChangeResult.Failure.Error(it))
+                            .onFailure { exception ->
+                                updateCredentialChangeState(
+                                    CredentialChangeResult.Failure.Error(
+                                        exception
+                                    )
+                                )
                             }
-                        }
                     }
-            }
+                }
 
-            Provider.Email -> {
-                auth.getAuth().currentUser
-                    ?.unlink(EmailAuthProvider.PROVIDER_ID)?.addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
+                Provider.Email -> {
+                    userRepository.unlinkEmailProvider().firstOrNull()?.let { result ->
+                        result
+                            .onSuccess {
+                                _uiState.update {
+                                    it.copy(linkedProviders = it.linkedProviders.filter { it != Provider.Email })
+                                }
 
-                            _uiState.update {
-                                it.copy(linkedProviders = it.linkedProviders.filter { it != Provider.Email })
+                                reload()
                             }
-
-                            reload()
-                        } else {
-                            task.exception?.let {
-                                updateCredentialChangeState(CredentialChangeResult.Failure.Error(it))
+                            .onFailure { exception ->
+                                updateCredentialChangeState(
+                                    CredentialChangeResult.Failure.Error(
+                                        exception
+                                    )
+                                )
                             }
-                        }
                     }
+                }
             }
         }
     }
 
     fun linkGoogleProvider(authCredential: AuthCredential) {
         viewModelScope.launch {
-            firebaseAuth.currentUser?.linkWithCredential(
-                authCredential
-            )?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
+            auth.linkGoogleProvider(authCredential).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        _uiState.update {
+                            it.copy(linkedProviders = it.linkedProviders + Provider.Google)
+                        }
 
-                    _uiState.update {
-                        it.copy(linkedProviders = it.linkedProviders + Provider.Google)
+                        resetCredentialChangeState()
+                        reload()
                     }
-
-                    resetCredentialChangeState()
-                    reload()
-                } else {
-                    task.exception?.let {
-                        if (it is FirebaseAuthRecentLoginRequiredException) {
+                    .onFailure { exception ->
+                        if (exception is FirebaseAuthRecentLoginRequiredException) {
                             updateCredentialChangeState(
                                 CredentialChangeResult.Failure.ReauthorizationRequired()
                             )
@@ -343,32 +311,32 @@ class AccountSettingsViewModel(
                         }
 
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
-                _launchGoogleIntent.value = false
             }
-        }
+        }.invokeOnCompletion { shouldLaunchGoogleIntent(false) }
     }
 
     private fun linkEmailProvider(credentials: Credentials.Sensitive) {
-        val credential = (credentials as Credentials.Sensitive.SignInCredentials)
-        val emailCredentials =
-            EmailAuthProvider.getCredential(credential.email, credential.password)
-        auth.getAuth().currentUser?.linkWithCredential(emailCredentials)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
+        viewModelScope.launch {
+            val credential = (credentials as Credentials.Sensitive.SignInCredentials)
 
-                    _uiState.update {
-                        it.copy(linkedProviders = it.linkedProviders + Provider.Email)
+            userRepository.linkEmailProvider(
+                email = credential.email,
+                password = credential.password
+            ).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        _uiState.update {
+                            it.copy(linkedProviders = it.linkedProviders + Provider.Email)
+                        }
+
+                        resetCredentialChangeState()
+                        reload()
                     }
-
-                    resetCredentialChangeState()
-                    reload()
-                } else {
-                    task.exception?.let {
-                        if (it is FirebaseAuthRecentLoginRequiredException) {
+                    .onFailure { exception ->
+                        if (exception is FirebaseAuthRecentLoginRequiredException) {
                             updateCredentialChangeState(
                                 CredentialChangeResult.Failure.ReauthorizationRequired()
                             )
@@ -376,54 +344,43 @@ class AccountSettingsViewModel(
                         }
 
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
             }
+        }
     }
 
     // Manual refresh of firebase account details
     private fun reload() {
-        auth.getAuth().currentUser?.reload()
-
-        _uiState.update {
-            it.copy(userDetails = auth.getAuth().currentUser?.run {
-                UserAccountDetails(
-                    uid = uid,
-                    creationTimeStamp = metadata?.creationTimestamp,
-                    userName = displayName?.takeIf { it.isNotBlank() },
-                    email = providerData.find { it.providerId == FirebaseProviderId }?.email.takeIf { it?.isNotBlank() == true }
-                        ?: providerData.find { it.email?.isNotBlank() == true }?.email,
-                    isAnonymous = isAnonymous
-                )
-            })
+        userRepository.reloadUserData().let { newUserData ->
+            _uiState.update {
+                it.copy(userDetails = newUserData)
+            }
         }
+
     }
 
     private fun updateUserName(userName: String) {
-        val changeRequest = UserProfileChangeRequest.Builder()
-            .setDisplayName(userName)
-            .build()
-
-        auth.getAuth().currentUser?.updateProfile(changeRequest)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    updateCredentialChangeState(
-                        CredentialChangeResult.Success(R.string.username_changed_message)
-                    )
-
-                    _uiState.update {
-                        it.copy(userDetails = it.userDetails?.copy(userName = userName))
-                    }
-                } else {
-                    task.exception?.let {
+        viewModelScope.launch {
+            userRepository.updateUsername(userName).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Success(R.string.username_changed_message)
+                        )
+
+                        _uiState.update {
+                            it.copy(userDetails = it.userDetails?.copy(userName = userName))
+                        }
+                    }
+                    .onFailure { exception ->
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
             }
+        }
     }
 
     // If the user wants to make dangerous changes (i.e.: change email, password, delete account)
@@ -434,52 +391,56 @@ class AccountSettingsViewModel(
     private fun reauthenticateUsingEmailAndPassword(
         credentials: Credentials.Sensitive.SignInCredentials
     ) {
-        val credential = EmailAuthProvider.getCredential(credentials.email, credentials.password)
-        auth.getAuth().currentUser?.reauthenticate(credential)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    if (_uiState.value.credentialChangeResult is CredentialChangeResult.Failure.ReauthorizationRequired) {
-                        val result =
-                            (_uiState.value.credentialChangeResult as CredentialChangeResult.Failure.ReauthorizationRequired)
+        viewModelScope.launch {
+            auth.reauthenticateWithEmailAndPassword(
+                email = credentials.email,
+                password = credentials.password
+            ).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        if (_uiState.value.credentialChangeResult is CredentialChangeResult.Failure.ReauthorizationRequired) {
+                            val credentialResult =
+                                (_uiState.value.credentialChangeResult as CredentialChangeResult.Failure.ReauthorizationRequired)
 
-                        when {
-                            result.email != null -> {
-                                updateEmail(result.email)
+                            when {
+                                credentialResult.email != null -> {
+                                    updateEmail(credentialResult.email)
+                                }
+
+                                credentialResult.password != null -> {
+                                    updatePassword(credentialResult.password)
+                                }
+
+                                credentialResult.deleteAccount -> deleteAccount()
                             }
-
-                            result.password != null -> {
-                                updatePassword(result.password)
-                            }
-
-                            result.deleteAccount -> deleteAccount()
                         }
+                        resetCredentialChangeState()
+                        reload()
                     }
-                    resetCredentialChangeState()
-                    reload()
-                } else {
-                    task.exception?.let {
+                    .onFailure { exception ->
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
             }
+        }
     }
 
     private fun updateEmail(email: String) {
-        auth.getAuth().currentUser?.verifyBeforeUpdateEmail(email)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    updateCredentialChangeState(
-                        CredentialChangeResult.Success(R.string.email_changed_message)
-                    )
+        viewModelScope.launch {
+            userRepository.updateEmail(email).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Success(R.string.email_changed_message)
+                        )
 
-                    _uiState.update {
-                        it.copy(userDetails = it.userDetails?.copy(email = email))
+                        _uiState.update {
+                            it.copy(userDetails = it.userDetails?.copy(email = email))
+                        }
                     }
-                } else {
-                    task.exception?.let {
-                        if (it is FirebaseAuthRecentLoginRequiredException) {
+                    .onFailure { exception ->
+                        if (exception is FirebaseAuthRecentLoginRequiredException) {
                             updateCredentialChangeState(
                                 CredentialChangeResult.Failure.ReauthorizationRequired(email = email)
                             )
@@ -487,23 +448,24 @@ class AccountSettingsViewModel(
                         }
 
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
             }
+        }
     }
 
     private fun updatePassword(password: String) {
-        auth.getAuth().currentUser?.updatePassword(password)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    updateCredentialChangeState(
-                        CredentialChangeResult.Success(R.string.password_changed_message)
-                    )
-                } else {
-                    task.exception?.let {
-                        if (it is FirebaseAuthRecentLoginRequiredException) {
+        viewModelScope.launch {
+            userRepository.updatePassword(password).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Success(R.string.password_changed_message)
+                        )
+                    }
+                    .onFailure { exception ->
+                        if (exception is FirebaseAuthRecentLoginRequiredException) {
                             updateCredentialChangeState(
                                 CredentialChangeResult.Failure.ReauthorizationRequired(password = password)
                             )
@@ -511,47 +473,37 @@ class AccountSettingsViewModel(
                         }
 
                         updateCredentialChangeState(
-                            CredentialChangeResult.Failure.Error(it)
+                            CredentialChangeResult.Failure.Error(exception)
                         )
                     }
-                }
             }
+        }
     }
 
+    // User's data should be deleted automatically using Firebase CLI, but this app is not for
+    // production use, so I used this workaround, which is not recommended for production-ready apps
     private fun deleteAccount() {
-        val uid = auth.getAuth().currentUser?.uid
-        uid?.let { userId ->
-            viewModelScope.launch {
-                firebase
-                    .collection("users")
-                    .document(userId)
-                    .delete()
-                    .addOnCompleteListener { deleteTask ->
-                        if (deleteTask.isSuccessful) {
-                            auth.getAuth().currentUser?.delete()
-                                ?.addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        updateCredentialChangeState(
-                                            CredentialChangeResult.Success(R.string.account_deleted_message)
-                                        )
-                                    } else {
-                                        task.exception?.let innerLet@{
-                                            if (it is FirebaseAuthRecentLoginRequiredException) {
-                                                updateCredentialChangeState(
-                                                    CredentialChangeResult.Failure.ReauthorizationRequired(
-                                                        deleteAccount = true
-                                                    )
-                                                )
-                                                return@innerLet
-                                            }
-
-                                            updateCredentialChangeState(
-                                                CredentialChangeResult.Failure.Error(it)
-                                            )
-                                        }
-                                    }
-                                }
+        viewModelScope.launch {
+            userRepository.deleteUserAccount().firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Success(R.string.account_deleted_message)
+                        )
+                    }
+                    .onFailure { exception ->
+                        if (exception is FirebaseAuthRecentLoginRequiredException) {
+                            updateCredentialChangeState(
+                                CredentialChangeResult.Failure.ReauthorizationRequired(
+                                    deleteAccount = true
+                                )
+                            )
+                            return@let
                         }
+
+                        updateCredentialChangeState(
+                            CredentialChangeResult.Failure.Error(exception)
+                        )
                     }
             }
         }

@@ -47,7 +47,6 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ModifiedImagePreviewScreenContent(
     state: ModifiedImagePreviewState,
-    snackbarHostState: SnackbarHostState,
     onEvent: (ModifiedImagePreviewUiEvent) -> Unit,
 ) {
     Box(
@@ -96,7 +95,7 @@ fun ModifiedImagePreviewScreenContent(
             }
 
             SnackbarHost(
-                hostState = snackbarHostState,
+                hostState = state.snackbarHostState,
                 modifier = Modifier
                     .fillMaxWidth()
             )
@@ -154,7 +153,6 @@ fun ModifiedImagePreviewScreen(
 
     ModifiedImagePreviewScreenContent(
         state = uiState,
-        snackbarHostState = snackbarHostState,
         onEvent = { event ->
             when (event) {
                 ModifiedImagePreviewUiEvent.OnLaunchCropLauncher -> {
@@ -175,9 +173,6 @@ fun ModifiedImagePreviewScreen(
 fun ModifiedImageScreenPreview() {
     ModifiedImagePreviewScreenContent(
         state = ModifiedImagePreviewState(),
-        snackbarHostState = remember {
-            SnackbarHostState()
-        },
         onEvent = {}
     )
 }

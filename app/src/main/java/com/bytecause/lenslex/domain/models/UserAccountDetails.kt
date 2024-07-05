@@ -6,5 +6,6 @@ data class UserAccountDetails(
     val creationTimeStamp: Long?,
     val userName: String?,
     val email: String?,
+    val profilePictureUrl: String,
     val isAnonymous: Boolean
 )

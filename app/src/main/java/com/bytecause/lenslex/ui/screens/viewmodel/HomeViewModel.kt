@@ -3,10 +3,10 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
-import com.bytecause.lenslex.data.remote.auth.Authenticator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
+import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.HomeUiEvent
@@ -27,14 +27,18 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val wordsRepository: WordsRepository,
     private val textRecognitionRepository: TextRecognitionRepository,
+    private val userRepository: UserRepository,
     translationModelManager: TranslationModelManager,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository,
-    auth: Authenticator
 ) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
 
     private val _uiState =
-        MutableStateFlow(HomeState(profilePictureUrl = auth.getAuth().currentUser?.photoUrl.toString()))
+        MutableStateFlow(
+            HomeState(
+                profilePictureUrl = userRepository.getUserData()?.profilePictureUrl ?: ""
+            )
+        )
     val uiState = _uiState.asStateFlow()
 
     private val _textResultChannel = Channel<List<String>>()
@@ -121,35 +125,13 @@ class HomeViewModel(
         }
     }
 
-    /*private fun addSnapShotListener() {
-        viewModelScope.launch {
-            firestoreRepository.getWords.collectLatest {
-                addWords(it)
+    fun reload() {
+        userRepository.reloadUserData()?.run {
+            _uiState.update {
+                it.copy(profilePictureUrl = profilePictureUrl)
             }
         }
-        /*userId?.let { id ->
-            fireStoreSnapShotListener = fireStore
-                .collection("users")
-                .document(id)
-                .collection("WordsAndSentences")
-                .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && !snapshot.isEmpty) {
-                        val wordsList = mutableListOf<WordsAndSentences>()
-                        for (doc in snapshot.documents) {
-                            wordsList.add(mapDocumentObject(doc))
-                        }
-
-                        addWords(wordsList.sortedByDescending { it.timeStamp })
-                    } else {
-                        addWords(emptyList())
-                    }
-                }
-        }*/
-    }*/
+    }
 
     private fun runTextRecognition(imagePaths: List<Uri>): Flow<List<String>> =
         textRecognitionRepository.runTextRecognition(imagePaths)

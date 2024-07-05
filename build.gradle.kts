@@ -12,5 +12,3 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.google.services) apply false
 }
-
-val ndkVersion by extra("25.2.9519653")

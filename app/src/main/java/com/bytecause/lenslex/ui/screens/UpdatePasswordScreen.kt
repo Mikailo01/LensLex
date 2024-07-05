@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,7 +61,6 @@ fun UpdatePasswordScreenContent(
     isExpandedScreen: Boolean,
     state: UpdatePasswordState,
     modifier: Modifier = Modifier,
-    snackBarHostState: SnackbarHostState,
     yTextOffset: Animatable<Float, AnimationVector1D>,
     yImageOffset: Animatable<Float, AnimationVector1D>,
     onEvent: (UpdatePasswordUiEvent) -> Unit
@@ -70,7 +68,7 @@ fun UpdatePasswordScreenContent(
     if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
         UserAuthBackground(
             modifier = modifier.padding(top = 70.dp),
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
                     modifier = Modifier.graphicsLayer {
@@ -212,7 +210,7 @@ fun UpdatePasswordScreenContent(
         )
     } else {
         UserAuthBackgroundExpanded(
-            snackBarHostState = snackBarHostState,
+            snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
                     modifier = Modifier.graphicsLayer {
@@ -366,10 +364,6 @@ fun UpdatePasswordScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val getNewCodeChannel by viewModel.getNewCodeChannel.collectAsStateWithLifecycle(initialValue = false)
 
-    val snackBarHostState = remember {
-        SnackbarHostState()
-    }
-
     val yTextOffset by remember {
         mutableStateOf(Animatable(if (!uiState.animationStarted) -700f else 0f))
     }
@@ -396,7 +390,7 @@ fun UpdatePasswordScreen(
             }
 
             is SimpleResult.OnFailure -> {
-                snackBarHostState.showSnackbar((uiState.resetState as SimpleResult.OnFailure).exception?.message.toString())
+                uiState.snackbarHostState.showSnackbar((uiState.resetState as SimpleResult.OnFailure).exception?.message.toString())
                 viewModel.uiEventHandler(UpdatePasswordUiEvent.OnResetPasswordResult)
             }
 
@@ -410,11 +404,11 @@ fun UpdatePasswordScreen(
         if (uiState.codeValidationResult?.isLoading == false) {
             when (uiState.codeValidationResult?.error) {
                 UpdatePasswordViewModel.NetworkErrorType.NetworkUnavailable -> {
-                    snackBarHostState.showSnackbar(context.resources.getString(R.string.network_unavailable))
+                    uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.network_unavailable))
                 }
 
                 UpdatePasswordViewModel.NetworkErrorType.ServiceUnavailable -> {
-                    snackBarHostState.showSnackbar(context.resources.getString(R.string.service_unavailable))
+                    uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.service_unavailable))
                 }
 
                 else -> {
@@ -467,7 +461,6 @@ fun UpdatePasswordScreen(
     UpdatePasswordScreenContent(
         isExpandedScreen = isExpandedScreen,
         state = uiState,
-        snackBarHostState = snackBarHostState,
         yTextOffset = yTextOffset,
         yImageOffset = yImageOffset,
         onEvent = viewModel::uiEventHandler
@@ -480,9 +473,6 @@ fun UpdatePasswordScreenContentPreview() {
     UpdatePasswordScreenContent(
         isExpandedScreen = false,
         state = UpdatePasswordState(),
-        snackBarHostState = remember {
-            SnackbarHostState()
-        },
         yTextOffset = remember {
             Animatable(0f)
         },

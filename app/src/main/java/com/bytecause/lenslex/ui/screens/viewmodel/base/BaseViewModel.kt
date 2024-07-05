@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel.base
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -113,19 +115,42 @@ abstract class BaseViewModel(
         }
     }
 
+    fun areModelsReady(
+        origin: TranslationOption.Origin,
+        target: TranslationOption.Target
+    ): Boolean {
+        val isOriginDownloaded =
+            supportedLanguages.value.find { it.langCode == origin.lang.langCode }?.isDownloaded
+                ?: false
+        val isTargetDownloaded =
+            supportedLanguages.value.find { it.langCode == target.lang.langCode }?.isDownloaded
+                ?: false
+        return isOriginDownloaded && isTargetDownloaded
+    }
+
     private fun getDownloadedModels() {
-        translationModelManager.getModels { modelSet ->
-            _supportedLanguages.value.map { language ->
-                language.copy(isDownloaded = modelSet.any { it.language == language.langCode })
-            }.let {
-                _supportedLanguages.value = it
+        viewModelScope.launch {
+            translationModelManager.getModels().firstOrNull()?.let { result ->
+                result
+                    .onSuccess { modelSet ->
+                        _supportedLanguages.value.map { language ->
+                            language.copy(isDownloaded = modelSet.any { it.language == language.langCode })
+                        }.let {
+                            _supportedLanguages.value = it
+                        }
+                    }
             }
         }
     }
 
     fun removeModel(langCode: String) {
-        translationModelManager.deleteModel(langCode) {
-            getDownloadedModels()
+        viewModelScope.launch {
+            translationModelManager.deleteModel(langCode).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        getDownloadedModels()
+                    }
+            }
         }
     }
 
@@ -139,18 +164,21 @@ abstract class BaseViewModel(
     fun downloadModel(
         langCode: String
     ) {
-        setIsModelDownloading(langCode, true)
+        viewModelScope.launch {
+            setIsModelDownloading(langCode, true)
 
-        translationModelManager.downloadModel(
-            languageTag = langCode,
-            onDownloadSuccess = {
-                getDownloadedModels()
-                setIsModelDownloading(langCode, false)
-            },
-            onDownloadFailure = { exception ->
-                setIsModelDownloading(langCode, false)
+            translationModelManager.downloadModel(langCode).firstOrNull()?.let { result ->
+                result
+                    .onSuccess {
+                        Log.d("idk", "success")
+                        getDownloadedModels()
+                        setIsModelDownloading(langCode, false)
+                    }
+                    .onFailure {
+                        setIsModelDownloading(langCode, false)
+                    }
             }
-        )
+        }
     }
 
     private val _supportedLanguages: MutableStateFlow<List<SupportedLanguage>> = MutableStateFlow(

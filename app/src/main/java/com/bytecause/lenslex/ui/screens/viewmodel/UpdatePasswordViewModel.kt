@@ -2,7 +2,7 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bytecause.lenslex.data.remote.auth.Authenticator
+import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.repository.abstraction.VerifyOobRepository
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UpdatePasswordViewModel(
-    private val auth: Authenticator,
+    private val auth: FirebaseAuthClient,
     private val verifyOobRepository: VerifyOobRepository
 ) : ViewModel() {
 

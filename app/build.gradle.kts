@@ -60,7 +60,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    ndkVersion = rootProject.extra["ndkVersion"] as String
+    ndkVersion = "25.2.9519653"
     buildToolsVersion = "34.0.0"
 }
 
