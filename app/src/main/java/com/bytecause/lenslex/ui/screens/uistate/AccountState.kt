@@ -4,7 +4,6 @@ import com.bytecause.lenslex.domain.models.UserData
 
 data class AccountState(
     val userData: UserData? = null,
-    val isEditing: Boolean = false,
     val urlValue: String = "",
     val showConfirmationDialog: Boolean = false,
     val showLanguageDialog: Boolean = false,

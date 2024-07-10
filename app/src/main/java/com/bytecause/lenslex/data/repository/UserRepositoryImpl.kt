@@ -107,14 +107,12 @@ class UserRepositoryImpl(
 
     override fun deleteUserAccount(): Flow<Result<Unit>> = callbackFlow {
         deleteUserData().firstOrNull()?.let {
-            if (it) {
-                user()?.delete()?.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        trySend(Result.success(Unit))
-                    } else {
-                        task.exception?.let { exception ->
-                            trySend(Result.failure(exception))
-                        }
+            user()?.delete()?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    trySend(Result.success(Unit))
+                } else {
+                    task.exception?.let { exception ->
+                        trySend(Result.failure(exception))
                     }
                 }
             }

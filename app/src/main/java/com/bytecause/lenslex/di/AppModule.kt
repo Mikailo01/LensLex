@@ -23,7 +23,7 @@ import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
-import com.bytecause.lenslex.ui.screens.viewmodel.RecognizedTextViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -173,7 +173,7 @@ val appModule = module {
     }
 
     viewModel {
-        RecognizedTextViewModel(
+        ExtractedTextViewModel(
             wordsRepository = get<WordsRepositoryImpl>(),
             translateRepository = get<TranslateRepositoryImpl>(),
             languageRecognitionRepository = get<TextLanguageRecognitionRepositoryImpl>(),

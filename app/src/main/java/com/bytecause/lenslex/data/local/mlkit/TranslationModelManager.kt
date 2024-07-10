@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.data.local.mlkit
 
-import android.util.Log
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.common.model.RemoteModelManager
 import com.google.mlkit.nl.translate.TranslateLanguage
@@ -16,8 +15,6 @@ class TranslationModelManager {
     fun getModels(): Flow<Result<Set<TranslateRemoteModel>>> = callbackFlow {
         modelManager.getDownloadedModels(TranslateRemoteModel::class.java)
             .addOnSuccessListener { models ->
-                Log.d("idk", models.first().language)
-                Log.d("idk", models.joinToString())
                 trySend(Result.success(models))
             }
             .addOnFailureListener { exception ->

@@ -6,13 +6,11 @@ import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
-import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.AddState
-import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -32,7 +30,11 @@ class AddViewModel(
     translationModelManager: TranslationModelManager,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
-) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
+) : TranslationViewModel(
+    userPrefsRepository,
+    translationModelManager,
+    supportedLanguagesRepository
+) {
 
     private val _uiState = MutableStateFlow(AddState())
     val uiState = _uiState.asStateFlow()
@@ -62,7 +64,7 @@ class AddViewModel(
     fun uiEventHandler(event: AddUiEvent) {
         when (event) {
             is AddUiEvent.OnTextValueChange -> onTextValueChangeHandler(event.text)
-            is AddUiEvent.OnConfirmDialog -> onConfirmDialogHandler(event.value)
+            is AddUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialog(event.value)
             is AddUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
             is AddUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
             is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
@@ -70,6 +72,10 @@ class AddViewModel(
             is AddUiEvent.OnTryAgainClick -> onTryAgainClickHandler(event.value)
             AddUiEvent.OnNavigateBack -> onNavigateBackHandler()
             AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialogHandler()
+            AddUiEvent.OnSwitchLanguages -> switchLanguageOptions(
+                origin = uiState.value.selectedLanguageOptions.first,
+                target = uiState.value.selectedLanguageOptions.second
+            )
         }
     }
 
@@ -103,8 +109,17 @@ class AddViewModel(
         _uiState.update { it.copy(textValue = text) }
     }
 
-    private fun onConfirmDialogHandler(translationOption: TranslationOption) {
-        saveTranslationOption(translationOption)
+    private fun onConfirmLanguageDialog(language: TranslationOption) {
+        if (language is TranslationOption.Origin) {
+            saveTranslationOptions(Pair(first = language, second = null))
+        } else {
+            saveTranslationOptions(
+                Pair(
+                    first = null,
+                    second = language as TranslationOption.Target
+                )
+            )
+        }
         _uiState.update { it.copy(showLanguageDialog = null) }
     }
 

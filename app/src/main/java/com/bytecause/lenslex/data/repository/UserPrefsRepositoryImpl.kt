@@ -2,6 +2,7 @@ package com.bytecause.lenslex.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -53,8 +55,32 @@ class UserPrefsRepositoryImpl(
             else throw exception
         }
 
-    private companion object {
-        val ORIGIN_TRANSLATION_OPTION_KEY = stringPreferencesKey("origin_translation_option")
-        val TARGET_TRANSLATION_OPTION_KEY = stringPreferencesKey("target_translation_option")
+    override suspend fun setFeatureVisited(featureName: String) {
+        withContext(coroutineDispatcher) {
+            val featureKey = booleanPreferencesKey(featureName)
+            userDataStorePreferences.edit { preferences ->
+                preferences[featureKey] = true
+            }
+        }
+    }
+
+    override fun isFeatureVisited(featureName: String): Flow<Boolean> {
+        val featureKey = booleanPreferencesKey(featureName)
+        return userDataStorePreferences.data.map { preferences ->
+            preferences[featureKey] ?: false
+        }
+            .flowOn(coroutineDispatcher)
+            .catch { exception ->
+                if (exception is IOException) emit(false)
+                else throw exception
+            }
+    }
+
+    companion object {
+        private val ORIGIN_TRANSLATION_OPTION_KEY = stringPreferencesKey("origin_translation_option")
+        private val TARGET_TRANSLATION_OPTION_KEY = stringPreferencesKey("target_translation_option")
+
+        const val HOME_FEATURE = "home_feature"
+        const val EXTRACTED_TEXT_FEATURE = "extracted_text_feature"
     }
 }

@@ -19,8 +19,14 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,15 +36,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.screens.FabNavigation
+import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
+import com.bytecause.lenslex.util.then
+import com.canopas.lib.showcase.IntroShowcaseScope
+import com.canopas.lib.showcase.component.ShowcaseStyle
+import kotlinx.coroutines.delay
 
 @Composable
-fun CircularFloatingActionMenu(
+fun IntroShowcaseScope.CircularFloatingActionMenu(
     iconState: Boolean,
     fabColor: Color,
     fabContentColor: Color,
@@ -46,6 +56,27 @@ fun CircularFloatingActionMenu(
     onInnerContentClick: (FabNavigation) -> Unit,
     onIconStateChange: (Boolean) -> Unit
 ) {
+
+    // Animation state
+    val rotationAnimation = animateFloatAsState(
+        targetValue = if (iconState) 180f else 0f,
+        label = "Fab content rotation animation"
+    )
+
+    // State to track if animation is finished
+    var animationFinished by remember { mutableStateOf(false) }
+
+    // LaunchedEffect to detect when animation finishes
+    LaunchedEffect(rotationAnimation.value) {
+        if (rotationAnimation.value == 180f || rotationAnimation.value == 0f) {
+            // Small delay to ensure all composables are recomposed after the animation ends
+            delay(200)
+            animationFinished = true
+        } else {
+            animationFinished = false
+        }
+    }
+
     Box(modifier = Modifier.wrapContentSize()) {
         AnimatedVisibility(
             visible = iconState, modifier = Modifier
@@ -83,7 +114,20 @@ fun CircularFloatingActionMenu(
                                     top.linkTo(parent.top)
                                     end.linkTo(parent.end)
                                 }
-                                .padding(top = 10.dp, end = 10.dp),
+                                .padding(top = 10.dp, end = 10.dp)
+                                .introShowCaseTarget(
+                                    index = 4,
+                                    style = ShowcaseStyle.Default.copy(
+                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                                        targetCircleColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.camera_mini_fab_showcase_message),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                },
                             contentDescription = stringResource(id = R.string.launch_camera),
                             navigation = FabNavigation.CAMERA,
                             onClick = {
@@ -100,7 +144,20 @@ fun CircularFloatingActionMenu(
                                     top.linkTo(parent.top)
                                     start.linkTo(parent.start)
                                 }
-                                .padding(top = 50.dp, start = 35.dp),
+                                .padding(top = 50.dp, start = 35.dp)
+                                .introShowCaseTarget(
+                                    index = 5,
+                                    style = ShowcaseStyle.Default.copy(
+                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                                        targetCircleColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.gallery_mini_fab_showcase_message),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                },
                             contentDescription = stringResource(id = R.string.launch_gallery_image_picker),
                             navigation = FabNavigation.GALLERY,
                             onClick = {
@@ -117,7 +174,20 @@ fun CircularFloatingActionMenu(
                                     top.linkTo(gallery.bottom)
                                     start.linkTo(parent.start)
                                 }
-                                .padding(top = 10.dp, start = 5.dp),
+                                .padding(top = 10.dp, start = 5.dp)
+                                .introShowCaseTarget(
+                                    index = 6,
+                                    style = ShowcaseStyle.Default.copy(
+                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                                        targetCircleColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.add_mini_fab_showcase_message),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                },
                             contentDescription = stringResource(id = R.string.add_new_word_into_the_list),
                             navigation = FabNavigation.ADD,
                             onClick = {
@@ -135,18 +205,33 @@ fun CircularFloatingActionMenu(
                 .align(Alignment.BottomEnd)
                 .padding(20.dp)
         ) {
-            FloatingActionButton(onClick = {
-                onIconStateChange(!iconState)
-            }, containerColor = fabColor) {
+            FloatingActionButton(
+                onClick = { onIconStateChange(!iconState) },
+                containerColor = fabColor,
+                modifier = Modifier.then(
+                    true, onTrue = {
+                        introShowCaseTarget(
+                            index = 3,
+                            style = ShowcaseStyle.Default.copy(
+                                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                backgroundAlpha = introShowcaseBackgroundAlpha,
+                                targetCircleColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.add_new_item_showcase_message),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                )
+            ) {
                 Icon(
                     imageVector =
                     if (!iconState) Icons.Default.Add else Icons.Default.Close,
                     contentDescription = "Floating action button with destinations",
                     modifier = Modifier.graphicsLayer(
-                        rotationZ = animateFloatAsState(
-                            targetValue = if (iconState) 180f else 0f,
-                            label = "Fab content rotation animation"
-                        ).value
+                        rotationZ = rotationAnimation.value
                     ),
                     tint = fabContentColor
                 )
@@ -165,7 +250,6 @@ fun MiniFab(
     navigation: FabNavigation,
     onClick: (FabNavigation) -> Unit
 ) {
-
     Box(
         modifier = modifier.clip(CircleShape)
     ) {
@@ -204,29 +288,4 @@ fun MiniFab(
             )
         }
     }
-}
-
-@Composable
-@Preview(showBackground = true)
-fun MiniFabPreview() {
-    MiniFab(
-        image = ImageResource.ImageVector(Icons.Filled.AddCircle),
-        contentColor = Color.Black,
-        text = stringResource(id = R.string.preview),
-        contentDescription = "",
-        navigation = FabNavigation.ADD
-    ) { }
-}
-
-@Composable
-@Preview(showBackground = true)
-fun CircularFloatingActionMenuPreview() {
-    CircularFloatingActionMenu(
-        iconState = true,
-        fabColor = Color.Magenta,
-        fabContentColor = Color.Black,
-        expandedFabBackgroundColor = Color.Cyan,
-        onInnerContentClick = {},
-        onIconStateChange = {}
-    )
 }

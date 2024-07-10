@@ -21,13 +21,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -35,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -145,31 +140,10 @@ fun AccountScreenContent(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (!state.isEditing) {
+                    if (state.userData?.userName?.isNotBlank() == true) {
                         Text(
-                            text = state.userData?.userName.takeIf { it?.isNotBlank() == true }
-                                ?: state.userData?.userId ?: "",
+                            text = state.userData.userName,
                             fontWeight = FontWeight.Bold
-                        )
-                    } else {
-                        TextField(
-                            value = state.userData?.userName.takeIf { it?.isNotBlank() == true }
-                                ?: state.userData?.userId ?: "", onValueChange = {
-                                onEvent(AccountUiEvent.OnNameTextFieldValueChange(it))
-                            },
-                            modifier = Modifier.padding(top = 10.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            onEvent(AccountUiEvent.OnUpdateName(state.userData?.userName ?: ""))
-                            onEvent(AccountUiEvent.OnEditChange)
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (state.isEditing) Icons.Filled.Check else Icons.Filled.Create,
-                            contentDescription = ""
                         )
                     }
                 }
@@ -352,7 +326,6 @@ fun AccountScreen(
     onBackButtonClick: () -> Unit,
     onUserLoggedOut: () -> Unit
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState()

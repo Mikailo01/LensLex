@@ -14,7 +14,6 @@ sealed interface AccountUiEvent {
     data object OnBackButtonClick: Direct
     data object OnSinglePicturePickerLaunch: Direct
 
-    data class OnUpdateName(val value: String): NonDirect
     data class OnUpdateProfilePicture(val value: String): NonDirect
     data class OnChangeFirebaseLanguage(val value: String): NonDirect
     data class OnShowConfirmationDialog(val value: Boolean): NonDirect
@@ -24,6 +23,5 @@ sealed interface AccountUiEvent {
     data class OnNameTextFieldValueChange(val value: String): NonDirect
     data class OnUrlTextFieldValueChange(val value: String): NonDirect
     data class OnSaveUserProfilePicture(val value: Uri): NonDirect
-    data object OnEditChange: NonDirect
     data object OnSignOut: NonDirect
 }

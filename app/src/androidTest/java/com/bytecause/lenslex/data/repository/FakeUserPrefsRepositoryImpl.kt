@@ -18,4 +18,12 @@ class FakeUserPrefsRepositoryImpl : UserPrefsRepository {
 
     override fun loadOriginTranslationOption(): Flow<String?> = flow { emit(originLangOption) }
     override fun loadTargetTranslationOption(): Flow<String?> = flow { emit(targetLangOption) }
+
+    override suspend fun setFeatureVisited(featureName: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun isFeatureVisited(featureName: String): Flow<Boolean> {
+        TODO("Not yet implemented")
+    }
 }

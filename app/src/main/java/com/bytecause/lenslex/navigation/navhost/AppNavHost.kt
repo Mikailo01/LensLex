@@ -22,7 +22,7 @@ import com.bytecause.lenslex.ui.screens.AddScreen
 import com.bytecause.lenslex.ui.screens.HomeScreen
 import com.bytecause.lenslex.ui.screens.LoginScreen
 import com.bytecause.lenslex.ui.screens.ModifiedImagePreviewScreen
-import com.bytecause.lenslex.ui.screens.RecognizedTextResultScreen
+import com.bytecause.lenslex.ui.screens.ExtractedTextScreen
 import com.bytecause.lenslex.ui.screens.SendEmailResetScreen
 import com.bytecause.lenslex.ui.screens.UpdatePasswordScreen
 import com.google.firebase.Firebase
@@ -130,7 +130,7 @@ fun AppNavHost(
             composable<Screen.TextResult> { backStackEntry ->
                 val text = backStackEntry.toRoute<Screen.TextResult>().text
 
-                RecognizedTextResultScreen(
+                ExtractedTextScreen(
                     text = text,
                     isExpandedScreen = isExpandedScreen,
                     onBackButtonClick = { navController.popBackStackOnce() },

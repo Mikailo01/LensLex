@@ -1,11 +1,14 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Immutable
 import com.bytecause.lenslex.domain.models.SupportedLanguage
-import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
+import com.bytecause.lenslex.ui.models.Word
 
+@Immutable
 data class RecognizedTextState(
+    val showIntroShowcase: Boolean = false,
     val isSentence: Boolean = false,
     val sentence: List<Word> = emptyList(),
     val words: List<Word> = emptyList(),
@@ -17,7 +20,5 @@ data class RecognizedTextState(
     val isLoading: Boolean = false,
     val showLanguageDialog: TranslationOption? = null,
     val showNetworkErrorDialog: Boolean = false,
-    val showNetworkErrorMessage: Boolean = false,
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-    val shouldNavigateBack: Boolean = false
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 )

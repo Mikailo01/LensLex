@@ -4,22 +4,25 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
+import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
 import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
-import com.bytecause.lenslex.ui.screens.viewmodel.base.BaseViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,18 +31,25 @@ class HomeViewModel(
     private val wordsRepository: WordsRepository,
     private val textRecognitionRepository: TextRecognitionRepository,
     private val userRepository: UserRepository,
+    private val userPrefsRepository: UserPrefsRepository,
     translationModelManager: TranslationModelManager,
-    userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository,
-) : BaseViewModel(userPrefsRepository, translationModelManager, supportedLanguagesRepository) {
+) : TranslationViewModel(
+    userPrefsRepository,
+    translationModelManager,
+    supportedLanguagesRepository
+) {
 
     private val _uiState =
         MutableStateFlow(
             HomeState(
-                profilePictureUrl = userRepository.getUserData()?.profilePictureUrl ?: ""
+                profilePictureUrl = userRepository.getUserData()?.profilePictureUrl ?: "",
             )
         )
     val uiState = _uiState.asStateFlow()
+
+    private val _effect = Channel<HomeUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
 
     private val _textResultChannel = Channel<List<String>>()
     val textResultChannel = _textResultChannel.receiveAsFlow()
@@ -48,9 +58,10 @@ class HomeViewModel(
         combine(
             wordsRepository.getWords(),
             languageOptionFlow,
-            supportedLanguages
+            supportedLanguages,
         ) { words, selectedLang, supportedLanguages ->
-
+            Triple(words, selectedLang, supportedLanguages)
+        }.distinctUntilChanged().onEach { (words, selectedLang, supportedLanguages) ->
             _uiState.update { state ->
                 state.copy(
                     wordList = words.takeIf { it != state.wordList } ?: state.wordList,
@@ -58,15 +69,30 @@ class HomeViewModel(
                         ?: state.selectedLanguageOptions,
                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
                         ?: state.supportedLanguages,
-                    isLoading = words != state.wordList
                 )
             }
 
-            _uiState.update { state ->
-                state.copy(isLoading = state.wordList != words)
-            }
-
+            _uiState.update { it.copy(isLoading = it.wordList != words) }
         }.launchIn(viewModelScope)
+
+        /* combine(
+             wordsRepository.getWords(),
+             languageOptionFlow,
+             supportedLanguages,
+         ) { words, selectedLang, supportedLanguages ->
+             _uiState.update { state ->
+                 state.copy(
+                     wordList = words.takeIf { it != state.wordList } ?: state.wordList,
+                     selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
+                         ?: state.selectedLanguageOptions,
+                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
+                         ?: state.supportedLanguages,
+                     isLoading = words != state.wordList,
+                 )
+             }
+
+             _uiState.update { it.copy(isLoading = it.wordList != words) }
+         }.launchIn(viewModelScope)*/
     }
 
     private var deletedItemsStack = emptyList<WordsAndSentences>()
@@ -74,21 +100,40 @@ class HomeViewModel(
     fun uiEventHandler(event: HomeUiEvent.NonDirect) {
         when (event) {
             is HomeUiEvent.OnIconStateChange -> onIconStateChange(event.value)
-            is HomeUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialogHandler(event.value)
-            is HomeUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
+            is HomeUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialog(event.value)
+            is HomeUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
             is HomeUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
             is HomeUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
-            is HomeUiEvent.OnItemRemoved -> onItemRemovedHandler(event.word)
-            is HomeUiEvent.OnTextRecognition -> onTextRecognitionHandler(event.imagePaths)
-            HomeUiEvent.OnItemRestored -> onItemRestoredHandler()
+            is HomeUiEvent.OnItemRemoved -> onItemRemoved(event.word)
+            is HomeUiEvent.OnTextRecognition -> onTextRecognition(event.imagePaths)
+            HomeUiEvent.OnItemRestored -> onItemRestored()
+            HomeUiEvent.OnSwitchLanguages -> switchLanguageOptions(
+                origin = uiState.value.selectedLanguageOptions.first,
+                target = uiState.value.selectedLanguageOptions.second
+            )
+
+            HomeUiEvent.OnShowcaseCompleted -> onShowcaseCompleted()
+            HomeUiEvent.OnReload -> reload()
+            HomeUiEvent.OnShowIntroShowcaseIfNecessary -> showIntroShowcaseIfNecessary()
         }
     }
 
-    fun resetImageTextless() {
-        _uiState.update { it.copy(isImageTextless = false) }
+    private fun sendEffect(effect: HomeUiEffect) {
+        _effect.trySend(effect)
     }
 
-    private fun onShowLanguageDialogHandler(option: TranslationOption?) {
+    private fun onShowcaseCompleted() {
+        viewModelScope.launch {
+            // Perform "click" to continue show case intro
+            onIconStateChange(!uiState.value.fabState)
+            // after fab's content is hidden again, save flag to preferences datastore
+            if (!uiState.value.fabState) {
+                userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE)
+            }
+        }
+    }
+
+    private fun onShowLanguageDialog(option: TranslationOption?) {
         _uiState.update { it.copy(showLanguageDialog = option) }
     }
 
@@ -96,19 +141,19 @@ class HomeViewModel(
         _uiState.update { it.copy(fabState = boolean) }
     }
 
-    private fun onItemRemovedHandler(word: WordsAndSentences) {
+    private fun onItemRemoved(word: WordsAndSentences) {
         addDeletedItemToStack(word)
         deleteWord(word.id)
         _uiState.update { it.copy(showUndoButton = true) }
     }
 
-    private fun onItemRestoredHandler() {
+    private fun onItemRestored() {
         insertWord(deletedItemsStack.last())
         removeDeletedItemFromStack()
         _uiState.update { it.copy(showUndoButton = deletedItemsStack.isNotEmpty()) }
     }
 
-    private fun onTextRecognitionHandler(uris: List<Uri>) {
+    private fun onTextRecognition(uris: List<Uri>) {
         _uiState.update {
             it.copy(showProgressBar = true)
         }
@@ -116,7 +161,8 @@ class HomeViewModel(
         viewModelScope.launch {
             runTextRecognition(uris).firstOrNull()?.let { result ->
                 _uiState.update { state ->
-                    state.copy(showProgressBar = false, isImageTextless = result.isEmpty())
+                    if (result.isEmpty()) sendEffect(HomeUiEffect.ImageTextless)
+                    state.copy(showProgressBar = false)
                 }
                 if (result.isNotEmpty()) {
                     _textResultChannel.trySend(result)
@@ -125,7 +171,7 @@ class HomeViewModel(
         }
     }
 
-    fun reload() {
+    private fun reload() {
         userRepository.reloadUserData()?.run {
             _uiState.update {
                 it.copy(profilePictureUrl = profilePictureUrl)
@@ -133,11 +179,29 @@ class HomeViewModel(
         }
     }
 
+    private fun showIntroShowcaseIfNecessary() {
+        viewModelScope.launch {
+            userPrefsRepository.isFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE).firstOrNull()
+                ?.let { isVisited ->
+                    _uiState.update { it.copy(showIntroShowcase = !isVisited) }
+                }
+        }
+    }
+
     private fun runTextRecognition(imagePaths: List<Uri>): Flow<List<String>> =
         textRecognitionRepository.runTextRecognition(imagePaths)
 
-    private fun onConfirmLanguageDialogHandler(language: TranslationOption) {
-        saveTranslationOption(language)
+    private fun onConfirmLanguageDialog(language: TranslationOption) {
+        if (language is TranslationOption.Origin) {
+            saveTranslationOptions(Pair(first = language, second = null))
+        } else {
+            saveTranslationOptions(
+                Pair(
+                    first = null,
+                    second = language as TranslationOption.Target
+                )
+            )
+        }
         _uiState.update { it.copy(showLanguageDialog = null) }
     }
 

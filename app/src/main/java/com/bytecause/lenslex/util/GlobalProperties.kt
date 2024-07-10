@@ -10,3 +10,5 @@ val gradientBackground = Brush.verticalGradient(
     startY = 0.0f,
     endY = 1500f
 )
+
+const val introShowcaseBackgroundAlpha = 0.98f

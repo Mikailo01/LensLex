@@ -26,4 +26,12 @@ sealed interface HomeUiEvent {
     data class OnTextRecognition(val imagePaths: List<Uri>) : NonDirect
     data class OnItemRemoved(val word: WordsAndSentences) : NonDirect
     data object OnItemRestored : NonDirect
+    data object OnSwitchLanguages : NonDirect
+    data object OnShowcaseCompleted : NonDirect
+    data object OnReload : NonDirect
+    data object OnShowIntroShowcaseIfNecessary : NonDirect
+}
+
+sealed interface HomeUiEffect {
+    data object ImageTextless : HomeUiEffect
 }

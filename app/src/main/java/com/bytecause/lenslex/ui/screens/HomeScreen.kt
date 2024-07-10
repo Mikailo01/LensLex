@@ -2,7 +2,6 @@ package com.bytecause.lenslex.ui.screens
 
 import android.Manifest
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,16 +23,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,15 +62,19 @@ import com.bytecause.lenslex.ui.components.NoteItem
 import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
+import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
+import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
 import com.bytecause.lenslex.util.isScrollingUp
 import com.bytecause.lenslex.util.shimmerEffect
 import com.bytecause.lenslex.util.then
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
+import com.canopas.lib.showcase.IntroShowcase
+import com.canopas.lib.showcase.component.ShowcaseStyle
 import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
@@ -90,175 +90,222 @@ enum class FabNavigation { CAMERA, GALLERY, ADD }
 fun HomeScreenContent(
     state: HomeState,
     cameraPermissionState: PermissionState?,
-    lazyListState: LazyListState,
     onEvent: (HomeUiEvent) -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                titleRes = R.string.app_name,
-                actionIcons = listOf {
-                    if (state.showUndoButton) {
-                        Image(
+    IntroShowcase(
+        showIntroShowCase = state.showIntroShowcase,
+        onShowCaseCompleted = { onEvent(HomeUiEvent.OnShowcaseCompleted) }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    titleRes = R.string.app_name,
+                    actionIcons = listOf {
+                        if (state.showUndoButton) {
+                            Image(
+                                modifier = Modifier
+                                    .padding(end = 10.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        onEvent(HomeUiEvent.OnItemRestored)
+                                    },
+                                painter = painterResource(id = R.drawable.baseline_undo_24),
+                                contentDescription = stringResource(id = R.string.undo_changes)
+                            )
+                        }
+
+                        AsyncImage(
+                            model = state.profilePictureUrl.takeIf { it != "null" }
+                                ?: R.drawable.default_account_image,
+                            contentDescription = "avatar",
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .padding(end = 10.dp)
+                                .size(42.dp)
                                 .clip(CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                 .clickable {
-                                    onEvent(HomeUiEvent.OnItemRestored)
-                                },
-                            painter = painterResource(id = R.drawable.baseline_undo_24),
-                            contentDescription = stringResource(id = R.string.undo_changes)
-                        )
-                    }
-
-                    AsyncImage(
-                        model = state.profilePictureUrl.takeIf { it != "null" }
-                            ?: R.drawable.default_account_image,
-                        contentDescription = "avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .padding(end = 10.dp)
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            .clickable {
-                                onEvent(HomeUiEvent.OnNavigate(Screen.Account))
-                            }
-                            .then(state.isLoading, onTrue = { shimmerEffect() })
-                    )
-                }
-            )
-        }
-    ) { innerPadding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = CenterHorizontally
-                ) {
-                    LanguagePreferences(
-                        modifier = Modifier.padding(5.dp),
-                        originLangName = state.selectedLanguageOptions.first.lang.langName,
-                        targetLangName = state.selectedLanguageOptions.second.lang.langName,
-                        isLoading = state.isLoading,
-                        onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(it)) }
-                    )
-                    HorizontalDivider(
-                        thickness = 3.dp,
-                        color = Color.Gray
-                    )
-                }
-                LazyColumn(
-                    modifier = Modifier.padding(8.dp),
-                    state = lazyListState
-                ) {
-                    if (state.isLoading) {
-                        items(10) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(70.dp)
-                                    .shimmerEffect()
-                            ) {}
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    } else {
-                        if (state.wordList.none { it.languageCode == state.selectedLanguageOptions.first.lang.langCode }) return@LazyColumn
-
-                        items(state.wordList, key = { item -> item.timeStamp }) { item ->
-                            item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
-                                NoteItem(
-                                    originalText = item.word,
-                                    translatedText = it
+                                    onEvent(HomeUiEvent.OnNavigate(Screen.Account))
+                                }
+                                .then(state.isLoading, onTrue = { shimmerEffect() })
+                                .introShowCaseTarget(
+                                    index = 0,
+                                    style = ShowcaseStyle.Default.copy(
+                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                                        targetCircleColor = Color.White
+                                    )
                                 ) {
-                                    onEvent(HomeUiEvent.OnItemRemoved(item))
+                                    Text(
+                                        text = stringResource(id = R.string.tap_to_navigate_into_app_settings),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .align(Alignment.BottomEnd),
-                horizontalAlignment = Alignment.End
-            ) {
-                Column(modifier = Modifier.wrapContentSize()) {
-                    CircularFloatingActionMenu(
-                        iconState = state.fabState,
-                        fabColor = MaterialTheme.colorScheme.primary,
-                        fabContentColor = MaterialTheme.colorScheme.onPrimary,
-                        expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                        onInnerContentClick = { fabNavigation ->
-                            when (fabNavigation) {
-                                FabNavigation.CAMERA -> {
-                                    when (cameraPermissionState?.status) {
-                                        PermissionStatus.Granted -> {
-                                            onEvent(HomeUiEvent.OnCameraIntentLaunch)
-                                        }
-
-                                        PermissionStatus.Denied(true) -> onEvent(HomeUiEvent.OnPermissionDialogLaunch)
-
-                                        else -> {
-                                            cameraPermissionState?.launchPermissionRequest()
-                                        }
-                                    }
-                                }
-
-                                FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
-
-                                FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(Screen.Add))
-                            }
-                        },
-                        onIconStateChange = {
-                            onEvent(HomeUiEvent.OnIconStateChange(it))
-                        }
-                    )
-                }
-
-                SnackbarHost(hostState = state.snackbarHostState, Modifier.fillMaxWidth())
-            }
-
-            AnimatedVisibility(
-                visible = !lazyListState.isScrollingUp(),
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                ScrollToTop {
-                    onEvent(HomeUiEvent.OnScrollToTop)
-                }
-            }
-
-            if (state.showLanguageDialog != null) {
-                LanguageDialog(
-                    lazyListContent = state.supportedLanguages,
-                    translationOption = state.showLanguageDialog,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(500.dp)
-                        .padding(16.dp),
-                    onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(null)) },
-                    onConfirm = { language ->
-                        onEvent(HomeUiEvent.OnConfirmLanguageDialog(language))
-                    },
-                    onDownload = { langCode ->
-                        onEvent(HomeUiEvent.OnDownloadLanguage(langCode))
-                    },
-                    onRemove = { langCode ->
-                        onEvent(HomeUiEvent.OnRemoveLanguage(langCode))
+                        )
                     }
                 )
             }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = CenterHorizontally
+                    ) {
+                        LanguagePreferences(
+                            modifier = Modifier
+                                .padding(5.dp)
+                                .introShowCaseTarget(
+                                    index = 1,
+                                    style = ShowcaseStyle.Default.copy(
+                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                                        targetCircleColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.language_preferences_showcase_message),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                },
+                            originLangName = state.selectedLanguageOptions.first.lang.langName,
+                            targetLangName = state.selectedLanguageOptions.second.lang.langName,
+                            isLoading = state.isLoading,
+                            onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(it)) },
+                            onSwitchLanguages = { onEvent(HomeUiEvent.OnSwitchLanguages) }
+                        )
+                        HorizontalDivider(
+                            thickness = 3.dp,
+                            color = Color.Gray
+                        )
+                    }
+                    Column(modifier = Modifier
+                        .fillMaxSize()
+                        .introShowCaseTarget(
+                            index = 2,
+                            style = ShowcaseStyle.Default.copy(
+                                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                backgroundAlpha = introShowcaseBackgroundAlpha,
+                                targetCircleColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.translated_text_list_showcase_message),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .padding(8.dp),
+                            state = state.lazyListState
+                        ) {
+                            if (state.isLoading) {
+                                items(10) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(70.dp)
+                                            .shimmerEffect()
+                                    ) {}
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            } else {
+                                if (state.wordList.none { it.languageCode == state.selectedLanguageOptions.first.lang.langCode }) return@LazyColumn
 
-            if (state.showProgressBar) {
-                BallGridPulseProgressIndicator(modifier = Modifier.align(Center))
+                                items(state.wordList, key = { item -> item.timeStamp }) { item ->
+                                    item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
+                                        NoteItem(
+                                            originalText = item.word,
+                                            translatedText = it
+                                        ) {
+                                            onEvent(HomeUiEvent.OnItemRemoved(item))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .align(Alignment.BottomEnd),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Column(modifier = Modifier.wrapContentSize()) {
+                        CircularFloatingActionMenu(
+                            iconState = state.fabState,
+                            fabColor = MaterialTheme.colorScheme.primary,
+                            fabContentColor = MaterialTheme.colorScheme.onPrimary,
+                            expandedFabBackgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                            onInnerContentClick = { fabNavigation ->
+                                when (fabNavigation) {
+                                    FabNavigation.CAMERA -> {
+                                        when (cameraPermissionState?.status) {
+                                            PermissionStatus.Granted -> {
+                                                onEvent(HomeUiEvent.OnCameraIntentLaunch)
+                                            }
+
+                                            PermissionStatus.Denied(true) -> onEvent(HomeUiEvent.OnPermissionDialogLaunch)
+
+                                            else -> {
+                                                cameraPermissionState?.launchPermissionRequest()
+                                            }
+                                        }
+                                    }
+
+                                    FabNavigation.GALLERY -> onEvent(HomeUiEvent.OnMultiplePhotoPickerLaunch)
+                                    FabNavigation.ADD -> onEvent(HomeUiEvent.OnNavigate(Screen.Add))
+                                }
+                            },
+                            onIconStateChange = {
+                                onEvent(HomeUiEvent.OnIconStateChange(it))
+                            }
+                        )
+                    }
+
+                    SnackbarHost(hostState = state.snackbarHostState, Modifier.fillMaxWidth())
+                }
+
+                AnimatedVisibility(
+                    visible = !state.lazyListState.isScrollingUp(),
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    ScrollToTop {
+                        onEvent(HomeUiEvent.OnScrollToTop)
+                    }
+                }
+
+                if (state.showLanguageDialog != null) {
+                    LanguageDialog(
+                        lazyListContent = state.supportedLanguages,
+                        translationOption = state.showLanguageDialog,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(500.dp)
+                            .padding(16.dp),
+                        onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(null)) },
+                        onConfirm = { language ->
+                            onEvent(HomeUiEvent.OnConfirmLanguageDialog(language))
+                        },
+                        onDownload = { langCode ->
+                            onEvent(HomeUiEvent.OnDownloadLanguage(langCode))
+                        },
+                        onRemove = { langCode ->
+                            onEvent(HomeUiEvent.OnRemoveLanguage(langCode))
+                        }
+                    )
+                }
+
+                if (state.showProgressBar) {
+                    BallGridPulseProgressIndicator(modifier = Modifier.align(Center))
+                }
             }
         }
     }
@@ -280,8 +327,6 @@ fun HomeScreen(
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
     }
-
-    val lazyListState = rememberLazyListState()
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -305,7 +350,7 @@ fun HomeScreen(
             if (success) {
                 val cropOptions = CropImageContractOptions(imageUri, CropImageOptions())
                 imageCropLauncher.launch(cropOptions)
-            } else Toast.makeText(context, "Something went wrong.", Toast.LENGTH_SHORT).show()
+            }
         }
     )
 
@@ -334,13 +379,17 @@ fun HomeScreen(
     )
 
     LaunchedEffect(key1 = Unit) {
-        viewModel.reload()
-    }
+        viewModel.uiEventHandler(HomeUiEvent.OnReload)
+        viewModel.uiEventHandler(HomeUiEvent.OnShowIntroShowcaseIfNecessary)
 
-    LaunchedEffect(key1 = uiState.isImageTextless) {
-        if (uiState.isImageTextless) {
-            uiState.snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
-            viewModel.resetImageTextless()
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                HomeUiEffect.ImageTextless -> uiState.snackbarHostState.showSnackbar(
+                    context.getString(
+                        R.string.image_does_not_contain_any_text
+                    )
+                )
+            }
         }
     }
 
@@ -351,19 +400,18 @@ fun HomeScreen(
     // Scroll to top of the lazy list if wordList changes
     LaunchedEffect(key1 = uiState.wordList) {
         if (uiState.wordList.isNotEmpty()) {
-            lazyListState.scrollToItem(0)
+            uiState.lazyListState.scrollToItem(0)
         }
     }
 
     HomeScreenContent(
         state = uiState,
         cameraPermissionState = cameraPermissionState,
-        lazyListState = lazyListState,
         onEvent = { event ->
             when (event) {
                 HomeUiEvent.OnScrollToTop -> {
                     coroutineScope.launch {
-                        lazyListState.scrollToItem(0)
+                        uiState.lazyListState.scrollToItem(0)
                     }
                 }
 
@@ -400,7 +448,6 @@ fun HomeScreenPreview() {
     HomeScreenContent(
         state = HomeState(),
         cameraPermissionState = null,
-        lazyListState = rememberLazyListState(),
         onEvent = {}
     )
 }

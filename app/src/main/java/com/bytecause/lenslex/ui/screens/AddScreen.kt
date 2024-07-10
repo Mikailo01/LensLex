@@ -71,6 +71,9 @@ fun AddScreenContent(
                     targetLangName = state.selectedLanguageOptions.second.lang.langName,
                     onClick = {
                         onEvent(AddUiEvent.OnShowLanguageDialog(it))
+                    },
+                    onSwitchLanguages = {
+                        onEvent(AddUiEvent.OnSwitchLanguages)
                     }
                 )
                 TextField(
@@ -142,7 +145,7 @@ fun AddScreenContent(
                 .padding(16.dp),
             onDismiss = { onEvent(AddUiEvent.OnShowLanguageDialog(null)) },
             onConfirm = {
-                onEvent(AddUiEvent.OnConfirmDialog(it))
+                onEvent(AddUiEvent.OnConfirmLanguageDialog(it))
             },
             onDownload = { langCode ->
                 onEvent(AddUiEvent.OnDownloadLanguage(langCode))

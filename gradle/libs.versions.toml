@@ -23,6 +23,7 @@ compose-bom = "2024.06.00"
 image-cropper = "4.5.0"
 accompanist = "0.34.0"
 koin = "3.5.3"
+compose-showcase = "2.0.1"
 
 # Testing
 junit = "4.13.2"
@@ -75,6 +76,7 @@ accompanist-permissions = { group = "com.google.accompanist", name = "accompanis
 koin-bom = { group = "io.insert-koin", name = "koin-bom", version.ref = "koin" }
 koin-core = { group = "io.insert-koin", name = "koin-core" }
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose" }
+compose-showcase = { group = "com.canopas.intro-showcase-view", name = "introshowcaseview", version.ref = "compose-showcase" }
 
 # Testing
 koin-android = { group = "io.insert-koin", name = "koin-android" }

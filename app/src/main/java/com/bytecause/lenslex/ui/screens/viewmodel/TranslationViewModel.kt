@@ -1,6 +1,5 @@
-package com.bytecause.lenslex.ui.screens.viewmodel.base
+package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -18,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-abstract class BaseViewModel(
+abstract class TranslationViewModel(
     private val userPrefsRepository: UserPrefsRepository,
     private val translationModelManager: TranslationModelManager,
     supportedLanguagesRepository: SupportedLanguagesRepository
@@ -85,34 +84,71 @@ abstract class BaseViewModel(
                 ))
         }
 
-    private fun setLangOption(language: TranslationOption) {
-        translationLangOption.update {
-            when (language) {
-                is TranslationOption.Origin -> {
-                    it.copy(first = language)
+    private fun setLangOptions(languageOptions: Pair<TranslationOption.Origin?, TranslationOption.Target?>) {
+        when {
+            languageOptions.first == null -> {
+                languageOptions.second?.let { option ->
+                    translationLangOption.update {
+                        it.copy(second = option)
+                    }
                 }
+            }
 
-                is TranslationOption.Target -> {
-                    it.copy(second = language)
+            languageOptions.second == null -> {
+                languageOptions.first?.let { option ->
+                    translationLangOption.update {
+                        it.copy(first = option)
+                    }
+                }
+            }
+
+            else -> {
+                translationLangOption.update {
+                    it.copy(first = languageOptions.first!!, second = languageOptions.second!!)
                 }
             }
         }
     }
 
-    fun saveTranslationOption(language: TranslationOption) {
+    fun saveTranslationOptions(languageOptions: Pair<TranslationOption.Origin?, TranslationOption.Target?>) {
         viewModelScope.launch {
-            // Check which language option changed
-            when (language) {
-                is TranslationOption.Origin -> {
-                    userPrefsRepository.saveOriginTranslationOption(language.lang.langCode)
-                }
-
-                is TranslationOption.Target -> {
-                    userPrefsRepository.saveTargetTranslationOption(language.lang.langCode)
-                }
+            languageOptions.first?.let { option ->
+                // If first lang is the same as second, switch them
+                if (option.lang.langCode == translationLangOption.value.second.lang.langCode) {
+                    setLangOptions(
+                        Pair(
+                            first = TranslationOption.Origin(translationLangOption.value.second.lang)
+                                .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) },
+                            second = TranslationOption.Target(translationLangOption.value.first.lang)
+                                .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
+                        )
+                    )
+                    return@launch
+                } else userPrefsRepository.saveOriginTranslationOption(option.lang.langCode)
             }
-            setLangOption(language = language)
+
+            languageOptions.second?.let { option ->
+                // If first lang is the same as second, switch them
+                if (option.lang.langCode == translationLangOption.value.first.lang.langCode) {
+                    setLangOptions(
+                        Pair(
+                            first = TranslationOption.Origin(translationLangOption.value.second.lang)
+                                .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) },
+                            second = TranslationOption.Target(translationLangOption.value.first.lang)
+                                .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
+                        )
+                    )
+                    return@launch
+                } else userPrefsRepository.saveTargetTranslationOption(option.lang.langCode)
+            }
+            setLangOptions(languageOptions)
         }
+    }
+
+    fun switchLanguageOptions(origin: TranslationOption.Origin, target: TranslationOption.Target) {
+        saveTranslationOptions(
+            Pair(TranslationOption.Origin(target.lang), TranslationOption.Target(origin.lang))
+        )
     }
 
     fun areModelsReady(
@@ -170,7 +206,6 @@ abstract class BaseViewModel(
             translationModelManager.downloadModel(langCode).firstOrNull()?.let { result ->
                 result
                     .onSuccess {
-                        Log.d("idk", "success")
                         getDownloadedModels()
                         setIsModelDownloading(langCode, false)
                     }

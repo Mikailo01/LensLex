@@ -38,26 +38,17 @@ class AccountViewModel(
 
     fun uiEventHandler(event: AccountUiEvent.NonDirect) {
         when (event) {
-            is AccountUiEvent.OnUpdateName -> onUpdateNameHandler(event.value)
             is AccountUiEvent.OnUpdateProfilePicture -> onUpdateProfilePictureHandler(event.value)
-            AccountUiEvent.OnEditChange -> onEditChangeHandler()
             is AccountUiEvent.OnChangeFirebaseLanguage -> changeFirebaseLanguageCode(event.value)
             is AccountUiEvent.OnShowConfirmationDialog -> onShowConfirmationDialogHandler(event.value)
             is AccountUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
             is AccountUiEvent.OnShowBottomSheet -> onShowBottomSheetHandler(event.value)
             is AccountUiEvent.OnShowUrlDialog -> onShowUrlDialogHandler(event.value)
-            AccountUiEvent.OnSignOut -> onSignOutHandler()
             is AccountUiEvent.OnNameTextFieldValueChange -> onNameTextFieldValueChangeHandler(event.value)
             is AccountUiEvent.OnUrlTextFieldValueChange -> onUrlTextFieldValueChange(event.value)
             is AccountUiEvent.OnSaveUserProfilePicture -> onSaveUserProfilePictureHandler(event.value)
+            AccountUiEvent.OnSignOut -> onSignOutHandler()
         }
-    }
-
-    private fun onUpdateNameHandler(userName: String) {
-        _uiState.update {
-            it.copy(userData = it.userData?.copy(userName = userName))
-        }
-        updateName(userName)
     }
 
     private fun onUpdateProfilePictureHandler(profilePictureUrl: String) {
@@ -65,12 +56,6 @@ class AccountViewModel(
             it.copy(userData = it.userData?.copy(profilePictureUrl = profilePictureUrl))
         }
         updateProfilePicture(Uri.parse(profilePictureUrl))
-    }
-
-    private fun onEditChangeHandler() {
-        _uiState.update {
-            it.copy(isEditing = !it.isEditing)
-        }
     }
 
     private fun onShowConfirmationDialogHandler(boolean: Boolean) {
@@ -148,10 +133,6 @@ class AccountViewModel(
 
     init {
         firebaseAuth.addIdTokenListener(idTokenListener)
-    }
-
-    private fun updateName(name: String) {
-        userRepository.updateUsername(name)
     }
 
     private fun updateProfilePicture(uri: Uri) {
