@@ -22,9 +22,11 @@ sealed interface ExtractedTextUiEvent {
     data object OnHintActionIconClick : NonDirect
     data object OnFabActionButtonClick : NonDirect
     data object OnDismissNetworkErrorDialog : NonDirect
+    data object OnDismissLanguageInferenceErrorDialog : NonDirect
     data object OnTryAgainClick : NonDirect
     data object OnShowcaseCompleted : NonDirect
     data object OnShowIntroShowcaseIfNecessary : NonDirect
+    data object OnSwitchLanguageOptions : NonDirect
 
     data object OnBackButtonClick : Direct
     data object OnCopyContent : Direct
@@ -32,8 +34,6 @@ sealed interface ExtractedTextUiEvent {
 
 sealed interface ExtractedTextUiEffect {
     data object ShowNetworkErrorMessage : ExtractedTextUiEffect
-    data object ShowLanguageOptionMessage : ExtractedTextUiEffect
-    data object ShowChooseDifferentLanguageOptionMessage : ExtractedTextUiEffect
     data object ShowMissingLanguageOptionMessage : ExtractedTextUiEffect
     data object ResetIntroShowcaseState : ExtractedTextUiEffect
     data object NavigateBack : ExtractedTextUiEffect

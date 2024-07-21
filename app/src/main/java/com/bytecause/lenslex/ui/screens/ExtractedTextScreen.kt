@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -64,7 +66,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.ImageButtonWithText
+import com.bytecause.lenslex.ui.components.IntroShowcaseText
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
@@ -78,6 +82,7 @@ import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
 import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
+import com.bytecause.lenslex.util.then
 import com.canopas.lib.showcase.IntroShowcase
 import com.canopas.lib.showcase.IntroShowcaseScope
 import com.canopas.lib.showcase.component.IntroShowcaseState
@@ -150,21 +155,18 @@ private fun ExtractedTextScreenContent(
                 }
             },
             floatingActionButton = {
-                if (state.selectedWords.isNotEmpty() && !state.isSentence) {
+                if (state.selectedWords.isNotEmpty() && !state.isSentence || state.showIntroShowcase) {
                     FloatingActionButton(
                         onClick = { onEvent(ExtractedTextUiEvent.OnFabActionButtonClick) },
                         modifier = Modifier.introShowCaseTarget(
                             index = 4,
                             style = ShowcaseStyle.Default.copy(
-                                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                 backgroundAlpha = introShowcaseBackgroundAlpha,
                                 targetCircleColor = Color.White
                             )
                         ) {
-                            Text(
-                                text = stringResource(id = R.string.all_words_chosen_showcase_message),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            IntroShowcaseText(text = stringResource(id = R.string.all_words_chosen_showcase_message))
                         }
                     ) {
                         Image(
@@ -188,7 +190,6 @@ private fun ExtractedTextScreenContent(
                             .padding(5.dp),
                         originLangName = state.selectedLanguageOptions.first.lang.langName,
                         targetLangName = state.selectedLanguageOptions.second.lang.langName,
-                        isSwitchEnabled = false,
                         onClick = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(it)) },
                     )
 
@@ -250,6 +251,25 @@ private fun ExtractedTextScreenContent(
                         onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissNetworkErrorDialog) })
                 }
 
+                if (state.showLanguageInferenceErrorDialog) {
+                    Dialog(
+                        title = stringResource(id = R.string.language_cannot_be_inferred_title),
+                        onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.failed),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Text(
+                            text = stringResource(id = R.string.language_cannot_be_inferred_message),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
+                }
+
                 if (state.isLoading) {
                     BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
@@ -289,7 +309,11 @@ private fun IntroShowcaseScope.SentenceModeLayout(
                 )
             )
 
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            ) {
                 Text(
                     text = stringResource(id = R.string.sentence_construction),
                     fontWeight = FontWeight.Bold,
@@ -312,15 +336,12 @@ private fun IntroShowcaseScope.SentenceModeLayout(
                     modifier = Modifier.introShowCaseTarget(
                         index = 1,
                         style = ShowcaseStyle.Default.copy(
-                            backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                             backgroundAlpha = introShowcaseBackgroundAlpha,
                             targetCircleColor = Color.White
                         )
                     ) {
-                        Text(
-                            text = stringResource(id = R.string.sentence_preview_showcase_message),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        IntroShowcaseText(text = stringResource(id = R.string.sentence_preview_showcase_message))
                     }
                 )
             }
@@ -347,15 +368,25 @@ private fun IntroShowcaseScope.SentenceModeButtons(
             modifier = Modifier.introShowCaseTarget(
                 index = 2,
                 style = ShowcaseStyle.Default.copy(
-                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                     backgroundAlpha = introShowcaseBackgroundAlpha,
                     targetCircleColor = Color.White
                 )
             ) {
-                Text(
-                    text = stringResource(id = R.string.complete_sentence_construction_showcase_message),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(15.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.done),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    IntroShowcaseText(
+                        text = stringResource(id = R.string.complete_sentence_construction_showcase_message),
+                        modifier = Modifier.padding(top = 30.dp)
+                    )
+                }
             },
             onClick = { onEvent(ExtractedTextUiEvent.OnSentenceDone) }
         )
@@ -369,15 +400,25 @@ private fun IntroShowcaseScope.SentenceModeButtons(
             modifier = Modifier.introShowCaseTarget(
                 index = 3,
                 style = ShowcaseStyle.Default.copy(
-                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                     backgroundAlpha = introShowcaseBackgroundAlpha,
                     targetCircleColor = Color.White
                 )
             ) {
-                Text(
-                    text = stringResource(id = R.string.cancel_sentence_construction_showcase_message),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(15.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.cancel),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    IntroShowcaseText(
+                        text = stringResource(id = R.string.cancel_sentence_construction_showcase_message),
+                        modifier = Modifier.padding(top = 30.dp)
+                    )
+                }
             },
             onClick = { onEvent(ExtractedTextUiEvent.OnSentenceCancelled) }
         )
@@ -409,20 +450,12 @@ fun ExtractedTextScreen(
 
         viewModel.effect.collect {
             when (it) {
-                ExtractedTextUiEffect.ShowLanguageOptionMessage -> {
-                    uiState.snackbarHostState.showSnackbar(context.getString(R.string.input_language_cannot_be_changed_message))
-                }
-
                 ExtractedTextUiEffect.ShowNetworkErrorMessage -> {
                     uiState.snackbarHostState.showSnackbar(context.getString(R.string.network_unavailable))
                 }
 
                 ExtractedTextUiEffect.ShowMissingLanguageOptionMessage -> {
                     uiState.snackbarHostState.showSnackbar(context.getString(R.string.target_lang_option_not_selected))
-                }
-
-                ExtractedTextUiEffect.ShowChooseDifferentLanguageOptionMessage -> {
-                    uiState.snackbarHostState.showSnackbar(context.getString(R.string.please_select_different_language_option))
                 }
 
                 ExtractedTextUiEffect.ResetIntroShowcaseState -> introShowcaseState.reset()
@@ -514,15 +547,25 @@ private fun IntroShowcaseScope.WordsLayout(
                     .introShowCaseTarget(
                         index = 0,
                         style = ShowcaseStyle.Default.copy(
-                            backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                             backgroundAlpha = introShowcaseBackgroundAlpha,
                             targetCircleColor = Color.White
                         )
                     ) {
-                        Text(
-                            text = stringResource(id = R.string.words_layout_showcase_message),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(15.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.list),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            IntroShowcaseText(
+                                text = stringResource(id = R.string.words_layout_showcase_message),
+                                modifier = Modifier.padding(30.dp)
+                            )
+                        }
                     }
             ) {
                 items(chunks) { rowWords ->
@@ -683,7 +726,8 @@ private fun ExtractedTextScreenPreview() {
                         id = index,
                         text = s
                     )
-                }
+                },
+            isSentence = true
         ),
         introShowcaseState = rememberIntroShowcaseState(),
         isExpandedScreen = false,

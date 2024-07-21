@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -118,10 +119,6 @@ fun ModifiedImagePreviewScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val snackbarHostState = remember {
-        SnackbarHostState()
-    }
-
     val context = LocalContext.current
 
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
@@ -137,7 +134,7 @@ fun ModifiedImagePreviewScreen(
 
     LaunchedEffect(key1 = uiState.isImageTextless) {
         if (uiState.isImageTextless) {
-            snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
+            uiState.snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
         }
     }
 

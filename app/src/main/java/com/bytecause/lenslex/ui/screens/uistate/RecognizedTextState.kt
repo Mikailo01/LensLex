@@ -20,5 +20,6 @@ data class RecognizedTextState(
     val isLoading: Boolean = false,
     val showLanguageDialog: TranslationOption? = null,
     val showNetworkErrorDialog: Boolean = false,
+    val showLanguageInferenceErrorDialog: Boolean = false,
     val snackbarHostState: SnackbarHostState = SnackbarHostState()
 )

@@ -1,6 +1,9 @@
 package com.bytecause.lenslex.util
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import com.bytecause.lenslex.ui.theme.blue
 import com.bytecause.lenslex.ui.theme.purple
 

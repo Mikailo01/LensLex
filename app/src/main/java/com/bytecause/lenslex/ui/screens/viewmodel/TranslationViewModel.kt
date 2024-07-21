@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -66,17 +67,7 @@ abstract class TranslationViewModel(
                             )
                         }
 
-                        TranslationOption.Origin(
-                            SupportedLanguage(
-                                langCode = origin,
-                                langName = Locale(origin).displayName
-                            )
-                        ) to TranslationOption.Target(
-                            SupportedLanguage(
-                                langCode = target,
-                                langName = Locale(target).displayName
-                            )
-                        )
+                        translationLangOption.value
                     }
                 }
                 ?: (TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(

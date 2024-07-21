@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +55,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
+import com.bytecause.lenslex.data.local.TTSManager
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
+import com.bytecause.lenslex.ui.components.IntroShowcaseText
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NoteItem
@@ -131,15 +134,12 @@ fun HomeScreenContent(
                                 .introShowCaseTarget(
                                     index = 0,
                                     style = ShowcaseStyle.Default.copy(
-                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Text(
-                                        text = stringResource(id = R.string.tap_to_navigate_into_app_settings),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    IntroShowcaseText(text = stringResource(id = R.string.tap_to_navigate_into_app_settings))
                                 }
                         )
                     }
@@ -162,15 +162,12 @@ fun HomeScreenContent(
                                 .introShowCaseTarget(
                                     index = 1,
                                     style = ShowcaseStyle.Default.copy(
-                                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                        backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Text(
-                                        text = stringResource(id = R.string.language_preferences_showcase_message),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    IntroShowcaseText(text = stringResource(id = R.string.language_preferences_showcase_message))
                                 },
                             originLangName = state.selectedLanguageOptions.first.lang.langName,
                             targetLangName = state.selectedLanguageOptions.second.lang.langName,
@@ -188,21 +185,19 @@ fun HomeScreenContent(
                         .introShowCaseTarget(
                             index = 2,
                             style = ShowcaseStyle.Default.copy(
-                                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                                backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                 backgroundAlpha = introShowcaseBackgroundAlpha,
                                 targetCircleColor = Color.White
                             )
                         ) {
-                            Text(
-                                text = stringResource(id = R.string.translated_text_list_showcase_message),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            IntroShowcaseText(text = stringResource(id = R.string.translated_text_list_showcase_message))
                         }) {
                         LazyColumn(
                             modifier = Modifier
                                 .padding(8.dp),
                             state = state.lazyListState
                         ) {
+                            // shows shimmer effects
                             if (state.isLoading) {
                                 items(10) {
                                     Row(
@@ -214,16 +209,27 @@ fun HomeScreenContent(
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
                             } else {
-                                if (state.wordList.none { it.languageCode == state.selectedLanguageOptions.first.lang.langCode }) return@LazyColumn
+                                items(
+                                    state.wordList.filter { it.languageCode == state.selectedLanguageOptions.first.lang.langCode },
+                                    key = { item -> item.timeStamp }) { item ->
 
-                                items(state.wordList, key = { item -> item.timeStamp }) { item ->
                                     item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
                                         NoteItem(
                                             originalText = item.word,
-                                            translatedText = it
-                                        ) {
-                                            onEvent(HomeUiEvent.OnItemRemoved(item))
-                                        }
+                                            translatedText = it,
+                                            onRemove = {
+                                                onEvent(HomeUiEvent.OnItemRemoved(item))
+                                            },
+                                            onClick = { text ->
+                                                onEvent(
+                                                    HomeUiEvent.OnSpeak(
+                                                        text = text,
+                                                        langCode = if (text == item.word) item.languageCode
+                                                        else state.selectedLanguageOptions.second.lang.langCode
+                                                    )
+                                                )
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -324,6 +330,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
 
+    val ttsManager = remember { TTSManager(context) }
+
     var imageUri by remember {
         mutableStateOf<Uri?>(null)
     }
@@ -378,9 +386,19 @@ fun HomeScreen(
         }
     )
 
+    DisposableEffect(Unit) {
+        onDispose {
+            ttsManager.shutdown()
+        }
+    }
+
+    LaunchedEffect(key1 = uiState.isLoading) {
+        // Show intro showcase if necessary only if isLoading == false to avoid intro showcase recompositions
+        if (!uiState.isLoading) viewModel.uiEventHandler(HomeUiEvent.OnShowIntroShowcaseIfNecessary)
+    }
+
     LaunchedEffect(key1 = Unit) {
         viewModel.uiEventHandler(HomeUiEvent.OnReload)
-        viewModel.uiEventHandler(HomeUiEvent.OnShowIntroShowcaseIfNecessary)
 
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -425,6 +443,17 @@ fun HomeScreen(
 
                     imageUri = uri
                     cameraLauncher.launch(uri)
+                }
+
+                is HomeUiEvent.OnSpeak -> {
+                    ttsManager.speak(
+                        text = event.text,
+                        langCode = event.langCode
+                    ).takeIf { !it }?.let {
+                        coroutineScope.launch {
+                            uiState.snackbarHostState.showSnackbar(context.getString(R.string.unsupported_language))
+                        }
+                    }
                 }
 
                 HomeUiEvent.OnMultiplePhotoPickerLaunch -> {

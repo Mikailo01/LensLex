@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
@@ -64,7 +65,8 @@ class HomeViewModel(
         }.distinctUntilChanged().onEach { (words, selectedLang, supportedLanguages) ->
             _uiState.update { state ->
                 state.copy(
-                    wordList = words.takeIf { it != state.wordList } ?: state.wordList,
+                    wordList = (words.takeIf { it != state.wordList })
+                        ?: state.wordList,
                     selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
                         ?: state.selectedLanguageOptions,
                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
@@ -192,15 +194,19 @@ class HomeViewModel(
         textRecognitionRepository.runTextRecognition(imagePaths)
 
     private fun onConfirmLanguageDialog(language: TranslationOption) {
-        if (language is TranslationOption.Origin) {
-            saveTranslationOptions(Pair(first = language, second = null))
-        } else {
-            saveTranslationOptions(
-                Pair(
-                    first = null,
-                    second = language as TranslationOption.Target
+        when (language) {
+            is TranslationOption.Origin -> {
+                saveTranslationOptions(Pair(first = language, second = null))
+            }
+
+            is TranslationOption.Target -> {
+                saveTranslationOptions(
+                    Pair(
+                        first = null,
+                        second = language
+                    )
                 )
-            )
+            }
         }
         _uiState.update { it.copy(showLanguageDialog = null) }
     }

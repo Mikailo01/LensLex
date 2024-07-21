@@ -9,7 +9,6 @@ import com.bytecause.lenslex.data.repository.abstraction.TextLanguageRecognition
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.SupportedLanguage
 import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEffect
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class ExtractedTextViewModel(
     private val wordsRepository: WordsRepository,
@@ -54,16 +52,12 @@ class ExtractedTextViewModel(
             languageOptionFlow,
             supportedLanguages
         ) { selectedLang, supportedLanguages ->
-
-            if (uiState.value.selectedLanguageOptions.second.lang.langCode.isBlank()) {
-                _uiState.update {
-                    it.copy(selectedLanguageOptions = it.selectedLanguageOptions.copy(second = selectedLang.second))
-                }
-            }
-
-            if (uiState.value.supportedLanguages != supportedLanguages) _uiState.update {
-                it.copy(
-                    supportedLanguages = supportedLanguages
+            _uiState.update { state ->
+                state.copy(
+                    selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
+                        ?: state.selectedLanguageOptions,
+                    supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
+                        ?: state.supportedLanguages
                 )
             }
         }.launchIn(viewModelScope)
@@ -78,9 +72,14 @@ class ExtractedTextViewModel(
             ExtractedTextUiEvent.OnSentenceDone -> onSentenceDone()
             ExtractedTextUiEvent.OnUnselectAllWords -> onUnselectAllWords()
             ExtractedTextUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialog()
+            ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog -> onDismissLanguageInferenceErrorDialog()
             ExtractedTextUiEvent.OnTryAgainClick -> onTryAgainClick()
-            ExtractedTextUiEvent.OnShowcaseCompleted -> onShowcaseCompletedHandler()
+            ExtractedTextUiEvent.OnShowcaseCompleted -> onShowcaseCompleted()
             ExtractedTextUiEvent.OnShowIntroShowcaseIfNecessary -> showIntroShowcaseIfNecessary()
+            ExtractedTextUiEvent.OnSwitchLanguageOptions -> switchLanguageOptions(
+                origin = uiState.value.selectedLanguageOptions.first,
+                target = uiState.value.selectedLanguageOptions.second
+            )
             is ExtractedTextUiEvent.OnWordClick -> onWordClick(event.word)
             is ExtractedTextUiEvent.OnWordLongClick -> onWordLongClick(event.word)
             is ExtractedTextUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
@@ -96,36 +95,50 @@ class ExtractedTextViewModel(
     }
 
     private fun onHintActionIconClick() {
-        _uiState.update { it.copy(showIntroShowcase = true) }
+        // update state to render all ui elements needed for intro showcase
+        _uiState.update {
+            it.copy(
+                isSentence = true,
+                sentence = listOf(it.words.first()),
+                selectedWords = setOf(it.words.first()),
+                showIntroShowcase = true
+            )
+        }
         sendEffect(ExtractedTextUiEffect.ResetIntroShowcaseState)
     }
 
-    private fun onShowcaseCompletedHandler() {
-        // TODO("Fix")
+    private fun onShowcaseCompleted() {
         viewModelScope.launch {
-            if (userPrefsRepository.isFeatureVisited(UserPrefsRepositoryImpl.EXTRACTED_TEXT_FEATURE)
-                    .firstOrNull() == true
-            ) {
-                onUnselectAllWords()
-                return@launch
+            // set state to default values
+            _uiState.update {
+                it.copy(
+                    isSentence = false,
+                    sentence = emptyList(),
+                    selectedWords = emptySet(),
+                    showIntroShowcase = false
+                )
             }
-
-            if (!uiState.value.isSentence) {
-                onWordLongClick(uiState.value.words.first())
-            } else if (uiState.value.selectedWords.isEmpty()) {
-                onSentenceCancelled()
-                onWordClick(uiState.value.words.first())
-                userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.EXTRACTED_TEXT_FEATURE)
-            }
+            userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.EXTRACTED_TEXT_FEATURE)
         }
     }
 
     private fun showIntroShowcaseIfNecessary() {
+        if (uiState.value.showIntroShowcase) return
+
         viewModelScope.launch {
             userPrefsRepository.isFeatureVisited(UserPrefsRepositoryImpl.EXTRACTED_TEXT_FEATURE)
                 .firstOrNull()
                 ?.let { isVisited ->
-                    _uiState.update { it.copy(showIntroShowcase = !isVisited) }
+                    if (isVisited) return@launch
+
+                    _uiState.update {
+                        it.copy(
+                            showIntroShowcase = true,
+                            isSentence = true,
+                            sentence = listOf(it.words.first()),
+                            selectedWords = setOf(it.words.first()),
+                        )
+                    }
                 }
         }
     }
@@ -146,6 +159,16 @@ class ExtractedTextViewModel(
     private fun onDismissNetworkErrorDialog() {
         _uiState.update {
             it.copy(showNetworkErrorDialog = false)
+        }
+    }
+
+    // Dismiss inference error dialog and shows origin language dialog
+    private fun onDismissLanguageInferenceErrorDialog() {
+        _uiState.update {
+            it.copy(
+                showLanguageInferenceErrorDialog = false,
+                showLanguageDialog = TranslationOption.Origin()
+            )
         }
     }
 
@@ -218,23 +241,22 @@ class ExtractedTextViewModel(
     }
 
     private fun onShowLanguageDialog(option: TranslationOption?) {
-        if (option is TranslationOption.Target || option == null) {
-            _uiState.update {
-                it.copy(showLanguageDialog = option)
-            }
-        } else sendEffect(ExtractedTextUiEffect.ShowLanguageOptionMessage)
+        _uiState.update {
+            it.copy(showLanguageDialog = option)
+        }
     }
 
     private fun onConfirmLanguageDialog(translationOption: TranslationOption) {
-        if ((translationOption as TranslationOption.Target).lang.langCode != uiState.value.selectedLanguageOptions.first.lang.langCode) {
-            _uiState.update {
-                it.copy(
-                    showLanguageDialog = null,
-                    selectedLanguageOptions = it.selectedLanguageOptions.copy(second = translationOption)
-                )
+        when (translationOption) {
+            is TranslationOption.Origin -> {
+                saveTranslationOptions(Pair(first = translationOption, second = null))
             }
-        } else sendEffect(ExtractedTextUiEffect.ShowChooseDifferentLanguageOptionMessage)
 
+            is TranslationOption.Target -> {
+                saveTranslationOptions(Pair(first = null, second = translationOption))
+            }
+        }
+        _uiState.update { it.copy(showLanguageDialog = null) }
     }
 
     private fun onAddWords(words: List<Word>) {
@@ -247,17 +269,21 @@ class ExtractedTextViewModel(
             languageRecognitionRepository.runLangRecognition(words.joinToString(" ") { it.text })
                 .firstOrNull()?.let { langCode ->
                     if (langCode != "und") {
-                        _uiState.update {
-                            it.copy(
-                                selectedLanguageOptions = it.selectedLanguageOptions.copy(
-                                    first = TranslationOption.Origin(
-                                        lang = SupportedLanguage(
-                                            langCode = langCode,
-                                            langName = Locale(langCode).displayName
+                        if (langCode != uiState.value.selectedLanguageOptions.first.lang.langCode) {
+                            uiState.value.supportedLanguages.find { it.langCode == langCode }
+                                ?.let { lang ->
+                                    saveTranslationOptions(
+                                        Pair(
+                                            first = TranslationOption.Origin(
+                                                lang = lang
+                                            ), second = null
                                         )
                                     )
-                                )
-                            )
+                                }
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(showLanguageInferenceErrorDialog = true)
                         }
                     }
                 }
