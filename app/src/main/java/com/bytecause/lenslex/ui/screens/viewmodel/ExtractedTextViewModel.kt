@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -18,6 +19,7 @@ import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
 import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -133,6 +135,9 @@ class ExtractedTextViewModel(
                 .firstOrNull()
                 ?.let { isVisited ->
                     if (isVisited) return@launch
+
+                    // wait shortly to make sure that ui is stable
+                    delay(500)
 
                     _uiState.update {
                         it.copy(
