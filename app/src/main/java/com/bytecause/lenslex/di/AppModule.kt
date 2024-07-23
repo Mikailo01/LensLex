@@ -1,5 +1,6 @@
 package com.bytecause.lenslex.di
 
+import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.datastore.userDataStore
 import com.bytecause.lenslex.data.local.mlkit.TextRecognizer
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -72,6 +73,10 @@ val appModule = module {
         TextRecognizer(androidContext())
     }
 
+    single<TranslationOptionsDataSource> {
+        TranslationOptionsDataSource()
+    }
+
     // Repositories
     single<SupportedLanguagesRepository> {
         SupportedLanguagesRepository()
@@ -128,6 +133,7 @@ val appModule = module {
             userRepository = get<UserRepositoryImpl>(),
             supportedLanguagesRepository = get(),
             translationModelManager = get<TranslationModelManager>(),
+            translationOptionsDataSource = get<TranslationOptionsDataSource>()
         )
     }
 
@@ -161,7 +167,8 @@ val appModule = module {
             translateRepository = get<TranslateRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             translationModelManager = get<TranslationModelManager>(),
-            supportedLanguagesRepository = get()
+            supportedLanguagesRepository = get<SupportedLanguagesRepository>(),
+            translationOptionsDataSource = get<TranslationOptionsDataSource>()
         )
     }
 
@@ -179,7 +186,8 @@ val appModule = module {
             languageRecognitionRepository = get<TextLanguageRecognitionRepositoryImpl>(),
             userPrefsRepository = get<UserPrefsRepositoryImpl>(),
             translationModelManager = get<TranslationModelManager>(),
-            supportedLanguagesRepository = get()
+            supportedLanguagesRepository = get<SupportedLanguagesRepository>(),
+            translationOptionsDataSource = get<TranslationOptionsDataSource>()
         )
     }
 }

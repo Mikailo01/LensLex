@@ -25,20 +25,20 @@ class LoginViewModel(
 
     fun uiEventHandler(event: LoginUiEvent.NonDirect) {
         when (event) {
-            is LoginUiEvent.OnCredentialsEntered -> onCredentialsEnteredHandler()
-            is LoginUiEvent.OnEmailValueChange -> onEmailValueChangeHandler(event.email)
-            is LoginUiEvent.OnPasswordValueChange -> onPasswordValueChangeHandler(event.password)
-            is LoginUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChangeHandler(
+            is LoginUiEvent.OnCredentialsEntered -> onCredentialsEntered()
+            is LoginUiEvent.OnEmailValueChange -> onEmailValueChange(event.email)
+            is LoginUiEvent.OnPasswordValueChange -> onPasswordValueChange(event.password)
+            is LoginUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChange(
                 event.confirmationPassword
             )
 
-            LoginUiEvent.OnPasswordsVisibilityChange -> onPasswordsVisibilityChangeHandler()
-            LoginUiEvent.OnAnnotatedStringClick -> onAnnotatedStringClickHandler()
-            LoginUiEvent.OnSignInAnonymously -> onSignInAnonymouslyHandler()
+            LoginUiEvent.OnPasswordsVisibilityChange -> onPasswordsVisibilityChange()
+            LoginUiEvent.OnAnnotatedStringClick -> onAnnotatedStringClick()
+            LoginUiEvent.OnSignInAnonymously -> onSignInAnonymously()
         }
     }
 
-    private fun onCredentialsEnteredHandler() {
+    private fun onCredentialsEntered() {
         areCredentialsValid(
             if (_uiState.value.signIn) Credentials.Sensitive.SignInCredentials(
                 _uiState.value.email,
@@ -103,7 +103,7 @@ class LoginViewModel(
         }
     }
 
-    private fun onEmailValueChangeHandler(email: String) {
+    private fun onEmailValueChange(email: String) {
         _uiState.update {
             it.copy(
                 email = email,
@@ -125,7 +125,7 @@ class LoginViewModel(
         }
     }
 
-    private fun onPasswordValueChangeHandler(password: String) {
+    private fun onPasswordValueChange(password: String) {
         _uiState.update {
             it.copy(
                 password = password,
@@ -147,7 +147,7 @@ class LoginViewModel(
         }
     }
 
-    private fun onConfirmPasswordValueChangeHandler(password: String) {
+    private fun onConfirmPasswordValueChange(password: String) {
         _uiState.update {
             it.copy(
                 confirmPassword = password,
@@ -162,13 +162,13 @@ class LoginViewModel(
         }
     }
 
-    private fun onPasswordsVisibilityChangeHandler() {
+    private fun onPasswordsVisibilityChange() {
         _uiState.update {
             it.copy(passwordVisible = !it.passwordVisible)
         }
     }
 
-    private fun onAnnotatedStringClickHandler() {
+    private fun onAnnotatedStringClick() {
         _uiState.update {
             it.copy(
                 email = "",
@@ -180,7 +180,7 @@ class LoginViewModel(
         }
     }
 
-    private fun onSignInAnonymouslyHandler() {
+    private fun onSignInAnonymously() {
         viewModelScope.launch {
             signInAnonymously().firstOrNull()?.let {
                 onSignInResult(it)

@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
@@ -33,11 +34,13 @@ class ExtractedTextViewModel(
     private val translateRepository: TranslateRepository,
     private val languageRecognitionRepository: TextLanguageRecognitionRepository,
     private val userPrefsRepository: UserPrefsRepository,
+    translationOptionsDataSource: TranslationOptionsDataSource,
     translationModelManager: TranslationModelManager,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : TranslationViewModel(
     userPrefsRepository,
     translationModelManager,
+    translationOptionsDataSource,
     supportedLanguagesRepository
 ) {
 
@@ -327,6 +330,7 @@ class ExtractedTextViewModel(
                         }
 
                         is Translator.TranslationResult.TranslationSuccess -> {
+                            // Translation successful, save translated text into firestore database
                             insertWord(
                                 WordsAndSentences(
                                     id = "${text.text}_${sourceLang}"

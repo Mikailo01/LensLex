@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +64,8 @@ import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage
+import com.bytecause.lenslex.util.shimmerEffect
+import com.bytecause.lenslex.util.then
 import org.koin.androidx.compose.koinViewModel
 import java.io.InputStream
 import java.util.Locale
@@ -114,9 +117,20 @@ fun AccountScreenContent(
                                     .build()
                             } else state.userData?.profilePictureUrl.takeIf { it != "null" }
                                 ?: R.drawable.default_account_image,
-                            contentDescription = "avatar",
+                            contentDescription = null,
+                            onState = {
+                                it.painter?.let {
+                                    onEvent(
+                                        AccountUiEvent.OnImageLoading(
+                                            false
+                                        )
+                                    )
+                                } ?: onEvent(AccountUiEvent.OnImageLoading(true))
+                            },
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(state.isImageLoading, onTrue = { shimmerEffect() })
                         )
                     }
                 }
@@ -127,7 +141,7 @@ fun AccountScreenContent(
                     .fillMaxWidth()
                     .padding(innerPaddingValues)
                     .padding(top = 120.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
@@ -196,7 +210,8 @@ fun AccountScreenContent(
             }
 
             ProfilePicture(
-                profilePicture = state.userData?.profilePictureUrl.toString(),
+                profilePicture = state.userData?.profilePictureUrl.takeIf { it != "" }.toString(),
+                isLoading = state.isImageLoading,
                 modifier = Modifier.padding(top = 130.dp)
             ) {
                 onEvent(AccountUiEvent.OnShowBottomSheet(true))
@@ -282,7 +297,13 @@ fun AccountScreenContent(
             OutlinedTextField(
                 value = state.urlValue,
                 onValueChange = { onEvent(AccountUiEvent.OnUrlTextFieldValueChange(it)) },
-                supportingText = { Text(text = stringResource(id = R.string.url)) },
+                supportingText = {
+                    Text(
+                        text = stringResource(id = R.string.url),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
             )
             Button(
@@ -292,9 +313,15 @@ fun AccountScreenContent(
                     }
                     onEvent(AccountUiEvent.OnShowUrlDialog(false))
 
-                }, modifier = Modifier.padding(bottom = 10.dp)
+                },
+                modifier = Modifier.padding(bottom = 10.dp),
+                colors = ButtonDefaults.buttonColors()
+                    .copy(containerColor = MaterialTheme.colorScheme.onPrimaryContainer)
             ) {
-                Text(text = stringResource(id = R.string.done))
+                Text(
+                    text = stringResource(id = R.string.done),
+                    color = MaterialTheme.colorScheme.inversePrimary
+                )
             }
         }
     }
@@ -368,9 +395,9 @@ fun AccountScreen(
         }
     )
 
-    // Refresh user's firebase data
     LaunchedEffect(Unit) {
-        viewModel.reload()
+        // get user's data
+        viewModel.uiEventHandler(AccountUiEvent.OnGetUserData)
     }
 
     LaunchedEffect(uiState.userData) {

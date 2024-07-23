@@ -24,7 +24,28 @@ class AccountViewModel(
     private val firebaseAuth = auth.getAuth()
 
     private val _uiState =
-        MutableStateFlow(AccountState(userData = userRepository.getUserData()?.run {
+        MutableStateFlow(AccountState())
+    val uiState = _uiState.asStateFlow()
+
+    fun uiEventHandler(event: AccountUiEvent.NonDirect) {
+        when (event) {
+            is AccountUiEvent.OnUpdateProfilePicture -> onUpdateProfilePicture(event.value)
+            is AccountUiEvent.OnChangeFirebaseLanguage -> changeFirebaseLanguageCode(event.value)
+            is AccountUiEvent.OnShowConfirmationDialog -> onShowConfirmationDialog(event.value)
+            is AccountUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
+            is AccountUiEvent.OnShowBottomSheet -> onShowBottomSheet(event.value)
+            is AccountUiEvent.OnShowUrlDialog -> onShowUrlDialog(event.value)
+            is AccountUiEvent.OnNameTextFieldValueChange -> onNameTextFieldValueChange(event.value)
+            is AccountUiEvent.OnUrlTextFieldValueChange -> onUrlTextFieldValueChange(event.value)
+            is AccountUiEvent.OnSaveUserProfilePicture -> onSaveUserProfilePicture(event.value)
+            is AccountUiEvent.OnImageLoading -> onImageLoading(event.value)
+            AccountUiEvent.OnSignOut -> onSignOut()
+            AccountUiEvent.OnGetUserData -> getUserData()
+        }
+    }
+
+    private fun getUserData() {
+        val userData = userRepository.getUserData()?.run {
             UserData(
                 userId = uid,
                 userName = userName,
@@ -32,64 +53,57 @@ class AccountViewModel(
                 isAnonymous = isAnonymous
             )
         }
-        )
-        )
-    val uiState = _uiState.asStateFlow()
 
-    fun uiEventHandler(event: AccountUiEvent.NonDirect) {
-        when (event) {
-            is AccountUiEvent.OnUpdateProfilePicture -> onUpdateProfilePictureHandler(event.value)
-            is AccountUiEvent.OnChangeFirebaseLanguage -> changeFirebaseLanguageCode(event.value)
-            is AccountUiEvent.OnShowConfirmationDialog -> onShowConfirmationDialogHandler(event.value)
-            is AccountUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
-            is AccountUiEvent.OnShowBottomSheet -> onShowBottomSheetHandler(event.value)
-            is AccountUiEvent.OnShowUrlDialog -> onShowUrlDialogHandler(event.value)
-            is AccountUiEvent.OnNameTextFieldValueChange -> onNameTextFieldValueChangeHandler(event.value)
-            is AccountUiEvent.OnUrlTextFieldValueChange -> onUrlTextFieldValueChange(event.value)
-            is AccountUiEvent.OnSaveUserProfilePicture -> onSaveUserProfilePictureHandler(event.value)
-            AccountUiEvent.OnSignOut -> onSignOutHandler()
+        _uiState.update {
+            it.copy(userData = userData)
         }
     }
 
-    private fun onUpdateProfilePictureHandler(profilePictureUrl: String) {
+    private fun onImageLoading(boolean: Boolean) {
+        _uiState.update {
+            it.copy(isImageLoading = boolean)
+        }
+    }
+
+    private fun onUpdateProfilePicture(profilePictureUrl: String) {
         _uiState.update {
             it.copy(userData = it.userData?.copy(profilePictureUrl = profilePictureUrl))
         }
         updateProfilePicture(Uri.parse(profilePictureUrl))
     }
 
-    private fun onShowConfirmationDialogHandler(boolean: Boolean) {
+    private fun onShowConfirmationDialog(boolean: Boolean) {
         _uiState.update {
             it.copy(showConfirmationDialog = boolean)
         }
     }
 
-    private fun onShowLanguageDialogHandler(boolean: Boolean) {
+    private fun onShowLanguageDialog(boolean: Boolean) {
         _uiState.update {
             it.copy(showLanguageDialog = boolean)
         }
     }
 
-    private fun onShowBottomSheetHandler(boolean: Boolean) {
+    private fun onShowBottomSheet(boolean: Boolean) {
         _uiState.update {
             it.copy(showBottomSheet = boolean)
         }
     }
 
-    private fun onShowUrlDialogHandler(boolean: Boolean) {
+    private fun onShowUrlDialog(boolean: Boolean) {
         _uiState.update {
             it.copy(showUrlDialog = boolean)
         }
     }
 
-    private fun onSignOutHandler() {
+    private fun onSignOut() {
         signOut()
         _uiState.update {
             it.copy(signedOutSuccess = true)
         }
     }
 
-    private fun onNameTextFieldValueChangeHandler(userName: String) {
+    private fun onNameTextFieldValueChange(userName: String) {
         _uiState.update {
             it.copy(userData = it.userData?.copy(userName = userName))
         }
@@ -101,26 +115,9 @@ class AccountViewModel(
         }
     }
 
-    private fun onSaveUserProfilePictureHandler(imageUri: Uri) {
+    private fun onSaveUserProfilePicture(imageUri: Uri) {
         viewModelScope.launch {
             firebaseCloudRepository.saveUserProfilePicture(imageUri)
-        }
-    }
-
-    fun reload() {
-        userRepository.reloadUserData()?.run {
-            _uiState.update {
-                it.copy(userData =
-                userRepository.getUserData()?.run {
-                    UserData(
-                        userId = uid,
-                        userName = userName,
-                        profilePictureUrl = profilePictureUrl,
-                        isAnonymous = isAnonymous
-                    )
-                }
-                )
-            }
         }
     }
 

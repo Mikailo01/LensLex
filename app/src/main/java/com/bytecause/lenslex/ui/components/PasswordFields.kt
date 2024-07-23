@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -69,14 +71,16 @@ fun PasswordFields(
             label = {
                 Text(
                     text = stringResource(id = R.string.confirm_password),
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.alpha(0.5f)
                 )
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_repeat_24),
                     contentDescription = stringResource(id = R.string.confirm_password),
-                    tint = Color.Black
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             },
             visualTransformation = if (isPasswordVisible) VisualTransformation.None

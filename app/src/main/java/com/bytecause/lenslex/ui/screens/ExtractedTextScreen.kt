@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,19 +8,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -106,42 +110,200 @@ private fun ExtractedTextScreenContent(
         onShowCaseCompleted = { onEvent(ExtractedTextUiEvent.OnShowcaseCompleted) },
         state = introShowcaseState
     ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    titleRes = R.string.result,
-                    navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                    actionIcons = listOf {
-                        if (isExpandedScreen) {
+        if (isExpandedScreen) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        titleRes = R.string.result,
+                        navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                        actionIcons = listOf {
                             ImageButtonWithText(
                                 icon = Icons.Filled.Check,
-                                iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                iconColor = MaterialTheme.colorScheme.onPrimary,
+                                textColor = MaterialTheme.colorScheme.onPrimary,
                                 text = stringResource(id = R.string.select_all),
                                 contentDescription = stringResource(id = R.string.select_all),
                                 onClick = { onEvent(ExtractedTextUiEvent.OnSelectAllWords) }
                             )
                             ImageButtonWithText(
                                 icon = Icons.Filled.Clear,
-                                iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                iconColor = MaterialTheme.colorScheme.onPrimary,
+                                textColor = MaterialTheme.colorScheme.onPrimary,
                                 text = stringResource(id = R.string.unselect_all),
                                 contentDescription = stringResource(id = R.string.unselect_all),
                                 onClick = { onEvent(ExtractedTextUiEvent.OnUnselectAllWords) }
                             )
-                        }
-                        IconButton(onClick = { onEvent(ExtractedTextUiEvent.OnHintActionIconClick) }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.hint),
-                                contentDescription = stringResource(id = R.string.hint)
+                            IconButton(onClick = { onEvent(ExtractedTextUiEvent.OnHintActionIconClick) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.hint),
+                                    contentDescription = stringResource(id = R.string.hint),
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        },
+                        onNavigationIconClick = { onEvent(ExtractedTextUiEvent.OnBackButtonClick) }
+                    )
+                },
+                floatingActionButton = {
+                    if (state.selectedWords.isNotEmpty() && !state.isSentence || state.showIntroShowcase) {
+                        FloatingActionButton(
+                            onClick = { onEvent(ExtractedTextUiEvent.OnFabActionButtonClick) },
+                            modifier = Modifier.introShowCaseTarget(
+                                index = 4,
+                                style = ShowcaseStyle.Default.copy(
+                                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                    backgroundAlpha = introShowcaseBackgroundAlpha,
+                                    targetCircleColor = Color.White
+                                )
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.goal),
+                                        contentDescription = null,
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    IntroShowcaseText(
+                                        text = stringResource(id = R.string.all_words_chosen_showcase_message),
+                                        modifier = Modifier.padding(top = 30.dp)
+                                    )
+                                }
+                            }
+                        ) {
+                            Image(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null
                             )
                         }
-                    },
-                    onNavigationIconClick = { onEvent(ExtractedTextUiEvent.OnBackButtonClick) }
-                )
-            },
-            bottomBar = {
-                if (!isExpandedScreen) {
+                    }
+                }
+            ) { innerPaddingValues ->
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPaddingValues)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        LanguagePreferences(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(5.dp),
+                            originLangName = state.selectedLanguageOptions.first.lang.langName,
+                            targetLangName = state.selectedLanguageOptions.second.lang.langName,
+                            onClick = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(it)) },
+                            onSwitchLanguages = { onEvent(ExtractedTextUiEvent.OnSwitchLanguageOptions) }
+                        )
+
+                        HorizontalDivider()
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (state.isSentence) {
+                                SentenceModeLayout(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight(),
+                                    state = state,
+                                    onEvent = onEvent
+                                )
+                            }
+                            WordsLayout(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .weight(1f),
+                                words = state.words,
+                                isSentence = state.isSentence,
+                                sentence = state.sentence,
+                                selectedWords = state.selectedWords,
+                                onWordClick = { onEvent(ExtractedTextUiEvent.OnWordClick(it)) },
+                                onWordLongClick = { onEvent(ExtractedTextUiEvent.OnWordLongClick(it)) }
+                            )
+                        }
+                    }
+
+                    if (state.showLanguageDialog != null) {
+                        LanguageDialog(
+                            lazyListContent = state.supportedLanguages,
+                            translationOption = state.showLanguageDialog,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(500.dp)
+                                .padding(16.dp),
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(null)) },
+                            onConfirm = {
+                                onEvent(ExtractedTextUiEvent.OnConfirmLanguageDialog(it))
+                            },
+                            onDownload = { langCode ->
+                                onEvent(ExtractedTextUiEvent.OnDownloadLanguage(langCode))
+                            },
+                            onRemove = { langCode ->
+                                onEvent(ExtractedTextUiEvent.OnRemoveLanguage(langCode))
+                            }
+                        )
+                    }
+
+                    SnackbarHost(
+                        hostState = state.snackbarHostState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                    )
+
+                    if (state.showNetworkErrorDialog) {
+                        NetworkUnavailableDialog(
+                            text = stringResource(id = R.string.models_missing),
+                            onTryAgainClick = { onEvent(ExtractedTextUiEvent.OnTryAgainClick) },
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissNetworkErrorDialog) })
+                    }
+
+                    if (state.showLanguageInferenceErrorDialog) {
+                        Dialog(
+                            title = stringResource(id = R.string.language_cannot_be_inferred_title),
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.failed),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Text(
+                                text = stringResource(id = R.string.language_cannot_be_inferred_message),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontStyle = FontStyle.Italic
+                            )
+                        }
+                    }
+
+                    if (state.isLoading) {
+                        BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                }
+            }
+        } else {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        titleRes = R.string.result,
+                        navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                        actionIcons = listOf {
+                            IconButton(onClick = { onEvent(ExtractedTextUiEvent.OnHintActionIconClick) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.hint),
+                                    contentDescription = stringResource(id = R.string.hint),
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        },
+                        onNavigationIconClick = { onEvent(ExtractedTextUiEvent.OnBackButtonClick) }
+                    )
+                },
+                bottomBar = {
                     BottomAppBar(
                         modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
                         onItemClick = { action ->
@@ -152,126 +314,142 @@ private fun ExtractedTextScreenContent(
                             }
                         }
                     )
-                }
-            },
-            floatingActionButton = {
-                if (state.selectedWords.isNotEmpty() && !state.isSentence || state.showIntroShowcase) {
-                    FloatingActionButton(
-                        onClick = { onEvent(ExtractedTextUiEvent.OnFabActionButtonClick) },
-                        modifier = Modifier.introShowCaseTarget(
-                            index = 4,
-                            style = ShowcaseStyle.Default.copy(
-                                backgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                                backgroundAlpha = introShowcaseBackgroundAlpha,
-                                targetCircleColor = Color.White
-                            )
+                },
+                floatingActionButton = {
+                    if (state.selectedWords.isNotEmpty() && !state.isSentence || state.showIntroShowcase) {
+                        FloatingActionButton(
+                            onClick = { onEvent(ExtractedTextUiEvent.OnFabActionButtonClick) },
+                            modifier = Modifier.introShowCaseTarget(
+                                index = 4,
+                                style = ShowcaseStyle.Default.copy(
+                                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                    backgroundAlpha = introShowcaseBackgroundAlpha,
+                                    targetCircleColor = Color.White
+                                )
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.goal),
+                                        contentDescription = null,
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    IntroShowcaseText(
+                                        text = stringResource(id = R.string.all_words_chosen_showcase_message),
+                                        modifier = Modifier.padding(top = 30.dp)
+                                    )
+                                }
+                            }
                         ) {
-                            IntroShowcaseText(text = stringResource(id = R.string.all_words_chosen_showcase_message))
+                            Image(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null
+                            )
                         }
-                    ) {
-                        Image(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null
-                        )
                     }
                 }
-            }
-        ) { innerPaddingValues ->
+            ) { innerPaddingValues ->
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPaddingValues)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LanguagePreferences(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(5.dp),
-                        originLangName = state.selectedLanguageOptions.first.lang.langName,
-                        targetLangName = state.selectedLanguageOptions.second.lang.langName,
-                        onClick = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(it)) },
-                    )
-
-                    HorizontalDivider()
-
-                    WordsLayout(
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPaddingValues)
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .weight(1f),
-                        words = state.words,
-                        isSentence = state.isSentence,
-                        sentence = state.sentence,
-                        selectedWords = state.selectedWords,
-                        onWordClick = { onEvent(ExtractedTextUiEvent.OnWordClick(it)) },
-                        onWordLongClick = { onEvent(ExtractedTextUiEvent.OnWordLongClick(it)) }
-                    )
+                    ) {
+                        LanguagePreferences(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(5.dp),
+                            originLangName = state.selectedLanguageOptions.first.lang.langName,
+                            targetLangName = state.selectedLanguageOptions.second.lang.langName,
+                            onClick = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(it)) },
+                            onSwitchLanguages = { onEvent(ExtractedTextUiEvent.OnSwitchLanguageOptions) }
+                        )
 
-                    if (state.isSentence) {
-                        SentenceModeLayout(
-                            state = state,
-                            isExpanded = isExpandedScreen,
-                            onEvent = onEvent
+                        HorizontalDivider()
+
+                        WordsLayout(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f),
+                            words = state.words,
+                            isSentence = state.isSentence,
+                            sentence = state.sentence,
+                            selectedWords = state.selectedWords,
+                            onWordClick = { onEvent(ExtractedTextUiEvent.OnWordClick(it)) },
+                            onWordLongClick = { onEvent(ExtractedTextUiEvent.OnWordLongClick(it)) }
+                        )
+
+                        if (state.isSentence) {
+                            SentenceModeLayout(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                state = state,
+                                onEvent = onEvent
+                            )
+                        }
+                    }
+
+                    if (state.showLanguageDialog != null) {
+                        LanguageDialog(
+                            lazyListContent = state.supportedLanguages,
+                            translationOption = state.showLanguageDialog,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(500.dp)
+                                .padding(16.dp),
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(null)) },
+                            onConfirm = {
+                                onEvent(ExtractedTextUiEvent.OnConfirmLanguageDialog(it))
+                            },
+                            onDownload = { langCode ->
+                                onEvent(ExtractedTextUiEvent.OnDownloadLanguage(langCode))
+                            },
+                            onRemove = { langCode ->
+                                onEvent(ExtractedTextUiEvent.OnRemoveLanguage(langCode))
+                            }
                         )
                     }
-                }
 
-                if (state.showLanguageDialog != null) {
-                    LanguageDialog(
-                        lazyListContent = state.supportedLanguages,
-                        translationOption = state.showLanguageDialog,
+                    SnackbarHost(
+                        hostState = state.snackbarHostState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(500.dp)
-                            .padding(16.dp),
-                        onDismiss = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(null)) },
-                        onConfirm = {
-                            onEvent(ExtractedTextUiEvent.OnConfirmLanguageDialog(it))
-                        },
-                        onDownload = { langCode ->
-                            onEvent(ExtractedTextUiEvent.OnDownloadLanguage(langCode))
-                        },
-                        onRemove = { langCode ->
-                            onEvent(ExtractedTextUiEvent.OnRemoveLanguage(langCode))
-                        }
+                            .align(Alignment.BottomCenter)
                     )
-                }
 
-                SnackbarHost(
-                    hostState = state.snackbarHostState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                )
-
-                if (state.showNetworkErrorDialog) {
-                    NetworkUnavailableDialog(
-                        text = stringResource(id = R.string.models_missing),
-                        onTryAgainClick = { onEvent(ExtractedTextUiEvent.OnTryAgainClick) },
-                        onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissNetworkErrorDialog) })
-                }
-
-                if (state.showLanguageInferenceErrorDialog) {
-                    Dialog(
-                        title = stringResource(id = R.string.language_cannot_be_inferred_title),
-                        onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.failed),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Text(
-                            text = stringResource(id = R.string.language_cannot_be_inferred_message),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontStyle = FontStyle.Italic
-                        )
+                    if (state.showNetworkErrorDialog) {
+                        NetworkUnavailableDialog(
+                            text = stringResource(id = R.string.models_missing),
+                            onTryAgainClick = { onEvent(ExtractedTextUiEvent.OnTryAgainClick) },
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissNetworkErrorDialog) })
                     }
-                }
 
-                if (state.isLoading) {
-                    BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    if (state.showLanguageInferenceErrorDialog) {
+                        Dialog(
+                            title = stringResource(id = R.string.language_cannot_be_inferred_title),
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.failed),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Text(
+                                text = stringResource(id = R.string.language_cannot_be_inferred_message),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontStyle = FontStyle.Italic
+                            )
+                        }
+                    }
+
+                    if (state.isLoading) {
+                        BallGridPulseProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
                 }
             }
         }
@@ -282,81 +460,108 @@ private fun ExtractedTextScreenContent(
 private fun IntroShowcaseScope.SentenceModeLayout(
     modifier: Modifier = Modifier,
     state: RecognizedTextState,
-    isExpanded: Boolean,
     onEvent: (ExtractedTextUiEvent) -> Unit
 ) {
-    Column(
+    BoxWithConstraints(
         modifier = modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
             .background(
                 color = MaterialTheme.colorScheme.secondaryContainer
             )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(15.dp)
-        ) {
-            Image(
-                modifier = Modifier,
-                painter = painterResource(id = R.drawable.paragraph),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            )
+        val maxWidth = maxWidth
+        val maxHeight = maxHeight
 
-            Column(
+        Column {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                Text(
-                    text = stringResource(id = R.string.sentence_construction),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    text = stringResource(id = R.string.sentence_construction_message),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.bodySmall
+                Image(
+                    modifier = Modifier,
+                    painter = painterResource(id = R.drawable.paragraph),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.sentence_construction),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = stringResource(id = R.string.sentence_construction_message),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.bodySmall
+                    )
 
-                Text(
-                    text = state.sentence.joinToString(" ") { it.text },
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontStyle = FontStyle.Italic,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.introShowCaseTarget(
-                        index = 1,
-                        style = ShowcaseStyle.Default.copy(
-                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                            backgroundAlpha = introShowcaseBackgroundAlpha,
-                            targetCircleColor = Color.White
-                        )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = if (maxHeight < maxWidth) maxHeight * 0.4f else maxHeight * 0.2f) // Adjust max height based on available space
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        IntroShowcaseText(text = stringResource(id = R.string.sentence_preview_showcase_message))
+                        Text(
+                            text = state.sentence.joinToString(" ") { it.text },
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontStyle = FontStyle.Italic,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.introShowCaseTarget(
+                                index = 1,
+                                style = ShowcaseStyle.Default.copy(
+                                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                    backgroundAlpha = introShowcaseBackgroundAlpha,
+                                    targetCircleColor = Color.White
+                                )
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.paragraph),
+                                        contentDescription = null,
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    IntroShowcaseText(
+                                        text = stringResource(id = R.string.sentence_preview_showcase_message),
+                                    )
+                                }
+                            }
+                        )
                     }
-                )
+                }
             }
-            if (isExpanded) SentenceModeButtons(onEvent)
+            SentenceModeButtons(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+                onEvent = onEvent
+            )
         }
-        if (!isExpanded) SentenceModeButtons(onEvent)
     }
 }
 
+
 @Composable
 private fun IntroShowcaseScope.SentenceModeButtons(
+    modifier: Modifier = Modifier,
     onEvent: (ExtractedTextUiEvent) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         ImageButtonWithText(
@@ -503,7 +708,7 @@ private fun WordDisplay(
         modifier = modifier
             .border(
                 width = 2.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
+                color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent
             )
             .combinedClickable(
                 onLongClick = { onWordLongClick(word) },
@@ -511,12 +716,12 @@ private fun WordDisplay(
             )
             .padding(4.dp)
             .background(
-                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.surfaceContainer
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer
             )
             .wrapContentWidth()
     ) {
-        Text(text = word.text, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = word.text, color = MaterialTheme.colorScheme.onSecondaryContainer)
     }
 }
 
@@ -531,7 +736,6 @@ private fun IntroShowcaseScope.WordsLayout(
     onWordLongClick: (Word) -> Unit
 ) {
     var screenWidth by remember { mutableIntStateOf(0) }
-
     Box(modifier = modifier
         .onGloballyPositioned {
             screenWidth = it.size.width
@@ -544,36 +748,13 @@ private fun IntroShowcaseScope.WordsLayout(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .introShowCaseTarget(
-                        index = 0,
-                        style = ShowcaseStyle.Default.copy(
-                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                            backgroundAlpha = introShowcaseBackgroundAlpha,
-                            targetCircleColor = Color.White
-                        )
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(15.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.list),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(64.dp)
-                            )
-                            IntroShowcaseText(
-                                text = stringResource(id = R.string.words_layout_showcase_message),
-                                modifier = Modifier.padding(30.dp)
-                            )
-                        }
-                    }
             ) {
-                items(chunks) { rowWords ->
+                itemsIndexed(chunks, key = { index, _ -> index }) { outerIndex, rowWords ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        rowWords.forEach { word ->
+                        rowWords.forEachIndexed { innerIndex, word ->
                             WordDisplay(
                                 word = word,
                                 isSelected = if (!isSentence) selectedWords.any { it.text == word.text }
@@ -582,6 +763,31 @@ private fun IntroShowcaseScope.WordsLayout(
                                 onWordLongClick = onWordLongClick,
                                 modifier = Modifier
                                     .padding(2.dp)
+                                    .then(outerIndex == 0 && innerIndex == 0, onTrue = {
+                                        introShowCaseTarget(
+                                            index = 0,
+                                            style = ShowcaseStyle.Default.copy(
+                                                backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                                backgroundAlpha = introShowcaseBackgroundAlpha,
+                                                targetCircleColor = Color.White
+                                            )
+                                        ) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(15.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.list),
+                                                    contentDescription = null,
+                                                    tint = Color.Unspecified,
+                                                    modifier = Modifier.size(64.dp)
+                                                )
+                                                IntroShowcaseText(
+                                                    text = stringResource(id = R.string.words_layout_showcase_message),
+                                                    modifier = Modifier.padding(30.dp)
+                                                )
+                                            }
+                                        }
+                                    })
                             )
                         }
                     }
@@ -600,6 +806,8 @@ private fun measureTextWidth(text: String, padding: Dp, style: TextStyle = TextS
 }
 
 // Chunk words into rows which will follow maximum specified width
+// returns list in list (the size of the outer list corresponds to the number of rows, inner list
+// holds content of the given row)
 @Composable
 private fun List<Word>.chunkedByWidth(maxWidth: Int): List<List<Word>> {
     val rows = mutableListOf<List<Word>>()
@@ -704,7 +912,9 @@ private fun BottomAppBar(
                 }
             }
         },
-        modifier = modifier
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
     )
 }
 

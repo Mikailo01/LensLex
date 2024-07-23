@@ -32,23 +32,23 @@ class UpdatePasswordViewModel(
 
     fun uiEventHandler(event: UpdatePasswordUiEvent) {
         when (event) {
-            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> onPasswordVisibilityClickHandler()
-            is UpdatePasswordUiEvent.OnPasswordValueChange -> onPasswordValueChangeHandler(event.password)
-            is UpdatePasswordUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChangeHandler(
+            is UpdatePasswordUiEvent.OnPasswordVisibilityClick -> onPasswordVisibilityClick()
+            is UpdatePasswordUiEvent.OnPasswordValueChange -> onPasswordValueChange(event.password)
+            is UpdatePasswordUiEvent.OnConfirmPasswordValueChange -> onConfirmPasswordValueChange(
                 event.confirmPassword
             )
 
-            is UpdatePasswordUiEvent.OnVerifyOob -> onVerifyOobHandler(event.oobCode)
-            UpdatePasswordUiEvent.OnResetPasswordClick -> onResetPasswordClickHandler()
-            UpdatePasswordUiEvent.OnAnimationStarted -> onAnimationStartedHandler()
-            UpdatePasswordUiEvent.OnTryAgainClick -> onTryAgainClickHandler()
-            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> onGetNewResetCodeClickHandler()
-            UpdatePasswordUiEvent.OnDismiss -> onDismissHandler()
+            is UpdatePasswordUiEvent.OnVerifyOob -> onVerifyOob(event.oobCode)
+            UpdatePasswordUiEvent.OnResetPasswordClick -> onResetPasswordClick()
+            UpdatePasswordUiEvent.OnAnimationStarted -> onAnimationStarted()
+            UpdatePasswordUiEvent.OnTryAgainClick -> onTryAgainClick()
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> onGetNewResetCodeClick()
+            UpdatePasswordUiEvent.OnDismiss -> onDismiss()
             UpdatePasswordUiEvent.OnResetPasswordResult -> updateState(null)
         }
     }
 
-    private fun onPasswordVisibilityClickHandler() {
+    private fun onPasswordVisibilityClick() {
         _uiState.update {
             it.copy(
                 passwordVisible = !it.passwordVisible
@@ -56,7 +56,7 @@ class UpdatePasswordViewModel(
         }
     }
 
-    private fun onPasswordValueChangeHandler(password: String) {
+    private fun onPasswordValueChange(password: String) {
         _uiState.update {
             it.copy(
                 password = password,
@@ -70,7 +70,7 @@ class UpdatePasswordViewModel(
         }
     }
 
-    private fun onConfirmPasswordValueChangeHandler(password: String) {
+    private fun onConfirmPasswordValueChange(password: String) {
         _uiState.update {
             it.copy(
                 confirmationPassword = password,
@@ -84,18 +84,18 @@ class UpdatePasswordViewModel(
         }
     }
 
-    private fun onVerifyOobHandler(oobCode: String) {
+    private fun onVerifyOob(oobCode: String) {
         _uiState.update {
             it.copy(oobCode = oobCode)
         }
         verifyOob(oobCode)
     }
 
-    private fun onGetNewResetCodeClickHandler() {
+    private fun onGetNewResetCodeClick() {
         _getNewCodeChannel.trySend(true)
     }
 
-    private fun onResetPasswordClickHandler() {
+    private fun onResetPasswordClick() {
         ValidationUtil.areCredentialsValid(
             Credentials.Sensitive.PasswordCredential(
                 password = _uiState.value.password,
@@ -113,17 +113,17 @@ class UpdatePasswordViewModel(
         }
     }
 
-    private fun onAnimationStartedHandler() {
+    private fun onAnimationStarted() {
         _uiState.update { it.copy(animationStarted = true) }
     }
 
-    private fun onTryAgainClickHandler() {
+    private fun onTryAgainClick() {
         _uiState.value.oobCode?.let { code ->
             verifyOob(code)
         }
     }
 
-    private fun onDismissHandler() {
+    private fun onDismiss() {
         _uiState.update { it.copy(dismissExpiredDialog = true) }
     }
 

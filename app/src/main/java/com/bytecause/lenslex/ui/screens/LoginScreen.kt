@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -137,16 +136,14 @@ fun LoginScreenContent(
                 LoginOptionRow(
                     modifier = Modifier.padding(top = 10.dp),
                     optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
-                    text = stringResource(id = R.string.continue_with_google),
-                    contentDescription = ""
+                    text = stringResource(id = R.string.continue_with_google)
                 ) {
                     onEvent(LoginUiEvent.OnSignInUsingGoogle)
                 }
 
                 LoginOptionRow(
                     optionImage = ImageResource.ImageVector(Icons.Filled.Person),
-                    text = stringResource(id = R.string.continue_anonymously),
-                    contentDescription = ""
+                    text = stringResource(id = R.string.continue_anonymously)
                 ) {
                     onEvent(LoginUiEvent.OnSignInAnonymously)
                 }
@@ -211,16 +208,14 @@ fun LoginScreenContent(
                 LoginOptionRow(
                     modifier = Modifier.padding(top = 10.dp),
                     optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
-                    text = stringResource(id = R.string.continue_with_google),
-                    contentDescription = ""
+                    text = stringResource(id = R.string.continue_with_google)
                 ) {
                     onEvent(LoginUiEvent.OnSignInUsingGoogle)
                 }
 
                 LoginOptionRow(
                     optionImage = ImageResource.ImageVector(Icons.Filled.Person),
-                    text = stringResource(id = R.string.continue_anonymously),
-                    contentDescription = ""
+                    text = stringResource(id = R.string.continue_anonymously)
                 ) {
                     onEvent(LoginUiEvent.OnSignInAnonymously)
                 }
@@ -376,7 +371,6 @@ private suspend fun saveCredential(
         )
     } catch (e: CreateCredentialCancellationException) {
         // do nothing, the user chose not to save the credential
-        Log.v("CredentialTest", "User cancelled the save")
     } catch (e: CreateCredentialException) {
         Log.v("CredentialTest", "Credential save error", e)
     }

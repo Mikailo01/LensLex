@@ -1,8 +1,9 @@
 package com.bytecause.lenslex.ui.components
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -10,7 +11,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import com.bytecause.lenslex.R
 
 @Composable
@@ -18,16 +21,17 @@ fun AnnotatedClickableText(
     modifier: Modifier = Modifier,
     @StringRes normalText: Int,
     @StringRes annotatedText: Int,
+    normalTextColor: Color,
     annotatedTextColor: Color,
     textDecoration: TextDecoration = TextDecoration.Underline,
     onAnnotatedTextClick: () -> Unit
 ) {
-
     val annotatedString = buildAnnotatedString {
-        val str =
-            stringResource(id = normalText, stringResource(id = annotatedText))
-        val startIndex = str.indexOf(stringResource(id = annotatedText))
-        val endIndex = startIndex + stringResource(id = annotatedText).length
+        val str = stringResource(id = normalText, stringResource(id = annotatedText))
+        val annotatedSubText = stringResource(id = annotatedText)
+        val startIndex = str.indexOf(annotatedSubText)
+        val endIndex = startIndex + annotatedSubText.length
+
         append(str)
         addStyle(
             style = SpanStyle(
@@ -35,8 +39,12 @@ fun AnnotatedClickableText(
                 textDecoration = textDecoration
             ), start = startIndex, end = endIndex
         )
+        addStyle(
+            style = SpanStyle(
+                color = normalTextColor
+            ), start = 0, end = startIndex
+        )
 
-        // Adding a custom annotation for the clickable segment
         addStringAnnotation(
             tag = "clickable",
             annotation = "annotatedElement",
@@ -45,21 +53,19 @@ fun AnnotatedClickableText(
         )
     }
 
-    ClickableText(
-        modifier = modifier,
+    Text(
         text = annotatedString,
-        onClick = { offset ->
-            // Retrieve annotations at the click location
-            annotatedString.getStringAnnotations("clickable", offset, offset)
+        modifier = modifier.clickable {
+            // Handle click on annotated text
+            annotatedString.getStringAnnotations("clickable", 0, annotatedString.length)
                 .firstOrNull()?.let { annotation ->
-                    when (annotation.item) {
-                        "annotatedElement" -> {
-                            // Execute the provided lambda when "Sign up" is clicked
-                            onAnnotatedTextClick()
-                        }
+                    if (annotation.item == "annotatedElement") {
+                        onAnnotatedTextClick()
                     }
                 }
-        }
+        },
+        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp),
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -69,6 +75,7 @@ fun AnnotatedClickableTextPreview() {
     AnnotatedClickableText(
         normalText = R.string.sign_prompt,
         annotatedText = R.string.sign_up,
+        normalTextColor = MaterialTheme.colorScheme.onSurface,
         annotatedTextColor = MaterialTheme.colorScheme.error
     ) { }
 }

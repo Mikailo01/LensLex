@@ -26,16 +26,16 @@ class ModifiedImagePreviewViewModel(
 
     fun uiEventHandler(event: ModifiedImagePreviewUiEvent.NonDirect) {
         when (event) {
-            is ModifiedImagePreviewUiEvent.OnUpdateImage -> onUpdateImageHandler(event.uri)
-            is ModifiedImagePreviewUiEvent.OnProcessImageClick -> onProcessImageClickHandler()
+            is ModifiedImagePreviewUiEvent.OnUpdateImage -> onUpdateImage(event.uri)
+            is ModifiedImagePreviewUiEvent.OnProcessImageClick -> onProcessImageClick()
         }
     }
 
-    private fun onUpdateImageHandler(imageUri: Uri) {
+    private fun onUpdateImage(imageUri: Uri) {
         _uiState.update { it.copy(modifiedImageUri = imageUri, isButtonEnabled = true) }
     }
 
-    private fun onProcessImageClickHandler() {
+    private fun onProcessImageClick() {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(isProcessing = true)

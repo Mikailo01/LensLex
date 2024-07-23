@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,7 +29,7 @@ fun LoginOptionRow(
     modifier: Modifier = Modifier,
     optionImage: ImageResource,
     text: String,
-    contentDescription: String,
+    contentDescription: String? = null,
     onSignOptionClick: () -> Unit
 ) {
     Row(
@@ -57,11 +58,16 @@ fun LoginOptionRow(
                         .padding(10.dp)
                         .align(Alignment.CenterVertically),
                     imageVector = optionImage.imageVector,
-                    contentDescription = contentDescription
+                    contentDescription = contentDescription,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
                 )
             }
         }
-        Text(modifier = Modifier.align(Alignment.CenterVertically), text = text)
+        Text(
+            modifier = Modifier.align(Alignment.CenterVertically),
+            text = text,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 

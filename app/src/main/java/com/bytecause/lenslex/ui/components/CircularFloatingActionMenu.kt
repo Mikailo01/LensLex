@@ -4,11 +4,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -116,17 +119,27 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                                 }
                                 .padding(top = 10.dp, end = 10.dp)
                                 .introShowCaseTarget(
-                                    index = 4,
+                                    index = 3,
                                     style = ShowcaseStyle.Default.copy(
                                         backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Text(
-                                        text = stringResource(id = R.string.camera_mini_fab_showcase_message),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.camera),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        IntroShowcaseText(
+                                            text = stringResource(id = R.string.camera_mini_fab_showcase_message),
+                                            modifier = Modifier.padding(top = 30.dp)
+                                        )
+                                    }
                                 },
                             contentDescription = stringResource(id = R.string.launch_camera),
                             navigation = FabNavigation.CAMERA,
@@ -146,17 +159,28 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                                 }
                                 .padding(top = 50.dp, start = 35.dp)
                                 .introShowCaseTarget(
-                                    index = 5,
+                                    index = 4,
                                     style = ShowcaseStyle.Default.copy(
                                         backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Text(
-                                        text = stringResource(id = R.string.gallery_mini_fab_showcase_message),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.gallery),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        IntroShowcaseText(
+                                            text = stringResource(id = R.string.gallery_mini_fab_showcase_message),
+                                            modifier = Modifier.padding(top = 30.dp)
+                                        )
+                                    }
                                 },
                             contentDescription = stringResource(id = R.string.launch_gallery_image_picker),
                             navigation = FabNavigation.GALLERY,
@@ -176,17 +200,27 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                                 }
                                 .padding(top = 10.dp, start = 5.dp)
                                 .introShowCaseTarget(
-                                    index = 6,
+                                    index = 5,
                                     style = ShowcaseStyle.Default.copy(
                                         backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Text(
-                                        text = stringResource(id = R.string.add_mini_fab_showcase_message),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(15.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.add),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        IntroShowcaseText(
+                                            text = stringResource(id = R.string.add_mini_fab_showcase_message),
+                                            modifier = Modifier.padding(top = 30.dp)
+                                        )
+                                    }
                                 },
                             contentDescription = stringResource(id = R.string.add_new_word_into_the_list),
                             navigation = FabNavigation.ADD,
@@ -211,17 +245,27 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                 modifier = Modifier.then(
                     true, onTrue = {
                         introShowCaseTarget(
-                            index = 3,
+                            index = 2,
                             style = ShowcaseStyle.Default.copy(
                                 backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                                 backgroundAlpha = introShowcaseBackgroundAlpha,
                                 targetCircleColor = Color.White
                             )
                         ) {
-                            Text(
-                                text = stringResource(id = R.string.add_new_item_showcase_message),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.expand),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                IntroShowcaseText(
+                                    text = stringResource(id = R.string.tap_to_expand_action_menu_showcase_message)
+                                )
+                            }
                         }
                     }
                 )
@@ -229,7 +273,7 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                 Icon(
                     imageVector =
                     if (!iconState) Icons.Default.Add else Icons.Default.Close,
-                    contentDescription = "Floating action button with destinations",
+                    contentDescription = "Floating action button with actions.",
                     modifier = Modifier.graphicsLayer(
                         rotationZ = rotationAnimation.value
                     ),

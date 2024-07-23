@@ -1,8 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
@@ -14,13 +14,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 abstract class TranslationViewModel(
     private val userPrefsRepository: UserPrefsRepository,
     private val translationModelManager: TranslationModelManager,
+    private val translationOptionsDataSource: TranslationOptionsDataSource,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : ViewModel() {
 
@@ -30,89 +30,47 @@ abstract class TranslationViewModel(
     private val translationDataStoreTargetLangOption: Flow<String?> =
         userPrefsRepository.loadTargetTranslationOption()
 
-    private val translationLangOption: MutableStateFlow<Pair<TranslationOption.Origin, TranslationOption.Target>> =
-        MutableStateFlow(
-            TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
-                SupportedLanguage()
-            )
-        )
-
     val languageOptionFlow: Flow<Pair<TranslationOption.Origin, TranslationOption.Target>> =
         combine(
             translationDataStoreOriginLangOption,
             translationDataStoreTargetLangOption,
-            translationLangOption
+            translationOptionsDataSource.translationLangOption
         ) { originOption, targetOption, defaultValue ->
-            defaultValue.takeIf {
-                // take only if state doesn't equal to initial state
-                it != TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
+            val initialOption =
+                TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
                     SupportedLanguage()
                 )
-            }
-                ?: originOption?.let { origin ->
+
+            if (defaultValue != initialOption) {
+                defaultValue
+            } else {
+                originOption?.let { origin ->
                     targetOption?.let { target ->
-
                         // Sync state in translationLangOption state flow
-                        translationLangOption.update {
+                        translationOptionsDataSource.updateOption(
                             TranslationOption.Origin(
-                                SupportedLanguage(
-                                    origin,
-                                    Locale(origin).displayName
-                                )
+                                SupportedLanguage(origin, Locale(origin).displayName)
                             ) to TranslationOption.Target(
-                                SupportedLanguage(
-                                    target,
-                                    Locale(target).displayName
-                                )
+                                SupportedLanguage(target, Locale(target).displayName)
                             )
-                        }
-
-                        translationLangOption.value
+                        )
+                        translationOptionsDataSource.translationLangOption.value
                     }
                 }
-                ?: (TranslationOption.Origin(SupportedLanguage()) to TranslationOption.Target(
-                    SupportedLanguage()
-                ))
+            } ?: initialOption
+
         }
-
-    private fun setLangOptions(languageOptions: Pair<TranslationOption.Origin?, TranslationOption.Target?>) {
-        when {
-            languageOptions.first == null -> {
-                languageOptions.second?.let { option ->
-                    translationLangOption.update {
-                        it.copy(second = option)
-                    }
-                }
-            }
-
-            languageOptions.second == null -> {
-                languageOptions.first?.let { option ->
-                    translationLangOption.update {
-                        it.copy(first = option)
-                    }
-                }
-            }
-
-            else -> {
-                translationLangOption.update {
-                    it.copy(first = languageOptions.first!!, second = languageOptions.second!!)
-                }
-            }
-        }
-    }
 
     fun saveTranslationOptions(languageOptions: Pair<TranslationOption.Origin?, TranslationOption.Target?>) {
         viewModelScope.launch {
             languageOptions.first?.let { option ->
                 // If first lang is the same as second, switch them
-                if (option.lang.langCode == translationLangOption.value.second.lang.langCode) {
-                    setLangOptions(
-                        Pair(
-                            first = TranslationOption.Origin(translationLangOption.value.second.lang)
-                                .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) },
-                            second = TranslationOption.Target(translationLangOption.value.first.lang)
-                                .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
-                        )
+                if (option.lang.langCode == translationOptionsDataSource.translationLangOption.value.second.lang.langCode) {
+                    translationOptionsDataSource.updateOption(
+                        TranslationOption.Origin(translationOptionsDataSource.translationLangOption.value.second.lang)
+                            .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) }
+                                to TranslationOption.Target(translationOptionsDataSource.translationLangOption.value.first.lang)
+                            .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
                     )
                     return@launch
                 } else userPrefsRepository.saveOriginTranslationOption(option.lang.langCode)
@@ -120,19 +78,18 @@ abstract class TranslationViewModel(
 
             languageOptions.second?.let { option ->
                 // If first lang is the same as second, switch them
-                if (option.lang.langCode == translationLangOption.value.first.lang.langCode) {
-                    setLangOptions(
-                        Pair(
-                            first = TranslationOption.Origin(translationLangOption.value.second.lang)
-                                .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) },
-                            second = TranslationOption.Target(translationLangOption.value.first.lang)
-                                .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
-                        )
+                if (option.lang.langCode == translationOptionsDataSource.translationLangOption.value.first.lang.langCode) {
+                    translationOptionsDataSource.updateOption(
+                        TranslationOption.Origin(translationOptionsDataSource.translationLangOption.value.second.lang)
+                            .also { userPrefsRepository.saveOriginTranslationOption(it.lang.langCode) }
+                                to
+                                TranslationOption.Target(translationOptionsDataSource.translationLangOption.value.first.lang)
+                                    .also { userPrefsRepository.saveTargetTranslationOption(it.lang.langCode) }
                     )
                     return@launch
                 } else userPrefsRepository.saveTargetTranslationOption(option.lang.langCode)
             }
-            setLangOptions(languageOptions)
+            translationOptionsDataSource.updateOption(languageOptions)
         }
     }
 

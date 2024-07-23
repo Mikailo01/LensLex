@@ -19,7 +19,6 @@ import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordValidationResult
-import com.ehsanmsz.mszprogressindicator.progressindicator.BallClipRotateProgressIndicator
 
 @Composable
 fun SignUp(
@@ -73,6 +72,7 @@ fun SignUp(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             normalText = R.string.sign_prompt,
             annotatedText = R.string.sign_in,
+            normalTextColor = MaterialTheme.colorScheme.onSurface,
             annotatedTextColor = MaterialTheme.colorScheme.error,
             onAnnotatedTextClick = { onEvent(LoginUiEvent.OnAnnotatedStringClick) }
         )

@@ -3,7 +3,8 @@ package com.bytecause.lenslex.ui.screens.uistate
 import com.bytecause.lenslex.domain.models.UserData
 
 data class AccountState(
-    val userData: UserData? = null,
+    val userData: UserData? = UserData(),
+    val isImageLoading: Boolean = false,
     val urlValue: String = "",
     val showConfirmationDialog: Boolean = false,
     val showLanguageDialog: Boolean = false,

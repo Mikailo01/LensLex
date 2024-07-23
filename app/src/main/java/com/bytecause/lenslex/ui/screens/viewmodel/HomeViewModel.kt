@@ -1,8 +1,8 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.UserPrefsRepositoryImpl
@@ -20,10 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,20 +31,17 @@ class HomeViewModel(
     private val textRecognitionRepository: TextRecognitionRepository,
     private val userRepository: UserRepository,
     private val userPrefsRepository: UserPrefsRepository,
+    translationOptionsDataSource: TranslationOptionsDataSource,
     translationModelManager: TranslationModelManager,
     supportedLanguagesRepository: SupportedLanguagesRepository,
 ) : TranslationViewModel(
     userPrefsRepository,
     translationModelManager,
+    translationOptionsDataSource,
     supportedLanguagesRepository
 ) {
 
-    private val _uiState =
-        MutableStateFlow(
-            HomeState(
-                profilePictureUrl = userRepository.getUserData()?.profilePictureUrl ?: "",
-            )
-        )
+    private val _uiState = MutableStateFlow(HomeState())
     val uiState = _uiState.asStateFlow()
 
     private val _effect = Channel<HomeUiEffect>(capacity = Channel.CONFLATED)
@@ -57,47 +52,19 @@ class HomeViewModel(
 
     init {
         combine(
-            wordsRepository.getWords(),
             languageOptionFlow,
             supportedLanguages,
-        ) { words, selectedLang, supportedLanguages ->
-            Triple(words, selectedLang, supportedLanguages)
-        }.distinctUntilChanged().onEach { (words, selectedLang, supportedLanguages) ->
+        ) { selectedLang, supportedLanguages ->
             _uiState.update { state ->
                 state.copy(
-                    wordList = (words.takeIf { it != state.wordList })
-                        ?: state.wordList,
                     selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
                         ?: state.selectedLanguageOptions,
                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
                         ?: state.supportedLanguages,
                 )
             }
-
-            _uiState.update { it.copy(isLoading = it.wordList != words) }
         }.launchIn(viewModelScope)
-
-        /* combine(
-             wordsRepository.getWords(),
-             languageOptionFlow,
-             supportedLanguages,
-         ) { words, selectedLang, supportedLanguages ->
-             _uiState.update { state ->
-                 state.copy(
-                     wordList = words.takeIf { it != state.wordList } ?: state.wordList,
-                     selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
-                         ?: state.selectedLanguageOptions,
-                     supportedLanguages = supportedLanguages.takeIf { it != state.supportedLanguages }
-                         ?: state.supportedLanguages,
-                     isLoading = words != state.wordList,
-                 )
-             }
-
-             _uiState.update { it.copy(isLoading = it.wordList != words) }
-         }.launchIn(viewModelScope)*/
     }
-
-    private var deletedItemsStack = emptyList<WordsAndSentences>()
 
     fun uiEventHandler(event: HomeUiEvent.NonDirect) {
         when (event) {
@@ -117,6 +84,7 @@ class HomeViewModel(
             HomeUiEvent.OnShowcaseCompleted -> onShowcaseCompleted()
             HomeUiEvent.OnReload -> reload()
             HomeUiEvent.OnShowIntroShowcaseIfNecessary -> showIntroShowcaseIfNecessary()
+            HomeUiEvent.OnFetchItemList -> onFetchItemList()
         }
     }
 
@@ -126,11 +94,34 @@ class HomeViewModel(
 
     private fun onShowcaseCompleted() {
         viewModelScope.launch {
-            // Perform "click" to continue show case intro
-            onIconStateChange(!uiState.value.fabState)
-            // after fab's content is hidden again, save flag to preferences datastore
-            if (!uiState.value.fabState) {
-                userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE)
+            // reset to initial state
+            _uiState.update {
+                it.copy(
+                    wordList = emptyList(),
+                    fabState = false,
+                    deletedItemsStack = emptyList(),
+                    showIntroShowcase = false
+                )
+            }
+            // save flag to preferences datastore
+            userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE)
+        }
+    }
+
+    private fun onFetchItemList() {
+        viewModelScope.launch {
+            _uiState.update { state ->
+                state.copy(isLoading = true)
+            }
+            uiState.value.selectedLanguageOptions.run {
+                wordsRepository.getWords(
+                    originLangCode = first.lang.langCode,
+                    targetLangCode = second.lang.langCode
+                ).firstOrNull()?.let { words ->
+                    _uiState.update { state ->
+                        state.copy(wordList = words, isLoading = false)
+                    }
+                }
             }
         }
     }
@@ -146,13 +137,11 @@ class HomeViewModel(
     private fun onItemRemoved(word: WordsAndSentences) {
         addDeletedItemToStack(word)
         deleteWord(word.id)
-        _uiState.update { it.copy(showUndoButton = true) }
     }
 
     private fun onItemRestored() {
-        insertWord(deletedItemsStack.last())
+        insertWord(uiState.value.deletedItemsStack.last())
         removeDeletedItemFromStack()
-        _uiState.update { it.copy(showUndoButton = deletedItemsStack.isNotEmpty()) }
     }
 
     private fun onTextRecognition(uris: List<Uri>) {
@@ -185,7 +174,28 @@ class HomeViewModel(
         viewModelScope.launch {
             userPrefsRepository.isFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE).firstOrNull()
                 ?.let { isVisited ->
-                    _uiState.update { it.copy(showIntroShowcase = !isVisited) }
+                    if (isVisited) return@launch
+
+                    // change states to make visible all needed ui elements
+                    val fakeWordList = listOf(
+                        WordsAndSentences(
+                            id = "0",
+                            word = "Intro",
+                            languageCode = "",
+                            translations = mapOf("" to "Intro")
+                        )
+                    )
+
+                    _uiState.update {
+                        it.copy(
+                            wordList = it.wordList.ifEmpty {
+                                fakeWordList
+                            },
+                            fabState = true,
+                            deletedItemsStack = fakeWordList,
+                            showIntroShowcase = true
+                        )
+                    }
                 }
         }
     }
@@ -222,14 +232,20 @@ class HomeViewModel(
     }
 
     private fun addDeletedItemToStack(item: WordsAndSentences) {
-        deletedItemsStack += item
+        _uiState.update {
+            it.copy(deletedItemsStack = it.deletedItemsStack + item)
+        }
     }
 
     private fun removeDeletedItemFromStack() {
-        deletedItemsStack = deletedItemsStack
-            .toMutableList()
-            .apply {
-                removeLast()
-            }
+        _uiState.update {
+            it.copy(
+                deletedItemsStack = it.deletedItemsStack
+                    .toMutableList()
+                    .apply {
+                        removeLast()
+                    }
+            )
+        }
     }
 }

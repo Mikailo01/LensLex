@@ -11,7 +11,7 @@ import com.bytecause.lenslex.ui.interfaces.TranslationOption
 data class HomeState(
     val wordList: List<WordsAndSentences> = emptyList(),
     val profilePictureUrl: String = "",
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val fabState: Boolean = false,
     val showIntroShowcase: Boolean = false,
     val showProgressBar: Boolean = false,
@@ -20,7 +20,7 @@ data class HomeState(
         SupportedLanguage()
     ) to TranslationOption.Target(SupportedLanguage()),
     val showLanguageDialog: TranslationOption? = null,
-    val showUndoButton: Boolean = false,
+    val deletedItemsStack: List<WordsAndSentences> = emptyList(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val lazyListState: LazyListState = LazyListState()
 )

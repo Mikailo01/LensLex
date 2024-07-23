@@ -23,10 +23,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -45,6 +46,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -104,15 +106,37 @@ fun HomeScreenContent(
                 TopAppBar(
                     titleRes = R.string.app_name,
                     actionIcons = listOf {
-                        if (state.showUndoButton) {
+                        if (state.deletedItemsStack.isNotEmpty()) {
                             Image(
                                 modifier = Modifier
                                     .padding(end = 10.dp)
                                     .clip(CircleShape)
                                     .clickable {
                                         onEvent(HomeUiEvent.OnItemRestored)
+                                    }
+                                    .introShowCaseTarget(
+                                        index = 7,
+                                        style = ShowcaseStyle.Default.copy(
+                                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                            backgroundAlpha = introShowcaseBackgroundAlpha,
+                                            targetCircleColor = Color.White
+                                        )
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.undo),
+                                                contentDescription = null,
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(64.dp)
+                                            )
+                                            Text(text = stringResource(id = R.string.restore_deleted_item_message))
+                                        }
                                     },
                                 painter = painterResource(id = R.drawable.baseline_undo_24),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
                                 contentDescription = stringResource(id = R.string.undo_changes)
                             )
                         }
@@ -120,13 +144,13 @@ fun HomeScreenContent(
                         AsyncImage(
                             model = state.profilePictureUrl.takeIf { it != "null" }
                                 ?: R.drawable.default_account_image,
-                            contentDescription = "avatar",
+                            contentDescription = stringResource(id = R.string.app_seetings),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .padding(end = 10.dp)
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.onPrimary, CircleShape)
                                 .clickable {
                                     onEvent(HomeUiEvent.OnNavigate(Screen.Account))
                                 }
@@ -139,7 +163,20 @@ fun HomeScreenContent(
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    IntroShowcaseText(text = stringResource(id = R.string.tap_to_navigate_into_app_settings))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(15.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.settings),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        IntroShowcaseText(
+                                            text = stringResource(id = R.string.tap_to_navigate_into_app_settings),
+                                        )
+                                    }
                                 }
                         )
                     }
@@ -167,11 +204,21 @@ fun HomeScreenContent(
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    IntroShowcaseText(text = stringResource(id = R.string.language_preferences_showcase_message))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.language),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        IntroShowcaseText(
+                                            text = stringResource(id = R.string.language_preferences_showcase_message),
+                                            modifier = Modifier.padding(top = 30.dp)
+                                        )
+                                    }
                                 },
                             originLangName = state.selectedLanguageOptions.first.lang.langName,
                             targetLangName = state.selectedLanguageOptions.second.lang.langName,
-                            isLoading = state.isLoading,
                             onClick = { onEvent(HomeUiEvent.OnShowLanguageDialog(it)) },
                             onSwitchLanguages = { onEvent(HomeUiEvent.OnSwitchLanguages) }
                         )
@@ -180,57 +227,87 @@ fun HomeScreenContent(
                             color = Color.Gray
                         )
                     }
-                    Column(modifier = Modifier
-                        .fillMaxSize()
-                        .introShowCaseTarget(
-                            index = 2,
-                            style = ShowcaseStyle.Default.copy(
-                                backgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                                backgroundAlpha = introShowcaseBackgroundAlpha,
-                                targetCircleColor = Color.White
-                            )
-                        ) {
-                            IntroShowcaseText(text = stringResource(id = R.string.translated_text_list_showcase_message))
-                        }) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .padding(8.dp),
-                            state = state.lazyListState
-                        ) {
-                            // shows shimmer effects
-                            if (state.isLoading) {
-                                items(10) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(70.dp)
-                                            .shimmerEffect()
-                                    ) {}
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            } else {
-                                items(
-                                    state.wordList.filter { it.languageCode == state.selectedLanguageOptions.first.lang.langCode },
-                                    key = { item -> item.timeStamp }) { item ->
 
-                                    item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
-                                        NoteItem(
-                                            originalText = item.word,
-                                            translatedText = it,
-                                            onRemove = {
-                                                onEvent(HomeUiEvent.OnItemRemoved(item))
-                                            },
-                                            onClick = { text ->
-                                                onEvent(
-                                                    HomeUiEvent.OnSpeak(
-                                                        text = text,
-                                                        langCode = if (text == item.word) item.languageCode
-                                                        else state.selectedLanguageOptions.second.lang.langCode
-                                                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(8.dp),
+                        state = state.lazyListState
+                    ) {
+                        // shows shimmer effects
+                        if (state.isLoading) {
+                            items(10) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(70.dp)
+                                        .shimmerEffect()
+                                ) {}
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        } else {
+                            itemsIndexed(
+                                state.wordList,
+                                key = { _, item -> item.timeStamp }) { index, item ->
+
+                                // get translated text for currently chosen target lang option
+                                item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
+                                    NoteItem(
+                                        showIntro = index == 0,
+                                        originalText = item.word,
+                                        translatedText = it,
+                                        onRemove = {
+                                            onEvent(HomeUiEvent.OnItemRemoved(item))
+                                        },
+                                        onClick = { text ->
+                                            onEvent(
+                                                HomeUiEvent.OnSpeak(
+                                                    text = text,
+                                                    langCode = if (text == item.word) item.languageCode
+                                                    else state.selectedLanguageOptions.second.lang.langCode
                                                 )
+                                            )
+                                        },
+                                        // set focus of introShowCase on first element in the list
+                                        modifier = Modifier.then(index == 0, onTrue = {
+                                            introShowCaseTarget(
+                                                index = 6,
+                                                style = ShowcaseStyle.Default.copy(
+                                                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                                    backgroundAlpha = introShowcaseBackgroundAlpha,
+                                                    targetCircleColor = Color.White
+                                                )
+                                            ) {
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(
+                                                        15.dp
+                                                    ),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.swipe_left),
+                                                        contentDescription = null,
+                                                        tint = Color.Unspecified,
+                                                        modifier = Modifier
+                                                            .size(64.dp)
+                                                            .weight(0.5f)
+                                                    )
+                                                    Text(
+                                                        text = stringResource(id = R.string.swipe_left_or_right_message),
+                                                        modifier = Modifier
+                                                            .weight(2f)
+                                                    )
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.swipe_right),
+                                                        contentDescription = null,
+                                                        tint = Color.Unspecified,
+                                                        modifier = Modifier
+                                                            .size(64.dp)
+                                                            .weight(0.5f)
+                                                    )
+                                                }
                                             }
-                                        )
-                                    }
+                                        })
+                                    )
                                 }
                             }
                         }
@@ -339,16 +416,12 @@ fun HomeScreen(
     val imageCropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
             // use the cropped image
-
             val originalUri = result.originalUri
             val modifiedUri = result.uriContent
 
             if (originalUri != null && modifiedUri != null) {
                 onPhotoTaken(originalUri, modifiedUri)
             }
-
-        } else {
-            // an error occurred cropping
         }
     }
 
@@ -386,10 +459,22 @@ fun HomeScreen(
         }
     )
 
+    // Text to speech manager must be properly closed when composable leaves composition
     DisposableEffect(Unit) {
         onDispose {
             ttsManager.shutdown()
         }
+    }
+
+    // If lang options change, item is removed or restored, fetch new item list
+    LaunchedEffect(
+        key1 = uiState.selectedLanguageOptions,
+        key2 = uiState.deletedItemsStack
+    ) {
+        // don't fetch real item list if showIntroShowcase is running
+        if (uiState.showIntroShowcase) return@LaunchedEffect
+
+        viewModel.uiEventHandler(HomeUiEvent.OnFetchItemList)
     }
 
     LaunchedEffect(key1 = uiState.isLoading) {

@@ -10,18 +10,20 @@ sealed interface AccountUiEvent {
     sealed interface Direct : AccountUiEvent
     sealed interface NonDirect : AccountUiEvent
 
-    data class OnNavigate(val destination: Screen): Direct
-    data object OnBackButtonClick: Direct
-    data object OnSinglePicturePickerLaunch: Direct
+    data class OnNavigate(val destination: Screen) : Direct
+    data object OnBackButtonClick : Direct
+    data object OnSinglePicturePickerLaunch : Direct
 
-    data class OnUpdateProfilePicture(val value: String): NonDirect
-    data class OnChangeFirebaseLanguage(val value: String): NonDirect
-    data class OnShowConfirmationDialog(val value: Boolean): NonDirect
-    data class OnShowLanguageDialog(val value: Boolean): NonDirect
-    data class OnShowBottomSheet(val value: Boolean): NonDirect
-    data class OnShowUrlDialog(val value: Boolean): NonDirect
-    data class OnNameTextFieldValueChange(val value: String): NonDirect
-    data class OnUrlTextFieldValueChange(val value: String): NonDirect
-    data class OnSaveUserProfilePicture(val value: Uri): NonDirect
-    data object OnSignOut: NonDirect
+    data class OnUpdateProfilePicture(val value: String) : NonDirect
+    data class OnChangeFirebaseLanguage(val value: String) : NonDirect
+    data class OnShowConfirmationDialog(val value: Boolean) : NonDirect
+    data class OnShowLanguageDialog(val value: Boolean) : NonDirect
+    data class OnShowBottomSheet(val value: Boolean) : NonDirect
+    data class OnShowUrlDialog(val value: Boolean) : NonDirect
+    data class OnNameTextFieldValueChange(val value: String) : NonDirect
+    data class OnUrlTextFieldValueChange(val value: String) : NonDirect
+    data class OnSaveUserProfilePicture(val value: Uri) : NonDirect
+    data class OnImageLoading(val value: Boolean) : NonDirect
+    data object OnSignOut : NonDirect
+    data object OnGetUserData : NonDirect
 }

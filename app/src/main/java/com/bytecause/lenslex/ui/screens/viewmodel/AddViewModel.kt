@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
@@ -27,12 +28,14 @@ import kotlinx.coroutines.launch
 class AddViewModel(
     private val wordsRepository: WordsRepository,
     private val translateRepository: TranslateRepository,
+    translationOptionsDataSource: TranslationOptionsDataSource,
     translationModelManager: TranslationModelManager,
     userPrefsRepository: UserPrefsRepository,
     supportedLanguagesRepository: SupportedLanguagesRepository
 ) : TranslationViewModel(
     userPrefsRepository,
     translationModelManager,
+    translationOptionsDataSource,
     supportedLanguagesRepository
 ) {
 
@@ -63,15 +66,15 @@ class AddViewModel(
 
     fun uiEventHandler(event: AddUiEvent) {
         when (event) {
-            is AddUiEvent.OnTextValueChange -> onTextValueChangeHandler(event.text)
+            is AddUiEvent.OnTextValueChange -> onTextValueChange(event.text)
             is AddUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialog(event.value)
             is AddUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
             is AddUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
-            is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialogHandler(event.value)
+            is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
             is AddUiEvent.OnTranslate -> translateText(event.value)
-            is AddUiEvent.OnTryAgainClick -> onTryAgainClickHandler(event.value)
-            AddUiEvent.OnNavigateBack -> onNavigateBackHandler()
-            AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialogHandler()
+            is AddUiEvent.OnTryAgainClick -> onTryAgainClick(event.value)
+            AddUiEvent.OnNavigateBack -> onNavigateBack()
+            AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialog()
             AddUiEvent.OnSwitchLanguages -> switchLanguageOptions(
                 origin = uiState.value.selectedLanguageOptions.first,
                 target = uiState.value.selectedLanguageOptions.second
@@ -79,7 +82,7 @@ class AddViewModel(
         }
     }
 
-    private fun onTryAgainClickHandler(text: String) {
+    private fun onTryAgainClick(text: String) {
         viewModelScope.launch {
             if (NetworkUtil.isOnline()) {
                 _uiState.update {
@@ -99,13 +102,13 @@ class AddViewModel(
         }
     }
 
-    private fun onDismissNetworkErrorDialogHandler() {
+    private fun onDismissNetworkErrorDialog() {
         _uiState.update {
             it.copy(showNetworkErrorDialog = false)
         }
     }
 
-    private fun onTextValueChangeHandler(text: String) {
+    private fun onTextValueChange(text: String) {
         _uiState.update { it.copy(textValue = text) }
     }
 
@@ -123,11 +126,11 @@ class AddViewModel(
         _uiState.update { it.copy(showLanguageDialog = null) }
     }
 
-    private fun onShowLanguageDialogHandler(translationOption: TranslationOption?) {
+    private fun onShowLanguageDialog(translationOption: TranslationOption?) {
         _uiState.update { it.copy(showLanguageDialog = translationOption) }
     }
 
-    private fun onNavigateBackHandler() {
+    private fun onNavigateBack() {
         _uiState.update { it.copy(shouldNavigateBack = true) }
     }
 

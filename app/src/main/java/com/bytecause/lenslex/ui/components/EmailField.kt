@@ -5,12 +5,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,14 +38,16 @@ fun EmailField(
         label = {
             Text(
                 text = stringResource(id = R.string.email),
-                fontSize = 16.sp
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.alpha(0.5f)
             )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Filled.Email,
                 contentDescription = stringResource(id = R.string.email),
-                tint = Color.Black
+                tint = MaterialTheme.colorScheme.onSurface
             )
         },
         singleLine = true,

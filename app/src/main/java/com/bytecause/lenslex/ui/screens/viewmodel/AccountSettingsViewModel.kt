@@ -62,29 +62,29 @@ class AccountSettingsViewModel(
 
     fun uiEventHandler(event: AccountSettingsUiEvent.NonDirect) {
         when (event) {
-            AccountSettingsUiEvent.OnDeleteAccountButtonClick -> onDeleteAccountClickHandler()
-            AccountSettingsUiEvent.OnConfirmConfirmationDialog -> onConfirmConfirmationDialogHandler()
-            AccountSettingsUiEvent.OnDismissConfirmationDialog -> onDismissConfirmationDialogHandler()
-            is AccountSettingsUiEvent.OnShowCredentialDialog -> onShowCredentialDialogHandler(event.value)
-            is AccountSettingsUiEvent.OnLinkButtonClick -> onLinkButtonClickHandler(event.value)
-            is AccountSettingsUiEvent.OnEnteredCredential -> onEnteredCredentialHandler(event.value)
-            is AccountSettingsUiEvent.OnCredentialsDialogDismiss -> onCredentialsDialogDismissHandler(
+            AccountSettingsUiEvent.OnDeleteAccountButtonClick -> onDeleteAccountClick()
+            AccountSettingsUiEvent.OnConfirmConfirmationDialog -> onConfirmConfirmationDialog()
+            AccountSettingsUiEvent.OnDismissConfirmationDialog -> onDismissConfirmationDialog()
+            is AccountSettingsUiEvent.OnShowCredentialDialog -> onShowCredentialDialog(event.value)
+            is AccountSettingsUiEvent.OnLinkButtonClick -> onLinkButtonClick(event.value)
+            is AccountSettingsUiEvent.OnEnteredCredential -> onEnteredCredential(event.value)
+            is AccountSettingsUiEvent.OnCredentialsDialogDismiss -> onCredentialsDialogDismiss(
                 event.value
             )
 
-            is AccountSettingsUiEvent.OnDialogCredentialChanged -> onDialogCredentialChangedHandler(
+            is AccountSettingsUiEvent.OnDialogCredentialChanged -> onDialogCredentialChanged(
                 event.value
             )
         }
     }
 
-    private fun onDeleteAccountClickHandler() {
+    private fun onDeleteAccountClick() {
         _uiState.update {
             it.copy(showConfirmationDialog = AccountSettingsConfirmationDialog.DeleteAccountWarning)
         }
     }
 
-    private fun onConfirmConfirmationDialogHandler() {
+    private fun onConfirmConfirmationDialog() {
         _uiState.value.showConfirmationDialog?.let { dialog ->
             when (dialog) {
                 AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
@@ -103,13 +103,13 @@ class AccountSettingsViewModel(
         }
     }
 
-    private fun onDismissConfirmationDialogHandler() {
+    private fun onDismissConfirmationDialog() {
         _uiState.update {
             it.copy(showConfirmationDialog = null)
         }
     }
 
-    private fun onShowCredentialDialogHandler(credentialType: CredentialType) {
+    private fun onShowCredentialDialog(credentialType: CredentialType) {
         _uiState.update {
             it.copy(
                 showCredentialUpdateDialog = credentialType,
@@ -118,7 +118,7 @@ class AccountSettingsViewModel(
         }
     }
 
-    private fun onLinkButtonClickHandler(provider: Provider) {
+    private fun onLinkButtonClick(provider: Provider) {
         when (provider) {
             Provider.Email -> {
                 if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
@@ -135,7 +135,7 @@ class AccountSettingsViewModel(
         }
     }
 
-    private fun onEnteredCredentialHandler(credentials: Credentials) {
+    private fun onEnteredCredential(credentials: Credentials) {
         val validationResult = _uiState.value.credentialValidationResult
 
         when (_uiState.value.showCredentialUpdateDialog) {
@@ -182,14 +182,14 @@ class AccountSettingsViewModel(
         }
     }
 
-    private fun onCredentialsDialogDismissHandler(credentialType: CredentialType) {
+    private fun onCredentialsDialogDismiss(credentialType: CredentialType) {
         if (credentialType is CredentialType.Reauthorization) resetCredentialChangeState()
         _uiState.update {
             it.copy(showCredentialUpdateDialog = null)
         }
     }
 
-    private fun onDialogCredentialChangedHandler(credentials: Credentials.Sensitive) {
+    private fun onDialogCredentialChanged(credentials: Credentials.Sensitive) {
         _uiState.update {
             it.copy(credentialValidationResult = ValidationUtil.areCredentialsValid(credentials))
         }

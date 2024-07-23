@@ -4,7 +4,7 @@ import com.bytecause.lenslex.domain.models.WordsAndSentences
 import kotlinx.coroutines.flow.Flow
 
 interface WordsRepository {
-    fun getWords(): Flow<List<WordsAndSentences>>
+    fun getWords(originLangCode: String, targetLangCode: String): Flow<List<WordsAndSentences>>
     fun addWord(word: WordsAndSentences): Flow<Boolean>
     fun deleteWord(documentId: String)
 }

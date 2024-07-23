@@ -21,21 +21,22 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.util.shimmerEffect
+import com.bytecause.lenslex.util.then
 
 @Composable
 fun ProfilePicture(
     profilePicture: String,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
     @DrawableRes cornerIcon: Int = R.drawable.baseline_camera_alt_24,
     cornerIconSize: Dp = 28.dp,
     onCornerIconClick: () -> Unit
 ) {
-
     Box(
         contentAlignment = Alignment.BottomEnd,
         modifier = modifier
     ) {
-
         AsyncImage(
             model = profilePicture.takeIf { it != "null" }
                 ?: R.drawable.default_account_image,
@@ -45,6 +46,7 @@ fun ProfilePicture(
                 .size(100.dp)
                 .clip(CircleShape)
                 .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .then(isLoading, onTrue = { shimmerEffect() })
         )
 
         Box(

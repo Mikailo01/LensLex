@@ -23,7 +23,10 @@ class WordsRepositoryImpl(
 
     private fun user(): FirebaseUser? = auth.getAuth().currentUser
 
-    override fun getWords(): Flow<List<WordsAndSentences>> = callbackFlow {
+    override fun getWords(
+        originLangCode: String,
+        targetLangCode: String
+    ): Flow<List<WordsAndSentences>> = callbackFlow {
         user()?.uid?.let { userId ->
             val listener = firestore
                 .collection(BaseCollection)
@@ -31,13 +34,23 @@ class WordsRepositoryImpl(
                 .collection(WordsCollection)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
+                        close(e)
                         return@addSnapshotListener
                     }
 
                     if (snapshot != null && !snapshot.isEmpty) {
                         val wordsList = mutableListOf<WordsAndSentences>()
                         for (doc in snapshot.documents) {
-                            wordsList.add(mapDocumentObject(doc))
+                            val originLang = doc.getString(FIELD_LANGUAGE_CODE)
+                            val targetLang = doc.get(FIELD_TRANSLATIONS) as Map<String, String>
+
+                            // filter words in corresponding languages
+                            if (originLangCode == originLang && targetLang.containsKey(
+                                    targetLangCode
+                                )
+                            ) {
+                                wordsList.add(mapDocumentObject(doc))
+                            }
                         }
 
                         trySend(wordsList.sortedByDescending { it.timeStamp })

@@ -8,12 +8,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -51,14 +53,16 @@ fun PasswordField(
         label = {
             Text(
                 text = stringResource(id = R.string.password),
-                fontSize = 16.sp
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.alpha(0.5f)
             )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Filled.Lock,
                 contentDescription = stringResource(id = R.string.password),
-                tint = Color.Black
+                tint = MaterialTheme.colorScheme.onSurface
             )
         },
         trailingIcon = {
@@ -72,7 +76,8 @@ fun PasswordField(
             ) {
                 Image(
                     painterResource(id = iconId),
-                    contentDescription = stringResource(id = contentDescription)
+                    contentDescription = stringResource(id = contentDescription),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
                 )
             }
         },

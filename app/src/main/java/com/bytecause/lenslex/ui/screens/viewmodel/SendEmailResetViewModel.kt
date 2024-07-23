@@ -27,13 +27,13 @@ class SendEmailResetViewModel(
 
     fun uiEventHandler(event: SendEmailResetUiEvent) {
         when (event) {
-            is SendEmailResetUiEvent.OnEmailValueChanged -> onEmailValueChangedHandler(event.value)
-            SendEmailResetUiEvent.OnSendEmailClick -> onSendEmailClickHandler()
-            SendEmailResetUiEvent.OnAnimationStarted -> onAnimationStartedHandler()
+            is SendEmailResetUiEvent.OnEmailValueChanged -> onEmailValueChanged(event.value)
+            SendEmailResetUiEvent.OnSendEmailClick -> onSendEmailClick()
+            SendEmailResetUiEvent.OnAnimationStarted -> onAnimationStarted()
         }
     }
 
-    private fun onEmailValueChangedHandler(email: String) {
+    private fun onEmailValueChanged(email: String) {
         _uiState.update {
             it.copy(
                 email = email,
@@ -44,7 +44,7 @@ class SendEmailResetViewModel(
         }
     }
 
-    private fun onSendEmailClickHandler() {
+    private fun onSendEmailClick() {
         val result = ValidationUtil.areCredentialsValid(
             Credentials.Sensitive.EmailCredential(_uiState.value.email)
         )
@@ -56,7 +56,7 @@ class SendEmailResetViewModel(
         }
     }
 
-    private fun onAnimationStartedHandler() {
+    private fun onAnimationStarted() {
         _uiState.update { it.copy(animationStarted = true) }
     }
 

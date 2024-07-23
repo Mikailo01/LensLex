@@ -34,7 +34,6 @@ fun LanguagePreferences(
     originLangName: String,
     targetLangName: String,
     isSwitchEnabled: Boolean = true,
-    isLoading: Boolean = false,
     onClick: (TranslationOption) -> Unit,
     onSwitchLanguages: () -> Unit = {}
 ) {
@@ -50,9 +49,8 @@ fun LanguagePreferences(
         RoundedText(
             modifier = Modifier.padding(start = 5.dp, end = 5.dp),
             text = originLangName,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            isLoading = isLoading,
+            containerColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentColor = MaterialTheme.colorScheme.inversePrimary,
             onClick = { onClick(TranslationOption.Origin()) }
         )
 
@@ -74,7 +72,7 @@ fun LanguagePreferences(
                 contentDescription = null,
                 modifier = Modifier
                     .size(24.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.secondary, CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.inversePrimary, CircleShape)
                     .padding(6.dp)
             )
         }
@@ -84,9 +82,8 @@ fun LanguagePreferences(
                 .padding(start = 5.dp, end = 5.dp)
                 .testTag(TestTags.SELECT_LANG_OPTION),
             text = targetLangName,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            isLoading = isLoading,
+            containerColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentColor = MaterialTheme.colorScheme.inversePrimary,
             onClick = { onClick(TranslationOption.Target()) }
         )
     }

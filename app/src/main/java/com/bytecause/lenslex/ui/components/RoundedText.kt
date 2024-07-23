@@ -20,8 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.util.shimmerEffect
-import com.bytecause.lenslex.util.then
 
 @Composable
 fun RoundedText(
@@ -30,7 +28,6 @@ fun RoundedText(
     containerColor: Color,
     contentColor: Color = Color.LightGray,
     borderColor: Color = Color.Black,
-    isLoading: Boolean = false,
     onClick: () -> Unit
 ) {
     val shape = RoundedCornerShape(60)
@@ -46,9 +43,7 @@ fun RoundedText(
         shape = shape,
     ) {
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .then(isLoading, onTrue = { shimmerEffect() }),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = text,

@@ -31,6 +31,7 @@ sealed interface HomeUiEvent {
     data object OnShowcaseCompleted : NonDirect
     data object OnReload : NonDirect
     data object OnShowIntroShowcaseIfNecessary : NonDirect
+    data object OnFetchItemList : NonDirect
 }
 
 sealed interface HomeUiEffect {
