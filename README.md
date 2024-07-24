@@ -6,11 +6,14 @@ LensLex is an Android application designed to assist users in translating and st
 
 - **Cloud Storage**: All saved words and sentences are stored remotely in Firestore Database, making them accessible from any device with the corresponding account.
 - **Adaptive layouts**
+- **Text-to-speech**
+- **Introshowcase**: User's introduction to non-trivial app features using compose introshowcase library by Canopas.
 - **Offline Translations**: Using ML Kit from Google, translations are available even without an internet connection if the translation model for the specific language is downloaded.
 - **OCR Support**: Users can take a photo or select an existing picture from the gallery, and LensLex will extract all the words. Users can then choose which words or sentences they want to translate and store in the chosen language.
-- **Firebase Integration**: Full integration with Firebase
+- **Firebase Integration**: Full integration with Firebase.
 
 ## Screenshots
+<img src="screenshots/preview_1.png" alt="Example Image" width="300"/> <img src="screenshots/preview_2.png" alt="Example Image" width="300"/>
 
 ## Techstack & libraries
 - **Kotlin**
@@ -21,6 +24,7 @@ LensLex is an Android application designed to assist users in translating and st
 - **[Koin](https://insert-koin.io/docs/quickstart/android/)**
 - **Jetpack DataStore**: Data storage solution from the Android Jetpack libraries.
 - **Retrofit**: A type-safe HTTP client for Android and Java.
+- **[Jetpack Compose](https://developer.android.com/develop/ui/compose)**: Declarative UI toolkit.
 - **Firebase**
 - **Credential Manager**
 
