@@ -1,6 +1,6 @@
 # LensLex
 
-LensLex is an Android application designed to assist users in translating and storing words or sentences in supported foreign languages. Leveraging Google's ML Kit and Firebase, LensLex provides a seamless experience for language learners, travelers, and anyone interested in multilingual capabilities.
+LensLex is an Android application designed to assist users in translating and storing words or sentences in supported foreign languages. Leveraging Google's ML Kit and Firebase, LensLex provides a seamless experience for language learners.
 
 ## Features
 
