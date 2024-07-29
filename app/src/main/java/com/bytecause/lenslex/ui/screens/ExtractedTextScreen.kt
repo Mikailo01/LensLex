@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -55,7 +54,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -73,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.ImageButtonWithText
+import com.bytecause.lenslex.ui.components.IntroShowcaseContent
 import com.bytecause.lenslex.ui.components.IntroShowcaseText
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
@@ -84,8 +83,6 @@ import com.bytecause.lenslex.ui.mappers.textListToWordList
 import com.bytecause.lenslex.ui.models.Word
 import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
 import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
-import com.bytecause.lenslex.util.OrientationMode
-import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
 import com.bytecause.lenslex.util.then
 import com.canopas.lib.showcase.IntroShowcase
@@ -157,18 +154,10 @@ private fun ExtractedTextScreenContent(
                                     targetCircleColor = Color.White
                                 )
                             ) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.goal),
-                                        contentDescription = null,
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(64.dp)
-                                    )
-                                    IntroShowcaseText(
-                                        text = stringResource(id = R.string.all_words_chosen_showcase_message),
-                                        modifier = Modifier.padding(top = 30.dp)
-                                    )
-                                }
+                                IntroShowcaseContent(
+                                    iconRes = R.drawable.goal,
+                                    messageRes = R.string.all_words_chosen_showcase_message
+                                )
                             }
                         ) {
                             Image(
@@ -526,20 +515,10 @@ private fun IntroShowcaseScope.SentenceModeLayout(
                                     targetCircleColor = Color.White
                                 )
                             ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.paragraph),
-                                        contentDescription = null,
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(64.dp)
-                                    )
-                                    IntroShowcaseText(
-                                        text = stringResource(id = R.string.sentence_preview_showcase_message),
-                                    )
-                                }
+                                IntroShowcaseContent(
+                                    iconRes = R.drawable.paragraph,
+                                    messageRes = R.string.sentence_preview_showcase_message
+                                )
                             }
                         )
                     }
@@ -579,20 +558,10 @@ private fun IntroShowcaseScope.SentenceModeButtons(
                     targetCircleColor = Color.White
                 )
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(15.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.done),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    IntroShowcaseText(
-                        text = stringResource(id = R.string.complete_sentence_construction_showcase_message),
-                        modifier = Modifier.padding(top = 30.dp)
-                    )
-                }
+                IntroShowcaseContent(
+                    iconRes = R.drawable.done,
+                    messageRes = R.string.complete_sentence_construction_showcase_message
+                )
             },
             onClick = { onEvent(ExtractedTextUiEvent.OnSentenceDone) }
         )
@@ -611,20 +580,10 @@ private fun IntroShowcaseScope.SentenceModeButtons(
                     targetCircleColor = Color.White
                 )
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(15.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.cancel),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    IntroShowcaseText(
-                        text = stringResource(id = R.string.cancel_sentence_construction_showcase_message),
-                        modifier = Modifier.padding(top = 30.dp)
-                    )
-                }
+                IntroShowcaseContent(
+                    iconRes = R.drawable.cancel,
+                    messageRes = R.string.cancel_sentence_construction_showcase_message
+                )
             },
             onClick = { onEvent(ExtractedTextUiEvent.OnSentenceCancelled) }
         )
@@ -666,7 +625,12 @@ fun ExtractedTextScreen(
 
                 ExtractedTextUiEffect.ResetIntroShowcaseState -> introShowcaseState.reset()
 
-                ExtractedTextUiEffect.NavigateBack -> onDone()
+                ExtractedTextUiEffect.Done -> onDone()
+                ExtractedTextUiEffect.CopyContent -> {
+                    clipboardManager.setText(AnnotatedString(joinedText))
+                }
+
+                ExtractedTextUiEffect.NavigateBack -> onBackButtonClick()
             }
         }
     }
@@ -680,19 +644,8 @@ fun ExtractedTextScreen(
     ExtractedTextScreenContent(
         state = uiState,
         introShowcaseState = introShowcaseState,
-        isExpandedScreen = isExpandedScreen || getOrientationMode(LocalConfiguration.current) == OrientationMode.Landscape,
-        onEvent = { event ->
-            when (event) {
-                ExtractedTextUiEvent.OnBackButtonClick -> onBackButtonClick()
-                ExtractedTextUiEvent.OnCopyContent -> clipboardManager.setText(
-                    AnnotatedString(
-                        joinedText
-                    )
-                )
-
-                else -> viewModel.uiEventHandler(event as ExtractedTextUiEvent.NonDirect)
-            }
-        }
+        isExpandedScreen = isExpandedScreen,
+        onEvent = viewModel::uiEventHandler
     )
 }
 
@@ -737,6 +690,7 @@ private fun IntroShowcaseScope.WordsLayout(
     onWordLongClick: (Word) -> Unit
 ) {
     var screenWidth by remember { mutableIntStateOf(0) }
+
     Box(modifier = modifier
         .onGloballyPositioned {
             screenWidth = it.size.width
@@ -750,12 +704,12 @@ private fun IntroShowcaseScope.WordsLayout(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                itemsIndexed(chunks, key = { index, _ -> index }) { outerIndex, rowWords ->
+                itemsIndexed(chunks, key = { index, _ -> index }) { index, rowWords ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        rowWords.forEachIndexed { innerIndex, word ->
+                        rowWords.forEach { word ->
                             WordDisplay(
                                 word = word,
                                 isSelected = if (!isSentence) selectedWords.any { it.text == word.text }
@@ -764,7 +718,7 @@ private fun IntroShowcaseScope.WordsLayout(
                                 onWordLongClick = onWordLongClick,
                                 modifier = Modifier
                                     .padding(2.dp)
-                                    .then(outerIndex == 0 && innerIndex == 0, onTrue = {
+                                    .then(index == 0 && word.id == 0, onTrue = {
                                         introShowCaseTarget(
                                             index = 0,
                                             style = ShowcaseStyle.Default.copy(
@@ -773,20 +727,10 @@ private fun IntroShowcaseScope.WordsLayout(
                                                 targetCircleColor = Color.White
                                             )
                                         ) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(15.dp)
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.list),
-                                                    contentDescription = null,
-                                                    tint = Color.Unspecified,
-                                                    modifier = Modifier.size(64.dp)
-                                                )
-                                                IntroShowcaseText(
-                                                    text = stringResource(id = R.string.words_layout_showcase_message),
-                                                    modifier = Modifier.padding(30.dp)
-                                                )
-                                            }
+                                            IntroShowcaseContent(
+                                                iconRes = R.drawable.list,
+                                                messageRes = R.string.words_layout_showcase_message
+                                            )
                                         }
                                     })
                             )

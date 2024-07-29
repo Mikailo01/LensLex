@@ -19,13 +19,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -55,14 +51,14 @@ import com.bytecause.lenslex.ui.components.SignIn
 import com.bytecause.lenslex.ui.components.SignUp
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
+import com.bytecause.lenslex.ui.events.LoginUiEffect
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
-import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.TestTags
-import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.shadowCustom
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -76,7 +72,78 @@ fun LoginScreenContent(
     xText2offset: Animatable<Float, AnimationVector1D>,
     onEvent: (LoginUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
+    if (isExpandedScreen) {
+        UserAuthBackgroundExpanded(
+            snackBarHostState = state.snackbarHostState,
+            backgroundContent = {
+                Spacer(modifier = Modifier.height(30.dp))
+                Text(
+                    text = stringResource(id = R.string.welcome_to_lens_lex),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier
+                        .graphicsLayer {
+                            translationX = xTextOffset.value
+                        }
+                        .shadowCustom(
+                            color = Color.Black.copy(0.6f),
+                            offsetX = 0.dp,
+                            offsetY = 28.dp,
+                            blurRadius = 8.dp
+                        ),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Text(
+                    text = stringResource(id = R.string.lets_get_started),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier
+                        .padding(start = 80.dp)
+                        .graphicsLayer {
+                            translationX = xText2offset.value
+                        }
+                        .shadowCustom(
+                            color = Color.Black.copy(0.6f),
+                            offsetX = 0.dp,
+                            offsetY = 28.dp,
+                            blurRadius = 8.dp
+                        ),
+                    fontWeight = FontWeight.Bold,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            },
+            foregroundContent = {
+                if (state.signIn) {
+                    SignIn(
+                        state = state,
+                        onEvent = { onEvent(it) }
+                    )
+                } else SignUp(
+                    state = state,
+                    onEvent = { onEvent(it) }
+                )
+
+                HorizontalDivider(thickness = 2.dp, color = Color.Gray)
+
+                LoginOptionRow(
+                    modifier = Modifier.padding(top = 10.dp),
+                    optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
+                    text = stringResource(id = R.string.continue_with_google)
+                ) {
+                    onEvent(LoginUiEvent.OnSignInUsingGoogle)
+                }
+
+                LoginOptionRow(
+                    optionImage = ImageResource.ImageVector(Icons.Filled.Person),
+                    text = stringResource(id = R.string.continue_anonymously)
+                ) {
+                    onEvent(LoginUiEvent.OnSignInAnonymously)
+                }
+            }
+        )
+    } else {
         UserAuthBackground(
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
@@ -149,78 +216,6 @@ fun LoginScreenContent(
                 }
             }
         )
-
-    } else {
-        UserAuthBackgroundExpanded(
-            snackBarHostState = state.snackbarHostState,
-            backgroundContent = {
-                Spacer(modifier = Modifier.height(30.dp))
-                Text(
-                    text = stringResource(id = R.string.welcome_to_lens_lex),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier
-                        .graphicsLayer {
-                            translationX = xTextOffset.value
-                        }
-                        .shadowCustom(
-                            color = Color.Black.copy(0.6f),
-                            offsetX = 0.dp,
-                            offsetY = 28.dp,
-                            blurRadius = 8.dp
-                        ),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-                Text(
-                    text = stringResource(id = R.string.lets_get_started),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier
-                        .padding(start = 80.dp)
-                        .graphicsLayer {
-                            translationX = xText2offset.value
-                        }
-                        .shadowCustom(
-                            color = Color.Black.copy(0.6f),
-                            offsetX = 0.dp,
-                            offsetY = 28.dp,
-                            blurRadius = 8.dp
-                        ),
-                    fontWeight = FontWeight.Bold,
-                    fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            },
-            foregroundContent = {
-                if (state.signIn) {
-                    SignIn(
-                        state = state,
-                        onEvent = { onEvent(it) }
-                    )
-                } else SignUp(
-                    state = state,
-                    onEvent = { onEvent(it) }
-                )
-
-                HorizontalDivider(thickness = 2.dp, color = Color.Gray)
-
-                LoginOptionRow(
-                    modifier = Modifier.padding(top = 10.dp),
-                    optionImage = ImageResource.Painter(painterResource(id = R.drawable.google_logo)),
-                    text = stringResource(id = R.string.continue_with_google)
-                ) {
-                    onEvent(LoginUiEvent.OnSignInUsingGoogle)
-                }
-
-                LoginOptionRow(
-                    optionImage = ImageResource.ImageVector(Icons.Filled.Person),
-                    text = stringResource(id = R.string.continue_anonymously)
-                ) {
-                    onEvent(LoginUiEvent.OnSignInAnonymously)
-                }
-            }
-        )
     }
 }
 
@@ -240,44 +235,34 @@ fun LoginScreen(
         CredentialManager.create(context)
     }
 
-    var credentialManagerShown by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    var animationStarted by rememberSaveable { mutableStateOf(false) }
-
     val xTextOffset by remember {
-        mutableStateOf(Animatable(if (!animationStarted) -1050f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationFinished) -1050f else 0f))
     }
     val xText2offset by remember {
-        mutableStateOf(Animatable(if (!animationStarted) 1050f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationFinished) 1050f else 0f))
     }
 
     // TODO("Uncomment after testing")
     // Prevention from multiple Credential Manager calls.
-    /* if (!credentialManagerShown) {
+    /* if (!uiState.credentialManagerShown) {
          LaunchedEffect(Unit) {
              try {
                  val passwordCredential =
                      getCredential(credentialManager = credentialManager, context = context)
                          ?: return@LaunchedEffect
 
-                 viewModel.signInUsingEmailAndPassword(
-                     Credentials.Sensitive.SignInCredentials(
-                         email = passwordCredential.id,
-                         password = passwordCredential.password
+                 viewModel.uiEventHandler(
+                     LoginUiEvent.OnSignInUsingEmailAndPassword(
+                         Credentials.Sensitive.SignInCredentials(
+                             email = passwordCredential.id,
+                             password = passwordCredential.password
+                         )
                      )
-                 ).firstOrNull()?.let {
-                     viewModel.onSignInResult(it)
-                 }
-
+                 )
              } catch (e: Exception) {
                  Log.e("CredentialTest", "Error getting credential", e)
              }
-
-             credentialManagerShown = true
+             viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerShown)
          }
      }*/
 
@@ -293,19 +278,41 @@ fun LoginScreen(
 
             !uiState.signInState.signInError.isNullOrEmpty() -> {
                 keyboardController?.hide()
-                coroutineScope.launch {
-                    uiState.signInState.signInError?.let {
-                        uiState.snackbarHostState.showSnackbar(it)
-                        viewModel.onSignInResult(SignInResult(null, null))
-                    }
+                uiState.signInState.signInError?.let {
+                    uiState.snackbarHostState.showSnackbar(it)
+                    viewModel.uiEventHandler(
+                        LoginUiEvent.OnUpdateSignInResult(
+                            SignInResult(
+                                null,
+                                null
+                            )
+                        )
+                    )
                 }
             }
         }
     }
 
     LaunchedEffect(Unit) {
-        if (!animationStarted) {
-            kotlinx.coroutines.coroutineScope {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                LoginUiEffect.SignInUsingGoogleIntent -> {
+                    FirebaseAuthClient().signInUsingGoogleCredential(context).firstOrNull()
+                        ?.let { result ->
+                            viewModel.uiEventHandler(LoginUiEvent.OnUpdateSignInResult(result))
+                        }
+                }
+
+                is LoginUiEffect.NavigateTo -> {
+                    onNavigate(effect.destination)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = Unit) {
+        if (!uiState.animationFinished) {
+            coroutineScope {
                 launch {
                     xTextOffset.animateTo(
                         targetValue = 0f,
@@ -324,7 +331,7 @@ fun LoginScreen(
                         )
                     )
                 }
-            }.invokeOnCompletion { animationStarted = true }
+            }.invokeOnCompletion { viewModel.uiEventHandler(LoginUiEvent.OnAnimationFinished) }
         }
     }
 
@@ -333,27 +340,7 @@ fun LoginScreen(
         state = uiState,
         xTextOffset = xTextOffset,
         xText2offset = xText2offset,
-        onEvent = { event ->
-            when (event) {
-                // Intercept events which have to be handled directly in UI
-                is LoginUiEvent.OnForgetPasswordClick -> {
-                    onNavigate(Screen.SendEmailPasswordReset)
-                }
-
-                is LoginUiEvent.OnSignInUsingGoogle -> {
-                    coroutineScope.launch {
-                        FirebaseAuthClient().signInUsingGoogleCredential(context).firstOrNull()
-                            ?.let { result ->
-                                viewModel.onSignInResult(result)
-                            }
-                    }
-                }
-
-                else -> {
-                    viewModel.uiEventHandler(event as LoginUiEvent.NonDirect)
-                }
-            }
-        }
+        onEvent = viewModel::uiEventHandler
     )
 }
 

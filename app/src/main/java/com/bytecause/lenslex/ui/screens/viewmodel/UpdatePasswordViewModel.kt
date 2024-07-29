@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.repository.abstraction.VerifyOobRepository
+import com.bytecause.lenslex.ui.events.UpdatePasswordUiEffect
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
@@ -27,8 +27,8 @@ class UpdatePasswordViewModel(
     private val _uiState = MutableStateFlow(UpdatePasswordState())
     val uiState = _uiState.asStateFlow()
 
-    private val _getNewCodeChannel = Channel<Boolean>()
-    val getNewCodeChannel = _getNewCodeChannel.receiveAsFlow()
+    private val _effect = Channel<UpdatePasswordUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
 
     fun uiEventHandler(event: UpdatePasswordUiEvent) {
         when (event) {
@@ -40,12 +40,15 @@ class UpdatePasswordViewModel(
 
             is UpdatePasswordUiEvent.OnVerifyOob -> onVerifyOob(event.oobCode)
             UpdatePasswordUiEvent.OnResetPasswordClick -> onResetPasswordClick()
-            UpdatePasswordUiEvent.OnAnimationStarted -> onAnimationStarted()
+            UpdatePasswordUiEvent.OnAnimationFinished -> onAnimationStarted()
             UpdatePasswordUiEvent.OnTryAgainClick -> onTryAgainClick()
-            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> onGetNewResetCodeClick()
+            UpdatePasswordUiEvent.OnGetNewResetCodeClick -> sendEffect(UpdatePasswordUiEffect.GetNewResetCodeClick)
             UpdatePasswordUiEvent.OnDismiss -> onDismiss()
-            UpdatePasswordUiEvent.OnResetPasswordResult -> updateState(null)
         }
+    }
+
+    private fun sendEffect(effect: UpdatePasswordUiEffect) {
+        _effect.trySend(effect)
     }
 
     private fun onPasswordVisibilityClick() {
@@ -91,10 +94,6 @@ class UpdatePasswordViewModel(
         verifyOob(oobCode)
     }
 
-    private fun onGetNewResetCodeClick() {
-        _getNewCodeChannel.trySend(true)
-    }
-
     private fun onResetPasswordClick() {
         ValidationUtil.areCredentialsValid(
             Credentials.Sensitive.PasswordCredential(
@@ -114,7 +113,7 @@ class UpdatePasswordViewModel(
     }
 
     private fun onAnimationStarted() {
-        _uiState.update { it.copy(animationStarted = true) }
+        _uiState.update { it.copy(animationFinished = true) }
     }
 
     private fun onTryAgainClick() {
@@ -127,18 +126,12 @@ class UpdatePasswordViewModel(
         _uiState.update { it.copy(dismissExpiredDialog = true) }
     }
 
-    private fun updateState(state: SimpleResult?) {
-        _uiState.update { it.copy(resetState = state) }
-    }
-
     private fun resetPassword(oobCode: String, password: String) {
         auth.getAuth().confirmPasswordReset(oobCode, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    updateState(SimpleResult.OnSuccess)
-                } else {
-                    updateState(SimpleResult.OnFailure(task.exception))
-                }
+                    sendEffect(UpdatePasswordUiEffect.ResetSuccessful)
+                } else sendEffect(UpdatePasswordUiEffect.ResetFailure(task.exception))
             }
     }
 

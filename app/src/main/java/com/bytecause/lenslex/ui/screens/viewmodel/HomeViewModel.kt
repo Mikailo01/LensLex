@@ -66,7 +66,7 @@ class HomeViewModel(
         }.launchIn(viewModelScope)
     }
 
-    fun uiEventHandler(event: HomeUiEvent.NonDirect) {
+    fun uiEventHandler(event: HomeUiEvent) {
         when (event) {
             is HomeUiEvent.OnIconStateChange -> onIconStateChange(event.value)
             is HomeUiEvent.OnConfirmLanguageDialog -> onConfirmLanguageDialog(event.value)
@@ -75,6 +75,14 @@ class HomeViewModel(
             is HomeUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
             is HomeUiEvent.OnItemRemoved -> onItemRemoved(event.word)
             is HomeUiEvent.OnTextRecognition -> onTextRecognition(event.imagePaths)
+            is HomeUiEvent.OnEditStateChange -> onEditStateChange(event.value)
+            is HomeUiEvent.OnDeleteConfirmationDialogResult -> onDeleteConfirmationDialogResult(
+                event.value
+            )
+
+            is HomeUiEvent.OnNavigate -> sendEffect(HomeUiEffect.NavigateTo(event.destination))
+            is HomeUiEvent.OnSpeak -> sendEffect(HomeUiEffect.Speak(event.text, event.langCode))
+
             HomeUiEvent.OnItemRestored -> onItemRestored()
             HomeUiEvent.OnSwitchLanguages -> switchLanguageOptions(
                 origin = uiState.value.selectedLanguageOptions.first,
@@ -85,6 +93,10 @@ class HomeViewModel(
             HomeUiEvent.OnReload -> reload()
             HomeUiEvent.OnShowIntroShowcaseIfNecessary -> showIntroShowcaseIfNecessary()
             HomeUiEvent.OnFetchItemList -> onFetchItemList()
+            HomeUiEvent.OnCameraIntentLaunch -> sendEffect(HomeUiEffect.CameraIntentLaunch)
+            HomeUiEvent.OnMultiplePhotoPickerLaunch -> sendEffect(HomeUiEffect.MultiplePhotoPickerLaunch)
+            HomeUiEvent.OnPermissionDialogLaunch -> sendEffect(HomeUiEffect.PermissionDialogLaunch)
+            HomeUiEvent.OnScrollToTop -> sendEffect(HomeUiEffect.ScrollToTop)
         }
     }
 
@@ -108,6 +120,18 @@ class HomeViewModel(
         }
     }
 
+    private fun onDeleteConfirmationDialogResult(boolean: Boolean) {
+        if (boolean) {
+            _uiState.update {
+                it.copy(
+                    deletedItemsStack = emptyList(),
+                    isEditEnabled = false,
+                    showDeleteConfirmationDialog = false
+                )
+            }
+        } else _uiState.update { it.copy(showDeleteConfirmationDialog = false) }
+    }
+
     private fun onFetchItemList() {
         viewModelScope.launch {
             _uiState.update { state ->
@@ -122,6 +146,18 @@ class HomeViewModel(
                         state.copy(wordList = words, isLoading = false)
                     }
                 }
+            }
+        }
+    }
+
+    private fun onEditStateChange(boolean: Boolean) {
+        if (!boolean && uiState.value.deletedItemsStack.isNotEmpty()) {
+            _uiState.update { it.copy(showDeleteConfirmationDialog = true) }
+        } else {
+            _uiState.update {
+                it.copy(
+                    isEditEnabled = boolean
+                )
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.uistate
 
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import com.bytecause.lenslex.domain.models.SupportedLanguage
@@ -13,6 +14,7 @@ data class HomeState(
     val profilePictureUrl: String = "",
     val isLoading: Boolean = false,
     val fabState: Boolean = false,
+    val isEditEnabled: Boolean = false,
     val showIntroShowcase: Boolean = false,
     val showProgressBar: Boolean = false,
     val supportedLanguages: List<SupportedLanguage> = emptyList(),
@@ -20,7 +22,9 @@ data class HomeState(
         SupportedLanguage()
     ) to TranslationOption.Target(SupportedLanguage()),
     val showLanguageDialog: TranslationOption? = null,
+    val showDeleteConfirmationDialog: Boolean = false,
     val deletedItemsStack: List<WordsAndSentences> = emptyList(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-    val lazyListState: LazyListState = LazyListState()
+    val lazyListState: LazyListState = LazyListState(),
+    val lazyGridState: LazyGridState = LazyGridState()
 )

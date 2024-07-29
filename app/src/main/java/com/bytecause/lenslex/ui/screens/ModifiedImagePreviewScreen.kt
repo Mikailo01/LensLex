@@ -1,7 +1,6 @@
 package com.bytecause.lenslex.ui.screens
 
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,13 +15,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,6 +32,7 @@ import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEffect
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
 import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
@@ -117,7 +115,6 @@ fun ModifiedImagePreviewScreen(
     onClickNavigate: (Screen) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val context = LocalContext.current
 
@@ -126,42 +123,37 @@ fun ModifiedImagePreviewScreen(
             result.uriContent?.let {
                 viewModel.uiEventHandler(ModifiedImagePreviewUiEvent.OnUpdateImage(it))
             }
-        } else {
-            // an error occurred cropping
-            onNavigateBack()
-        }
-    }
-
-    LaunchedEffect(key1 = uiState.isImageTextless) {
-        if (uiState.isImageTextless) {
-            uiState.snackbarHostState.showSnackbar(context.getString(R.string.image_does_not_contain_any_text))
-        }
+        } else onNavigateBack()
     }
 
     LaunchedEffect(key1 = Unit) {
         if (uiState.modifiedImageUri == Uri.EMPTY) viewModel.uiEventHandler(
             ModifiedImagePreviewUiEvent.OnUpdateImage(modifiedImageUri)
         )
-    }
 
-    LaunchedEffect(key1 = textResult) {
-        if (textResult.isNotEmpty()) onClickNavigate(Screen.TextResult(textResult))
-    }
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                ModifiedImagePreviewUiEffect.ImageTextless -> uiState.snackbarHostState.showSnackbar(
+                    context.getString(R.string.image_does_not_contain_any_text)
+                )
 
-    ModifiedImagePreviewScreenContent(
-        state = uiState,
-        onEvent = { event ->
-            when (event) {
-                ModifiedImagePreviewUiEvent.OnLaunchCropLauncher -> {
+                ModifiedImagePreviewUiEffect.LaunchCropLauncher -> {
                     val cropOptions = CropImageContractOptions(originalImageUri, CropImageOptions())
                     imageCropLauncher.launch(cropOptions)
                 }
 
-                else -> {
-                    viewModel.uiEventHandler(event as ModifiedImagePreviewUiEvent.NonDirect)
-                }
+                is ModifiedImagePreviewUiEffect.NavigateWithTextResult -> onClickNavigate(
+                    Screen.TextResult(
+                        effect.text
+                    )
+                )
             }
         }
+    }
+
+    ModifiedImagePreviewScreenContent(
+        state = uiState,
+        onEvent = viewModel::uiEventHandler
     )
 }
 

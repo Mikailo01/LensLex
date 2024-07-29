@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class FakeTranslateRepositoryImpl : TranslateRepository {
-
     override fun translate(
         text: String,
         sourceLang: String,

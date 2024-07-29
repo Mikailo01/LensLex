@@ -3,7 +3,6 @@ package com.bytecause.lenslex.ui.events
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
 sealed interface AddUiEvent {
-
     data class OnTextValueChange(val text: String) : AddUiEvent
     data class OnConfirmLanguageDialog(val value: TranslationOption) : AddUiEvent
     data class OnDownloadLanguage(val langCode: String) : AddUiEvent
@@ -14,4 +13,9 @@ sealed interface AddUiEvent {
     data object OnNavigateBack : AddUiEvent
     data object OnDismissNetworkErrorDialog : AddUiEvent
     data object OnSwitchLanguages : AddUiEvent
+}
+
+sealed interface AddUiEffect {
+    data object ShowNetworkErrorMessage : AddUiEffect
+    data object NavigateBack : AddUiEffect
 }

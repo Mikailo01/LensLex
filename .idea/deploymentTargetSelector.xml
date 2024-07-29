@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="LensLex">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-07-23T16:50:24.454929500Z">
+        <DropdownSelection timestamp="2024-07-29T15:25:10.743643700Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Mikailo\.android\avd\Pixel_7_Pro_API_34.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=26e7b75c" />
             </handle>
           </Target>
         </DropdownSelection>

@@ -6,7 +6,6 @@ import com.bytecause.lenslex.di.testModule
 import org.koin.core.context.startKoin
 
 class TestApplication: Application() {
-
     override fun onCreate() {
         super.onCreate()
         startKoin {

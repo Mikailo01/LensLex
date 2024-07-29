@@ -5,6 +5,7 @@ import com.bytecause.lenslex.ui.interfaces.Credentials
 private const val PASSWORD_MAX_LENGTH = 24
 private const val PASSWORD_MIN_LENGTH = 8
 
+// User's auth validation util
 object ValidationUtil {
 
     private fun emailValidator(email: String): Boolean {

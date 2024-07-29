@@ -12,6 +12,7 @@ import com.bytecause.lenslex.util.WordsCollection
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -27,8 +28,10 @@ class WordsRepositoryImpl(
         originLangCode: String,
         targetLangCode: String
     ): Flow<List<WordsAndSentences>> = callbackFlow {
+        var listener: ListenerRegistration? = null
+
         user()?.uid?.let { userId ->
-            val listener = firestore
+            listener = firestore
                 .collection(BaseCollection)
                 .document(userId)
                 .collection(WordsCollection)
@@ -56,8 +59,8 @@ class WordsRepositoryImpl(
                         trySend(wordsList.sortedByDescending { it.timeStamp })
                     } else trySend(emptyList())
                 }
-            awaitClose { listener.remove() }
         }
+        awaitClose { listener?.remove() }
     }
 
     private fun mapDocumentObject(document: DocumentSnapshot): WordsAndSentences {
@@ -73,6 +76,8 @@ class WordsRepositoryImpl(
     }
 
     override fun addWord(word: WordsAndSentences): Flow<Boolean> = callbackFlow {
+        var observer: ListenerRegistration? = null
+
         user()?.uid?.let { userId ->
             val collection = firestore
                 .collection(BaseCollection)
@@ -81,7 +86,7 @@ class WordsRepositoryImpl(
 
             // when device is offline, callback won't be invoked, because new data cannot be sent to
             // server, so we need observer which will listen for local changes
-            val observer = collection.addSnapshotListener { value, error ->
+            observer = collection.addSnapshotListener { value, error ->
                 when {
                     error != null -> trySend(false)
                     value != null && value.metadata.hasPendingWrites() -> trySend(true)
@@ -94,8 +99,8 @@ class WordsRepositoryImpl(
                     else trySend(false)
                 }
 
-            awaitClose { observer.remove() }
         }
+        awaitClose { observer?.remove() }
     }
 
     override fun deleteWord(documentId: String) {

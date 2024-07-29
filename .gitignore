@@ -1,15 +1,33 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Sensitive Data
+google-services.json
+
+# Build Folders
+/build/
+*/build/
+
+# Local Configuration Files
 local.properties
+
+# IntelliJ/Android Studio
+*.iml
+.idea/
+*.hprof
+
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+*.log
+
+# Generated binary files
+*.apk
+*.aar
+
+# VS Code
+.vscode/
+

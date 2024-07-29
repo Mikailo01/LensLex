@@ -59,6 +59,7 @@ import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.ProfilePicture
 import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AccountUiEffect
 import com.bytecause.lenslex.ui.events.AccountUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
@@ -398,6 +399,21 @@ fun AccountScreen(
     LaunchedEffect(Unit) {
         // get user's data
         viewModel.uiEventHandler(AccountUiEvent.OnGetUserData)
+
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                AccountUiEffect.SinglePicturePickerLaunch -> {
+                    singlePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
+                }
+
+                AccountUiEffect.NavigateBack -> onBackButtonClick()
+                is AccountUiEffect.NavigateTo -> onNavigate(effect.screen)
+            }
+        }
     }
 
     LaunchedEffect(uiState.userData) {
@@ -407,27 +423,7 @@ fun AccountScreen(
     AccountScreenContent(
         state = uiState,
         bottomSheetState = sheetState,
-        onEvent = { event ->
-            when (event) {
-                AccountUiEvent.OnSinglePicturePickerLaunch -> {
-                    singlePhotoPickerLauncher.launch(
-                        PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                        )
-                    )
-                }
-
-                is AccountUiEvent.OnNavigate -> {
-                    onNavigate(event.destination)
-                }
-
-                AccountUiEvent.OnBackButtonClick -> {
-                    onBackButtonClick()
-                }
-
-                else -> viewModel.uiEventHandler(event as AccountUiEvent.NonDirect)
-            }
-        }
+        onEvent = viewModel::uiEventHandler
     )
 }
 

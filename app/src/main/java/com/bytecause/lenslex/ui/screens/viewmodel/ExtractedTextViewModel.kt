@@ -1,6 +1,5 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -68,7 +67,7 @@ class ExtractedTextViewModel(
         }.launchIn(viewModelScope)
     }
 
-    fun uiEventHandler(event: ExtractedTextUiEvent.NonDirect) {
+    fun uiEventHandler(event: ExtractedTextUiEvent) {
         when (event) {
             ExtractedTextUiEvent.OnFabActionButtonClick -> translateAllText()
             ExtractedTextUiEvent.OnHintActionIconClick -> onHintActionIconClick()
@@ -85,6 +84,9 @@ class ExtractedTextViewModel(
                 origin = uiState.value.selectedLanguageOptions.first,
                 target = uiState.value.selectedLanguageOptions.second
             )
+
+            ExtractedTextUiEvent.OnBackButtonClick -> sendEffect(ExtractedTextUiEffect.NavigateBack)
+            ExtractedTextUiEvent.OnCopyContent -> sendEffect(ExtractedTextUiEffect.CopyContent)
             is ExtractedTextUiEvent.OnWordClick -> onWordClick(event.word)
             is ExtractedTextUiEvent.OnWordLongClick -> onWordLongClick(event.word)
             is ExtractedTextUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
@@ -346,7 +348,8 @@ class ExtractedTextViewModel(
                                     timeStamp = System.currentTimeMillis()
                                 )
                             ).firstOrNull().let {
-                                if (index == textSet.size - 1) sendEffect(ExtractedTextUiEffect.NavigateBack)
+                                // if all words are inserted, navigate back
+                                if (index == textSet.size - 1) sendEffect(ExtractedTextUiEffect.Done)
                             }
                         }
 

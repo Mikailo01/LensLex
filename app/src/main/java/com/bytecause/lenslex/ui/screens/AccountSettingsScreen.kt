@@ -3,6 +3,7 @@ package com.bytecause.lenslex.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,13 +36,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -59,27 +58,31 @@ import com.bytecause.lenslex.ui.components.LinkAccountItem
 import com.bytecause.lenslex.ui.components.PasswordField
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AccountSettingsUiEffect
 import com.bytecause.lenslex.ui.events.AccountSettingsUiEvent
-import com.bytecause.lenslex.ui.interfaces.CredentialChangeResult
+import com.bytecause.lenslex.ui.interfaces.AccountActionResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
-import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsConfirmationDialog
 import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
-import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
-import com.bytecause.lenslex.util.getOrientationMode
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
+
+enum class AccountSettingsMessage {
+    Username,
+    Email,
+    Password,
+    AccountDeletion
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,206 +110,7 @@ fun AccountSettingsScreenContent(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.link_account),
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
-                        )
-                        LinkAccountItem(
-                            leadingIconId = R.drawable.google_logo,
-                            contentDescription = R.string.link_google_account,
-                            accountProviderName = "Google",
-                            isLinked = state.linkedProviders.contains(Provider.Google),
-                            onLinkButtonClick = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnLinkButtonClick(
-                                        Provider.Google
-                                    )
-                                )
-                            }
-                        )
-
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                        )
-
-                        LinkAccountItem(
-                            leadingIconId = R.drawable.baseline_alternate_email_24,
-                            contentDescription = R.string.link_email_account,
-                            accountProviderName = stringResource(id = R.string.email),
-                            isLinked = state.linkedProviders.contains(Provider.Email),
-                            onLinkButtonClick = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnLinkButtonClick(
-                                        Provider.Email
-                                    )
-                                )
-                            }
-                        )
-                    }
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.account_info),
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
-                        )
-
-                        AccountInfoItem(
-                            leadingIconId = R.drawable.id,
-                            contentDescriptionId = R.string.user_id,
-                            accountInfoType = AccountInfoType.Uid,
-                            userCredential = state.userDetails?.uid,
-                            isChangeable = false,
-                            isAnonymous = state.userDetails?.isAnonymous,
-                        )
-
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                        )
-
-                        AccountInfoItem(
-                            leadingIconId = R.drawable.calendar,
-                            contentDescriptionId = R.string.account_creation_date,
-                            accountInfoType = AccountInfoType.CreationDate,
-                            userCredential = state.userDetails?.let {
-                                SimpleDateFormat.getDateInstance()
-                                    .format(Date(it.creationTimeStamp ?: 0))
-                            },
-                            isChangeable = false,
-                            isAnonymous = state.userDetails?.isAnonymous
-                        )
-
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                        )
-
-                        AccountInfoItem(
-                            leadingIconId = R.drawable.baseline_perm_identity_24,
-                            contentDescriptionId = R.string.username,
-                            accountInfoType = AccountInfoType.UserName,
-                            userCredential = state.userDetails?.userName,
-                            isChangeable = true,
-                            isAnonymous = state.userDetails?.isAnonymous,
-                            onAccountInfoChange = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnShowCredentialDialog(
-                                        CredentialType.Username
-                                    )
-                                )
-                            }
-                        )
-
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                        )
-
-                        AccountInfoItem(
-                            leadingIconId = R.drawable.baseline_alternate_email_24,
-                            contentDescriptionId = R.string.account_email,
-                            accountInfoType = AccountInfoType.Email,
-                            userCredential = state.userDetails?.email,
-                            isChangeable = true,
-                            isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnShowSnackBar(
-                                        context.resources.getString(
-                                            R.string.email_and_password_cant_be_changed
-                                        )
-                                    )
-                                )
-                            },
-                            onAccountInfoChange = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnShowCredentialDialog(
-                                        CredentialType.Email
-                                    )
-                                )
-                            }
-                        )
-
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
-                        )
-
-                        AccountInfoItem(
-                            leadingIconId = R.drawable.baseline_password_24,
-                            contentDescriptionId = R.string.account_password,
-                            accountInfoType = AccountInfoType.Password,
-                            userCredential = "********",
-                            isChangeable = true,
-                            isAnonymous = state.userDetails?.isAnonymous,
-                            showSnackBar = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnShowSnackBar(
-                                        context.resources.getString(
-                                            R.string.email_and_password_cant_be_changed
-                                        )
-                                    )
-                                )
-                            },
-                            onAccountInfoChange = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnShowCredentialDialog(
-                                        CredentialType.Password
-                                    )
-                                )
-                            }
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { onEvent(AccountSettingsUiEvent.OnDeleteAccountButtonClick) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 10.dp, end = 10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.delete_user),
-                                contentDescription = stringResource(id = R.string.delete_account),
-                            )
-                            Text(
-                                text = stringResource(id = R.string.delete_account),
-                                modifier = Modifier.padding(end = 10.dp),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            } else {
+            if (isExpandedScreen) {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
@@ -506,6 +310,205 @@ fun AccountSettingsScreenContent(
                         )
                     }
                 }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.link_account),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                        )
+                        LinkAccountItem(
+                            leadingIconId = R.drawable.google_logo,
+                            contentDescription = R.string.link_google_account,
+                            accountProviderName = "Google",
+                            isLinked = state.linkedProviders.contains(Provider.Google),
+                            onLinkButtonClick = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnLinkButtonClick(
+                                        Provider.Google
+                                    )
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        LinkAccountItem(
+                            leadingIconId = R.drawable.baseline_alternate_email_24,
+                            contentDescription = R.string.link_email_account,
+                            accountProviderName = stringResource(id = R.string.email),
+                            isLinked = state.linkedProviders.contains(Provider.Email),
+                            onLinkButtonClick = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnLinkButtonClick(
+                                        Provider.Email
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.account_info),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 10.dp, top = 5.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.id,
+                            contentDescriptionId = R.string.user_id,
+                            accountInfoType = AccountInfoType.Uid,
+                            userCredential = state.userDetails?.uid,
+                            isChangeable = false,
+                            isAnonymous = state.userDetails?.isAnonymous,
+                        )
+
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.calendar,
+                            contentDescriptionId = R.string.account_creation_date,
+                            accountInfoType = AccountInfoType.CreationDate,
+                            userCredential = state.userDetails?.let {
+                                SimpleDateFormat.getDateInstance()
+                                    .format(Date(it.creationTimeStamp ?: 0))
+                            },
+                            isChangeable = false,
+                            isAnonymous = state.userDetails?.isAnonymous
+                        )
+
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_perm_identity_24,
+                            contentDescriptionId = R.string.username,
+                            accountInfoType = AccountInfoType.UserName,
+                            userCredential = state.userDetails?.userName,
+                            isChangeable = true,
+                            isAnonymous = state.userDetails?.isAnonymous,
+                            onAccountInfoChange = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowCredentialDialog(
+                                        CredentialType.Username
+                                    )
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_alternate_email_24,
+                            contentDescriptionId = R.string.account_email,
+                            accountInfoType = AccountInfoType.Email,
+                            userCredential = state.userDetails?.email,
+                            isChangeable = true,
+                            isAnonymous = state.userDetails?.isAnonymous,
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
+                            onAccountInfoChange = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowCredentialDialog(
+                                        CredentialType.Email
+                                    )
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                        )
+
+                        AccountInfoItem(
+                            leadingIconId = R.drawable.baseline_password_24,
+                            contentDescriptionId = R.string.account_password,
+                            accountInfoType = AccountInfoType.Password,
+                            userCredential = "********",
+                            isChangeable = true,
+                            isAnonymous = state.userDetails?.isAnonymous,
+                            showSnackBar = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowSnackBar(
+                                        context.resources.getString(
+                                            R.string.email_and_password_cant_be_changed
+                                        )
+                                    )
+                                )
+                            },
+                            onAccountInfoChange = {
+                                onEvent(
+                                    AccountSettingsUiEvent.OnShowCredentialDialog(
+                                        CredentialType.Password
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { onEvent(AccountSettingsUiEvent.OnDeleteAccountButtonClick) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 10.dp, end = 10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.delete_user),
+                                contentDescription = stringResource(id = R.string.delete_account),
+                            )
+                            Text(
+                                text = stringResource(id = R.string.delete_account),
+                                modifier = Modifier.padding(end = 10.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
 
             state.showCredentialUpdateDialog?.let {
@@ -516,48 +519,29 @@ fun AccountSettingsScreenContent(
                 )
             }
 
-            when (state.showConfirmationDialog) {
-                null -> {
-                    // do nothing
-                }
-
-                else -> {
-                    ConfirmationDialog(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentSize(),
-                        title = if (state.showConfirmationDialog is AccountSettingsConfirmationDialog.PasswordChangeWarning) R.string.google_account_will_be_unlinked else -1,
-                        onDismiss = { onEvent(AccountSettingsUiEvent.OnDismissConfirmationDialog) },
-                        onConfirm = {
-                            onEvent(AccountSettingsUiEvent.OnConfirmConfirmationDialog)
-                        }
-                    ) {
-                        when (state.showConfirmationDialog) {
-                            AccountSettingsConfirmationDialog.DeleteAccountWarning -> {
-                                Row {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.delete_user),
-                                        contentDescription = "",
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .padding(end = 10.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(id = R.string.account_deletion_warning_message),
-                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-
-                            AccountSettingsConfirmationDialog.PasswordChangeWarning -> {
-                                Text(
-                                    text = stringResource(id = R.string.google_account_will_be_unlinked_message),
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+            if (state.showConfirmationDialog) {
+                ConfirmationDialog(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentSize(),
+                    onDismiss = { onEvent(AccountSettingsUiEvent.OnDismissConfirmationDialog) },
+                    onConfirm = {
+                        onEvent(AccountSettingsUiEvent.OnConfirmConfirmationDialog)
+                    }
+                ) {
+                    Row {
+                        Image(
+                            painter = painterResource(id = R.drawable.delete_user),
+                            contentDescription = "",
+                            modifier = Modifier
+                                .size(50.dp)
+                                .padding(end = 10.dp)
+                        )
+                        Text(
+                            text = stringResource(id = R.string.account_deletion_warning_message),
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -584,155 +568,129 @@ fun AccountSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var isGoogleIntentLaunched by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-
     val context = LocalContext.current
+
+    LaunchedEffect(key1 = Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                AccountSettingsUiEffect.LinkGoogleProvider -> {
+                    try {
+                        forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
+                        val authClient = FirebaseAuthClient()
+                        val authCredential = authClient.getGoogleCredential(context)
+
+                        viewModel.uiEventHandler(
+                            AccountSettingsUiEvent.OnLinkGoogleProvider(
+                                authCredential
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Log.e("AccountSettingsLinkGoogleIntent", e.message.toString())
+                    }
+                    forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+                }
+
+                AccountSettingsUiEffect.ReauthenticateWithGoogleProvider -> {
+                    try {
+                        forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
+                        val authClient = FirebaseAuthClient()
+                        val authCredential = authClient.getGoogleCredential(context)
+
+                        viewModel.uiEventHandler(
+                            AccountSettingsUiEvent.OnReauthenticateWithGoogle(
+                                authCredential
+                            )
+                        )
+
+                    } catch (e: Exception) {
+                        Log.e(
+                            "AccountSettingsReauthenticationGoogleIntent",
+                            e.message.toString()
+                        )
+                    }
+                    forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+                }
+
+                AccountSettingsUiEffect.NavigateBack -> onNavigateBack()
+
+                is AccountSettingsUiEffect.ShowMessage -> {
+                    uiState.snackbarHostState.showSnackbar(effect.message)
+                }
+
+                is AccountSettingsUiEffect.AccountActionResult -> {
+                    when (effect.result) {
+                        is AccountActionResult.Success -> {
+                            viewModel.uiEventHandler(AccountSettingsUiEvent.OnCredentialsDialogDismiss)
+
+                            val messageId: Int =
+                                when (effect.result.message) {
+                                    AccountSettingsMessage.Username -> R.string.username_changed_message
+                                    AccountSettingsMessage.Email -> R.string.email_changed_message
+                                    AccountSettingsMessage.Password -> R.string.password_changed_message
+                                    AccountSettingsMessage.AccountDeletion -> R.string.account_deleted_message
+                                }
+
+                            uiState.snackbarHostState.showSnackbar(
+                                context.getString(messageId)
+                            )
+                        }
+
+                        is AccountActionResult.Failure.Error -> {
+                            when (val exception = effect.result.exception) {
+                                is FirebaseAuthInvalidUserException -> {
+                                    exception.message?.let {
+                                        uiState.snackbarHostState.showSnackbar(it)
+                                    }
+                                }
+
+                                is FirebaseAuthInvalidCredentialsException -> {
+                                    exception.message?.let {
+                                        uiState.snackbarHostState.showSnackbar(it)
+                                    }
+                                }
+
+                                is FirebaseAuthUserCollisionException -> {
+                                    exception.message?.let {
+                                        uiState.snackbarHostState.showSnackbar(it)
+                                    }
+                                }
+
+                                is FirebaseAuthException -> {
+                                    exception.message?.let {
+                                        uiState.snackbarHostState.showSnackbar(it)
+                                    }
+                                }
+                            }
+                        }
+
+                        AccountActionResult.Failure.ReauthorizationRequired -> {
+                            // if user's account is linked with Google, use Credential Manager for faster and
+                            // simpler reauthentication
+                            if (uiState.linkedProviders.contains(Provider.Google)) {
+                                viewModel.uiEventHandler(AccountSettingsUiEvent.OnLaunchReauthenticationGoogleIntent)
+                            } else {
+                                // Shows dialog with email and password inputs for reauthorization
+                                viewModel.uiEventHandler(
+                                    AccountSettingsUiEvent.OnShowCredentialDialog(
+                                        CredentialType.Reauthorization
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(key1 = uiState.userDetails) {
         if (uiState.userDetails == null) onUserLoggedOut()
     }
 
-    LaunchedEffect(key1 = uiState.launchGoogleIntent) {
-        if (!isGoogleIntentLaunched) {
-            if (uiState.launchGoogleIntent) {
-                try {
-                    forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
-                    isGoogleIntentLaunched = true
-                    val authClient = FirebaseAuthClient()
-                    val authCredential = authClient.getGoogleCredential(context)
-
-                    viewModel.linkGoogleProvider(authCredential)
-                    isGoogleIntentLaunched = false
-                } catch (e: Exception) {
-                    isGoogleIntentLaunched = false
-                    viewModel.shouldLaunchGoogleIntent(false)
-                }
-                forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-            }
-        }
-    }
-
-    LaunchedEffect(uiState.credentialChangeResult) {
-        when (uiState.credentialChangeResult) {
-            is CredentialChangeResult.Success -> {
-                coroutineScope.launch {
-                    val messageId =
-                        (uiState.credentialChangeResult as CredentialChangeResult.Success).message
-                    uiState.snackbarHostState.showSnackbar(
-                        context.getString(messageId)
-                    )
-                }.invokeOnCompletion {
-                    viewModel.resetCredentialChangeState()
-                }
-            }
-
-            is CredentialChangeResult.Failure.ReauthorizationRequired -> {
-                // if user's account is linked with Google, use Credential Manager for faster and
-                // simpler reauthentication
-                if (uiState.linkedProviders.contains(Provider.Google)) {
-
-                    if (!isGoogleIntentLaunched) {
-                        try {
-                            forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
-                            isGoogleIntentLaunched = true
-                            val authClient = FirebaseAuthClient()
-                            val authCredential = authClient.getGoogleCredential(context)
-
-                            viewModel.reauthenticateWithGoogle(authCredential)
-
-                            isGoogleIntentLaunched = false
-                        } catch (e: Exception) {
-                            isGoogleIntentLaunched = false
-                            viewModel.resetCredentialChangeState()
-                        }
-                        forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-                    }
-
-                } else {
-                    // Shows dialog with email and password inputs for reauthorization
-                    viewModel.uiEventHandler(
-                        AccountSettingsUiEvent.OnShowCredentialDialog(
-                            CredentialType.Reauthorization
-                        )
-                    )
-                }
-            }
-
-            is CredentialChangeResult.Failure.Error -> {
-                val castedError =
-                    (uiState.credentialChangeResult as CredentialChangeResult.Failure.Error).exception
-
-                when (castedError) {
-                    is FirebaseAuthInvalidUserException -> {
-                        castedError.message?.let {
-                            coroutineScope.launch {
-                                uiState.snackbarHostState.showSnackbar(it)
-                            }.invokeOnCompletion {
-                                viewModel.resetCredentialChangeState()
-                            }
-                        }
-                    }
-
-                    is FirebaseAuthInvalidCredentialsException -> {
-                        castedError.message?.let {
-                            coroutineScope.launch {
-                                uiState.snackbarHostState.showSnackbar(it)
-                            }.invokeOnCompletion {
-                                viewModel.resetCredentialChangeState()
-                            }
-                        }
-                    }
-
-                    is FirebaseAuthUserCollisionException -> {
-                        castedError.message?.let {
-                            coroutineScope.launch {
-                                uiState.snackbarHostState.showSnackbar(it)
-                            }.invokeOnCompletion {
-                                viewModel.resetCredentialChangeState()
-                            }
-                        }
-                    }
-
-                    is FirebaseAuthException -> {
-                        castedError.message?.let {
-                            coroutineScope.launch {
-                                uiState.snackbarHostState.showSnackbar(it)
-                            }.invokeOnCompletion {
-                                viewModel.resetCredentialChangeState()
-                            }
-                        }
-                    }
-                }
-            }
-
-            else -> {
-
-            }
-        }
-    }
-
     AccountSettingsScreenContent(
         isExpandedScreen = isExpandedScreen,
         state = uiState,
-        onEvent = { event ->
-            when (event) {
-                is AccountSettingsUiEvent.OnShowSnackBar -> {
-                    coroutineScope.launch {
-                        uiState.snackbarHostState.showSnackbar(event.message)
-                    }
-                }
-
-                AccountSettingsUiEvent.OnNavigateBack -> onNavigateBack()
-
-                else -> {
-                    viewModel.uiEventHandler(event as AccountSettingsUiEvent.NonDirect)
-                }
-            }
-        }
+        onEvent = viewModel::uiEventHandler
     )
 }
 
@@ -823,11 +781,7 @@ fun CredentialsDialog(
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = {
-        onEvent(
-            AccountSettingsUiEvent.OnCredentialsDialogDismiss(
-                credentialType
-            )
-        )
+        onEvent(AccountSettingsUiEvent.OnCredentialsDialogDismiss)
     }) {
         Card(
             modifier = modifier,

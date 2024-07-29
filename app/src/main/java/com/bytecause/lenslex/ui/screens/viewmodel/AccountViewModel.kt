@@ -7,11 +7,14 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.repository.abstraction.FirebaseCloudRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.domain.models.UserData
+import com.bytecause.lenslex.ui.events.AccountUiEffect
 import com.bytecause.lenslex.ui.events.AccountUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.AccountState
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,7 +30,10 @@ class AccountViewModel(
         MutableStateFlow(AccountState())
     val uiState = _uiState.asStateFlow()
 
-    fun uiEventHandler(event: AccountUiEvent.NonDirect) {
+    private val _effect = Channel<AccountUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
+
+    fun uiEventHandler(event: AccountUiEvent) {
         when (event) {
             is AccountUiEvent.OnUpdateProfilePicture -> onUpdateProfilePicture(event.value)
             is AccountUiEvent.OnChangeFirebaseLanguage -> changeFirebaseLanguageCode(event.value)
@@ -39,9 +45,16 @@ class AccountViewModel(
             is AccountUiEvent.OnUrlTextFieldValueChange -> onUrlTextFieldValueChange(event.value)
             is AccountUiEvent.OnSaveUserProfilePicture -> onSaveUserProfilePicture(event.value)
             is AccountUiEvent.OnImageLoading -> onImageLoading(event.value)
+            is AccountUiEvent.OnNavigate -> sendEffect(AccountUiEffect.NavigateTo(event.destination))
             AccountUiEvent.OnSignOut -> onSignOut()
             AccountUiEvent.OnGetUserData -> getUserData()
+            AccountUiEvent.OnBackButtonClick -> sendEffect(AccountUiEffect.NavigateBack)
+            AccountUiEvent.OnSinglePicturePickerLaunch -> sendEffect(AccountUiEffect.SinglePicturePickerLaunch)
         }
+    }
+
+    private fun sendEffect(effect: AccountUiEffect) {
+        _effect.trySend(effect)
     }
 
     private fun getUserData() {
@@ -96,12 +109,7 @@ class AccountViewModel(
         }
     }
 
-    private fun onSignOut() {
-        signOut()
-        _uiState.update {
-            it.copy(signedOutSuccess = true)
-        }
-    }
+    private fun onSignOut() = signOut()
 
     private fun onNameTextFieldValueChange(userName: String) {
         _uiState.update {

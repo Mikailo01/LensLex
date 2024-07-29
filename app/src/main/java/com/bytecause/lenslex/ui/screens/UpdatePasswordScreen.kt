@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,14 +41,12 @@ import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.PasswordFields
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
+import com.bytecause.lenslex.ui.events.UpdatePasswordUiEffect
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
-import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
-import com.bytecause.lenslex.util.OrientationMode
 import com.bytecause.lenslex.util.PasswordValidationResult
-import com.bytecause.lenslex.util.getOrientationMode
 import com.bytecause.lenslex.util.shimmerEffect
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -65,9 +62,8 @@ fun UpdatePasswordScreenContent(
     yImageOffset: Animatable<Float, AnimationVector1D>,
     onEvent: (UpdatePasswordUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
-        UserAuthBackground(
-            modifier = modifier.padding(top = 70.dp),
+    if (isExpandedScreen) {
+        UserAuthBackgroundExpanded(
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
@@ -209,7 +205,8 @@ fun UpdatePasswordScreenContent(
             }
         )
     } else {
-        UserAuthBackgroundExpanded(
+        UserAuthBackground(
+            modifier = modifier.padding(top = 70.dp),
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
@@ -362,40 +359,35 @@ fun UpdatePasswordScreen(
     onGetNewResetCodeClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val getNewCodeChannel by viewModel.getNewCodeChannel.collectAsStateWithLifecycle(initialValue = false)
 
     val yTextOffset by remember {
-        mutableStateOf(Animatable(if (!uiState.animationStarted) -700f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationFinished) -700f else 0f))
     }
 
     val yImageOffset by remember {
-        mutableStateOf(Animatable(if (!uiState.animationStarted) 700f else 0f))
+        mutableStateOf(Animatable(if (!uiState.animationFinished) 700f else 0f))
     }
 
     val context = LocalContext.current
 
-    LaunchedEffect(key1 = uiState.resetState) {
-        when (uiState.resetState) {
-            SimpleResult.OnSuccess -> {
+    LaunchedEffect(key1 = Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UpdatePasswordUiEffect.GetNewResetCodeClick -> onGetNewResetCodeClick()
+                UpdatePasswordUiEffect.ResetSuccessful -> {
+                    // Show Toast instead of Snackbar to perform navigation to LoginScreen instantly
+                    Toast.makeText(
+                        context,
+                        context.resources.getString(R.string.password_reset_success),
+                        Toast.LENGTH_SHORT
+                    ).show()
 
-                // Show Toast instead of Snackbar to perform navigation to LoginScreen instantly
-                Toast.makeText(
-                    context,
-                    context.resources.getString(R.string.password_reset_success),
-                    Toast.LENGTH_SHORT
-                ).show()
+                    onPasswordChangedSuccess()
+                }
 
-                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnResetPasswordResult)
-                onPasswordChangedSuccess()
-            }
-
-            is SimpleResult.OnFailure -> {
-                uiState.snackbarHostState.showSnackbar((uiState.resetState as SimpleResult.OnFailure).exception?.message.toString())
-                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnResetPasswordResult)
-            }
-
-            null -> {
-                // init state, do nothing
+                is UpdatePasswordUiEffect.ResetFailure -> {
+                    uiState.snackbarHostState.showSnackbar(effect.exception?.message.toString())
+                }
             }
         }
     }
@@ -418,16 +410,12 @@ fun UpdatePasswordScreen(
         }
     }
 
-    LaunchedEffect(key1 = getNewCodeChannel) {
-        if (getNewCodeChannel) onGetNewResetCodeClick()
-    }
-
     LaunchedEffect(key1 = uiState.dismissExpiredDialog) {
         if (uiState.dismissExpiredDialog) (context as? Activity)?.finish()
     }
 
     LaunchedEffect(Unit) {
-        if (!uiState.animationStarted) {
+        if (!uiState.animationFinished) {
             coroutineScope {
                 launch {
                     yTextOffset.animateTo(
@@ -448,7 +436,7 @@ fun UpdatePasswordScreen(
                     )
                 }
             }.invokeOnCompletion {
-                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnAnimationStarted)
+                viewModel.uiEventHandler(UpdatePasswordUiEvent.OnAnimationFinished)
 
                 // After animations finish, make API call
                 oobCode?.let { code ->

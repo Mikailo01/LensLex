@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
+import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEffect
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
 import kotlinx.coroutines.channels.Channel
@@ -21,14 +22,21 @@ class ModifiedImagePreviewViewModel(
     private val _uiState = MutableStateFlow(ModifiedImagePreviewState())
     val uiState = _uiState.asStateFlow()
 
-    private val _textResultChannel = Channel<List<String>>()
-    val textResultChannel = _textResultChannel.receiveAsFlow()
+    private val _effect = Channel<ModifiedImagePreviewUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
 
-    fun uiEventHandler(event: ModifiedImagePreviewUiEvent.NonDirect) {
+    fun uiEventHandler(event: ModifiedImagePreviewUiEvent) {
         when (event) {
             is ModifiedImagePreviewUiEvent.OnUpdateImage -> onUpdateImage(event.uri)
             is ModifiedImagePreviewUiEvent.OnProcessImageClick -> onProcessImageClick()
+            ModifiedImagePreviewUiEvent.OnLaunchCropLauncher -> sendEffect(
+                ModifiedImagePreviewUiEffect.LaunchCropLauncher
+            )
         }
+    }
+
+    private fun sendEffect(effect: ModifiedImagePreviewUiEffect) {
+        _effect.trySend(effect)
     }
 
     private fun onUpdateImage(imageUri: Uri) {
@@ -46,11 +54,14 @@ class ModifiedImagePreviewViewModel(
                     _uiState.update {
                         it.copy(
                             isProcessing = false,
-                            isButtonEnabled = result.isNotEmpty(),
-                            isImageTextless = result.isEmpty()
+                            isButtonEnabled = result.isNotEmpty()
                         )
                     }
-                    _textResultChannel.trySend(result)
+                    sendEffect(
+                        if (result.isEmpty()) ModifiedImagePreviewUiEffect.ImageTextless else ModifiedImagePreviewUiEffect.NavigateWithTextResult(
+                            result
+                        )
+                    )
                 }
         }
     }

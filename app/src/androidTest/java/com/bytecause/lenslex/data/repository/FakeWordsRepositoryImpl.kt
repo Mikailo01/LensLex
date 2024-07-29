@@ -12,7 +12,10 @@ class FakeWordsRepositoryImpl : WordsRepository {
 
     private val _wordsFlow = MutableStateFlow<List<WordsAndSentences>>(emptyList())
 
-    override fun getWords(): Flow<List<WordsAndSentences>> = _wordsFlow.asStateFlow()
+    override fun getWords(
+        originLangCode: String,
+        targetLangCode: String
+    ): Flow<List<WordsAndSentences>> = _wordsFlow.asStateFlow()
 
     override fun addWord(word: WordsAndSentences): Flow<Boolean> = flow {
         _wordsFlow.value += word

@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,19 +24,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,6 +61,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,9 +69,11 @@ import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.data.local.TTSManager
+import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
-import com.bytecause.lenslex.ui.components.IntroShowcaseText
+import com.bytecause.lenslex.ui.components.ConfirmationDialog
+import com.bytecause.lenslex.ui.components.IntroShowcaseContent
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NoteItem
@@ -71,6 +84,7 @@ import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
+import com.bytecause.lenslex.util.PulsingAnimation
 import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
 import com.bytecause.lenslex.util.isScrollingUp
 import com.bytecause.lenslex.util.shimmerEffect
@@ -79,6 +93,7 @@ import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canopas.lib.showcase.IntroShowcase
+import com.canopas.lib.showcase.IntroShowcaseScope
 import com.canopas.lib.showcase.component.ShowcaseStyle
 import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -94,6 +109,7 @@ enum class FabNavigation { CAMERA, GALLERY, ADD }
 @Composable
 fun HomeScreenContent(
     state: HomeState,
+    isExpandedScreen: Boolean,
     cameraPermissionState: PermissionState?,
     onEvent: (HomeUiEvent) -> Unit
 ) {
@@ -115,25 +131,17 @@ fun HomeScreenContent(
                                         onEvent(HomeUiEvent.OnItemRestored)
                                     }
                                     .introShowCaseTarget(
-                                        index = 7,
+                                        index = 8,
                                         style = ShowcaseStyle.Default.copy(
                                             backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                             backgroundAlpha = introShowcaseBackgroundAlpha,
                                             targetCircleColor = Color.White
                                         )
                                     ) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.undo),
-                                                contentDescription = null,
-                                                tint = Color.Unspecified,
-                                                modifier = Modifier.size(64.dp)
-                                            )
-                                            Text(text = stringResource(id = R.string.restore_deleted_item_message))
-                                        }
+                                        IntroShowcaseContent(
+                                            iconRes = R.drawable.undo,
+                                            messageRes = R.string.restore_deleted_item_message
+                                        )
                                     },
                                 painter = painterResource(id = R.drawable.baseline_undo_24),
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
@@ -141,10 +149,57 @@ fun HomeScreenContent(
                             )
                         }
 
+                        if (state.wordList.isNotEmpty() || state.deletedItemsStack.isNotEmpty()) {
+                            IconButton(
+                                onClick = { onEvent(HomeUiEvent.OnEditStateChange(!state.isEditEnabled)) },
+                                modifier = Modifier
+                                    .introShowCaseTarget(
+                                        index = 6,
+                                        style = ShowcaseStyle.Default.copy(
+                                            backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                                            backgroundAlpha = introShowcaseBackgroundAlpha,
+                                            targetCircleColor = Color.White
+                                        )
+                                    ) {
+                                        IntroShowcaseContent(
+                                            iconRes = R.drawable.edit,
+                                            messageRes = R.string.enter_edit_mode_message
+                                        )
+                                    }
+                            ) {
+                                if (state.isEditEnabled) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.inversePrimary,
+                                        border = BorderStroke(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Check,
+                                            contentDescription = stringResource(id = R.string.exit_edit_mode),
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier
+                                                .padding(5.dp)
+                                        )
+                                    }
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = stringResource(id = R.string.enable_edit_mode),
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier
+                                    )
+                                }
+                            }
+                        }
+
+                        // user's profile picture and button for navigating into app and account settings
                         AsyncImage(
                             model = state.profilePictureUrl.takeIf { it != "null" }
                                 ?: R.drawable.default_account_image,
-                            contentDescription = stringResource(id = R.string.app_seetings),
+                            contentDescription = stringResource(id = R.string.app_settings),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .padding(end = 10.dp)
@@ -156,27 +211,17 @@ fun HomeScreenContent(
                                 }
                                 .then(state.isLoading, onTrue = { shimmerEffect() })
                                 .introShowCaseTarget(
-                                    index = 0,
+                                    index = 5,
                                     style = ShowcaseStyle.Default.copy(
                                         backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.settings),
-                                            contentDescription = null,
-                                            tint = Color.Unspecified,
-                                            modifier = Modifier.size(64.dp)
-                                        )
-                                        IntroShowcaseText(
-                                            text = stringResource(id = R.string.tap_to_navigate_into_app_settings),
-                                        )
-                                    }
+                                    IntroShowcaseContent(
+                                        iconRes = R.drawable.settings,
+                                        messageRes = R.string.tap_to_navigate_into_app_settings
+                                    )
                                 }
                         )
                     }
@@ -197,25 +242,17 @@ fun HomeScreenContent(
                             modifier = Modifier
                                 .padding(5.dp)
                                 .introShowCaseTarget(
-                                    index = 1,
+                                    index = 0,
                                     style = ShowcaseStyle.Default.copy(
                                         backgroundColor = MaterialTheme.colorScheme.inversePrimary,
                                         backgroundAlpha = introShowcaseBackgroundAlpha,
                                         targetCircleColor = Color.White
                                     )
                                 ) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.language),
-                                            contentDescription = null,
-                                            tint = Color.Unspecified,
-                                            modifier = Modifier.size(64.dp)
-                                        )
-                                        IntroShowcaseText(
-                                            text = stringResource(id = R.string.language_preferences_showcase_message),
-                                            modifier = Modifier.padding(top = 30.dp)
-                                        )
-                                    }
+                                    IntroShowcaseContent(
+                                        iconRes = R.drawable.language,
+                                        messageRes = R.string.language_preferences_showcase_message
+                                    )
                                 },
                             originLangName = state.selectedLanguageOptions.first.lang.langName,
                             targetLangName = state.selectedLanguageOptions.second.lang.langName,
@@ -228,85 +265,78 @@ fun HomeScreenContent(
                         )
                     }
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(8.dp),
-                        state = state.lazyListState
-                    ) {
-                        // shows shimmer effects
-                        if (state.isLoading) {
-                            items(10) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(70.dp)
-                                        .shimmerEffect()
-                                ) {}
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                        } else {
-                            itemsIndexed(
-                                state.wordList,
-                                key = { _, item -> item.timeStamp }) { index, item ->
+                    var scale by remember {
+                        mutableFloatStateOf(1f)
+                    }
 
-                                // get translated text for currently chosen target lang option
-                                item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
-                                    NoteItem(
-                                        showIntro = index == 0,
-                                        originalText = item.word,
-                                        translatedText = it,
-                                        onRemove = {
-                                            onEvent(HomeUiEvent.OnItemRemoved(item))
-                                        },
-                                        onClick = { text ->
-                                            onEvent(
-                                                HomeUiEvent.OnSpeak(
-                                                    text = text,
-                                                    langCode = if (text == item.word) item.languageCode
-                                                    else state.selectedLanguageOptions.second.lang.langCode
-                                                )
-                                            )
-                                        },
-                                        // set focus of introShowCase on first element in the list
-                                        modifier = Modifier.then(index == 0, onTrue = {
-                                            introShowCaseTarget(
-                                                index = 6,
-                                                style = ShowcaseStyle.Default.copy(
-                                                    backgroundColor = MaterialTheme.colorScheme.inversePrimary,
-                                                    backgroundAlpha = introShowcaseBackgroundAlpha,
-                                                    targetCircleColor = Color.White
-                                                )
-                                            ) {
-                                                Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(
-                                                        15.dp
-                                                    ),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.swipe_left),
-                                                        contentDescription = null,
-                                                        tint = Color.Unspecified,
-                                                        modifier = Modifier
-                                                            .size(64.dp)
-                                                            .weight(0.5f)
-                                                    )
-                                                    Text(
-                                                        text = stringResource(id = R.string.swipe_left_or_right_message),
-                                                        modifier = Modifier
-                                                            .weight(2f)
-                                                    )
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.swipe_right),
-                                                        contentDescription = null,
-                                                        tint = Color.Unspecified,
-                                                        modifier = Modifier
-                                                            .size(64.dp)
-                                                            .weight(0.5f)
-                                                    )
-                                                }
-                                            }
-                                        })
+                    // start scale animation if edit mode is enabled
+                    if (state.isEditEnabled) {
+                        PulsingAnimation {
+                            scale = it
+                        }
+                    } else scale = 1f
+
+                    if (isExpandedScreen) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            state = state.lazyGridState
+                        ) {
+                            // shows shimmer effects
+                            if (state.isLoading) {
+                                items(10) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(70.dp)
+                                            .shimmerEffect()
+                                    ) {}
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            } else {
+                                itemsIndexed(
+                                    state.wordList,
+                                    key = { _, item -> item.timeStamp }) { index, item ->
+                                    ListContent(
+                                        state = state,
+                                        item = item,
+                                        index = index,
+                                        scale = scale,
+                                        onEvent = onEvent
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            state = state.lazyListState
+                        ) {
+                            // shows shimmer effects
+                            if (state.isLoading) {
+                                items(10) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(70.dp)
+                                            .shimmerEffect()
+                                    ) {}
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            } else {
+                                itemsIndexed(
+                                    state.wordList,
+                                    key = { _, item -> item.timeStamp }) { index, item ->
+                                    ListContent(
+                                        state = state,
+                                        item = item,
+                                        index = index,
+                                        scale = scale,
+                                        onEvent = onEvent
                                     )
                                 }
                             }
@@ -356,12 +386,30 @@ fun HomeScreenContent(
                 }
 
                 AnimatedVisibility(
-                    visible = !state.lazyListState.isScrollingUp(),
+                    visible = if (isExpandedScreen) !state.lazyGridState.isScrollingUp()
+                    else !state.lazyListState.isScrollingUp(),
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
                     ScrollToTop {
                         onEvent(HomeUiEvent.OnScrollToTop)
+                    }
+                }
+
+                if (state.showDeleteConfirmationDialog) {
+                    ConfirmationDialog(
+                        onDismiss = {
+                            onEvent(
+                                HomeUiEvent.OnDeleteConfirmationDialogResult(
+                                    false
+                                )
+                            )
+                        },
+                        onConfirm = { onEvent(HomeUiEvent.OnDeleteConfirmationDialogResult(true)) }) {
+                        Text(
+                            text = stringResource(id = R.string.permanent_deletion_dialog_message),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 
@@ -394,10 +442,83 @@ fun HomeScreenContent(
     }
 }
 
+@Composable
+private fun IntroShowcaseScope.ListContent(
+    state: HomeState,
+    item: WordsAndSentences,
+    index: Int,
+    scale: Float,
+    onEvent: (HomeUiEvent) -> Unit
+) {
+    // get translated text for currently chosen target lang option
+    item.translations[state.selectedLanguageOptions.second.lang.langCode]?.let {
+        NoteItem(
+            showIntro = index == 0,
+            originalText = item.word,
+            translatedText = it,
+            isEditEnabled = state.isEditEnabled,
+            scale = scale,
+            onRemove = {
+                onEvent(HomeUiEvent.OnItemRemoved(item))
+            },
+            onClick = { text ->
+                onEvent(
+                    HomeUiEvent.OnSpeak(
+                        text = text,
+                        langCode = if (text == item.word) item.languageCode
+                        else state.selectedLanguageOptions.second.lang.langCode
+                    )
+                )
+            },
+            // set focus of introShowCase on first element in the list
+            modifier = Modifier.then(index == 0, onTrue = {
+                introShowCaseTarget(
+                    index = 7,
+                    style = ShowcaseStyle.Default.copy(
+                        backgroundColor = MaterialTheme.colorScheme.inversePrimary,
+                        backgroundAlpha = introShowcaseBackgroundAlpha,
+                        targetCircleColor = Color.White
+                    )
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(
+                            15.dp
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.swipe_left),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .weight(0.5f)
+                        )
+                        Text(
+                            text = stringResource(id = R.string.swipe_left_or_right_message),
+                            modifier = Modifier
+                                .weight(2f)
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.swipe_right),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .weight(0.5f)
+                        )
+                    }
+                }
+            })
+        )
+    }
+}
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
+    isExpandedScreen: Boolean,
     onClickNavigate: (Screen) -> Unit,
     onPhotoTaken: (Uri, Uri) -> Unit
 ) {
@@ -492,6 +613,39 @@ fun HomeScreen(
                         R.string.image_does_not_contain_any_text
                     )
                 )
+
+                HomeUiEffect.CameraIntentLaunch -> {
+                    val uri =
+                        ComposeFileProvider.getImageUri(context = context)
+
+                    imageUri = uri
+                    cameraLauncher.launch(uri)
+                }
+
+                HomeUiEffect.MultiplePhotoPickerLaunch -> {
+                    multiplePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+
+                HomeUiEffect.PermissionDialogLaunch -> launchPermissionRationaleDialog(context = context)
+                HomeUiEffect.ScrollToTop -> {
+                    if (isExpandedScreen) {
+                        uiState.lazyGridState.scrollToItem(0)
+                    } else uiState.lazyListState.scrollToItem(0)
+                }
+
+                is HomeUiEffect.NavigateTo -> onClickNavigate(effect.destination)
+                is HomeUiEffect.Speak -> {
+                    ttsManager.speak(
+                        text = effect.text,
+                        langCode = effect.langCode
+                    ).takeIf { !it }?.let {
+                        coroutineScope.launch {
+                            uiState.snackbarHostState.showSnackbar(context.getString(R.string.unsupported_language))
+                        }
+                    }
+                }
             }
         }
     }
@@ -509,49 +663,9 @@ fun HomeScreen(
 
     HomeScreenContent(
         state = uiState,
+        isExpandedScreen = isExpandedScreen,
         cameraPermissionState = cameraPermissionState,
-        onEvent = { event ->
-            when (event) {
-                HomeUiEvent.OnScrollToTop -> {
-                    coroutineScope.launch {
-                        uiState.lazyListState.scrollToItem(0)
-                    }
-                }
-
-                is HomeUiEvent.OnNavigate -> {
-                    onClickNavigate(event.destination)
-                }
-
-                is HomeUiEvent.OnCameraIntentLaunch -> {
-                    val uri =
-                        ComposeFileProvider.getImageUri(context = context)
-
-                    imageUri = uri
-                    cameraLauncher.launch(uri)
-                }
-
-                is HomeUiEvent.OnSpeak -> {
-                    ttsManager.speak(
-                        text = event.text,
-                        langCode = event.langCode
-                    ).takeIf { !it }?.let {
-                        coroutineScope.launch {
-                            uiState.snackbarHostState.showSnackbar(context.getString(R.string.unsupported_language))
-                        }
-                    }
-                }
-
-                HomeUiEvent.OnMultiplePhotoPickerLaunch -> {
-                    multiplePhotoPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                }
-
-                HomeUiEvent.OnPermissionDialogLaunch -> launchPermissionRationaleDialog(context = context)
-
-                else -> viewModel.uiEventHandler(event as HomeUiEvent.NonDirect)
-            }
-        }
+        onEvent = viewModel::uiEventHandler
     )
 }
 
@@ -561,6 +675,7 @@ fun HomeScreen(
 fun HomeScreenPreview() {
     HomeScreenContent(
         state = HomeState(),
+        isExpandedScreen = false,
         cameraPermissionState = null,
         onEvent = {}
     )

@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,12 +35,10 @@ import com.bytecause.lenslex.ui.components.CircularProgressWithCount
 import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
+import com.bytecause.lenslex.ui.events.SendEmailResetUiEffect
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
-import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
-import com.bytecause.lenslex.util.OrientationMode
-import com.bytecause.lenslex.util.getOrientationMode
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -55,7 +51,69 @@ fun SendEmailResetScreenContent(
     yOffset: Animatable<Float, AnimationVector1D>,
     onEvent: (SendEmailResetUiEvent) -> Unit
 ) {
-    if (!isExpandedScreen && getOrientationMode(LocalConfiguration.current) != OrientationMode.Landscape) {
+    if (isExpandedScreen) {
+        UserAuthBackgroundExpanded(
+            snackBarHostState = state.snackbarHostState,
+            backgroundContent = {
+                Text(
+                    text = stringResource(id = R.string.reset_password_request),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.graphicsLayer {
+                        translationX = xOffset.value
+                    }
+                )
+                Text(
+                    text = stringResource(id = R.string.reset_password_request_message),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.graphicsLayer {
+                        translationX = xOffset.value
+                    }
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.forgot_password),
+                    contentDescription = null,
+                    modifier = Modifier.graphicsLayer {
+                        translationY = yOffset.value
+                    }
+                )
+            },
+            foregroundContent = {
+                EmailField(
+                    emailValue = state.email,
+                    isEmailError = state.isEmailError,
+                    onEmailValueChanged = {
+                        onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
+                    })
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Button(
+                        onClick = { onEvent(SendEmailResetUiEvent.OnSendEmailClick) },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp),
+                        shape = RoundedCornerShape(
+                            topStart = 10.dp,
+                            topEnd = 10.dp,
+                            bottomStart = 10.dp,
+                            bottomEnd = 10.dp
+                        ),
+                        enabled = state.timer == -1,
+                        colors = ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        if (state.timer != -1) {
+                            CircularProgressWithCount(
+                                value = state.timer.toFloat(),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else Text(text = stringResource(id = R.string.send))
+                    }
+                }
+            }
+        )
+    } else {
         UserAuthBackground(
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
@@ -118,68 +176,6 @@ fun SendEmailResetScreenContent(
                 }
             }
         )
-    } else {
-        UserAuthBackgroundExpanded(
-            snackBarHostState = state.snackbarHostState,
-            backgroundContent = {
-                Text(
-                    text = stringResource(id = R.string.reset_password_request),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.graphicsLayer {
-                        translationX = xOffset.value
-                    }
-                )
-                Text(
-                    text = stringResource(id = R.string.reset_password_request_message),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.graphicsLayer {
-                        translationX = xOffset.value
-                    }
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                Image(
-                    painter = painterResource(id = R.drawable.forgot_password),
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer {
-                        translationY = yOffset.value
-                    }
-                )
-            },
-            foregroundContent = {
-                EmailField(
-                    emailValue = state.email,
-                    isEmailError = state.isEmailError,
-                    onEmailValueChanged = {
-                        onEvent(SendEmailResetUiEvent.OnEmailValueChanged(it))
-                    })
-
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Button(
-                        onClick = { onEvent(SendEmailResetUiEvent.OnSendEmailClick) },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(start = 20.dp, end = 20.dp),
-                        shape = RoundedCornerShape(
-                            topStart = 10.dp,
-                            topEnd = 10.dp,
-                            bottomStart = 10.dp,
-                            bottomEnd = 10.dp
-                        ),
-                        enabled = state.timer == -1,
-                        colors = ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
-                        if (state.timer != -1) {
-                            CircularProgressWithCount(
-                                value = state.timer.toFloat(),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        } else Text(text = stringResource(id = R.string.send))
-                    }
-                }
-            }
-        )
     }
 }
 
@@ -192,11 +188,27 @@ fun SendEmailResetScreen(
 
     val context = LocalContext.current
 
-    val xOffset = remember { Animatable(if (!uiState.animationStarted) -1050f else 0f) }
-    val yOffset = remember { Animatable(if (!uiState.animationStarted) 700f else 0f) }
+    val xOffset = remember { Animatable(if (!uiState.animationFinished) -1050f else 0f) }
+    val yOffset = remember { Animatable(if (!uiState.animationFinished) 700f else 0f) }
+
+    LaunchedEffect(key1 = Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                SendEmailResetUiEffect.SuccessfulRequest -> {
+                    uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
+                }
+
+                is SendEmailResetUiEffect.FailureRequest -> {
+                    uiState.snackbarHostState.showSnackbar(
+                        message = effect.exception?.message.toString()
+                    )
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
-        if (!uiState.animationStarted) {
+        if (!uiState.animationFinished) {
             coroutineScope {
                 launch {
                     xOffset.animateTo(
@@ -216,28 +228,7 @@ fun SendEmailResetScreen(
                         )
                     )
                 }
-            }.invokeOnCompletion { viewModel.uiEventHandler(SendEmailResetUiEvent.OnAnimationStarted) }
-        }
-    }
-
-    LaunchedEffect(key1 = uiState.requestResult) {
-        when (uiState.requestResult) {
-            SimpleResult.OnSuccess -> {
-                uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
-                viewModel.updateRequestResult(null)
-            }
-
-            is SimpleResult.OnFailure -> {
-                uiState.snackbarHostState.showSnackbar(
-                    message = (uiState.requestResult as SimpleResult.OnFailure)
-                        .exception?.message.toString()
-                )
-                viewModel.updateRequestResult(null)
-            }
-
-            null -> {
-                // init state, do nothing
-            }
+            }.invokeOnCompletion { viewModel.uiEventHandler(SendEmailResetUiEvent.OnAnimationFinished) }
         }
     }
 

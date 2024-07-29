@@ -3,16 +3,18 @@ package com.bytecause.lenslex.ui.screens.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
+import com.bytecause.lenslex.ui.events.SendEmailResetUiEffect
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.interfaces.SimpleResult
 import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -23,14 +25,21 @@ class SendEmailResetViewModel(
     private val _uiState = MutableStateFlow(SendEmailResetState())
     val uiState = _uiState.asStateFlow()
 
+    private val _effect = Channel<SendEmailResetUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
+
     private var shouldSendResetPasswordEmail: Boolean = true
 
     fun uiEventHandler(event: SendEmailResetUiEvent) {
         when (event) {
             is SendEmailResetUiEvent.OnEmailValueChanged -> onEmailValueChanged(event.value)
             SendEmailResetUiEvent.OnSendEmailClick -> onSendEmailClick()
-            SendEmailResetUiEvent.OnAnimationStarted -> onAnimationStarted()
+            SendEmailResetUiEvent.OnAnimationFinished -> onAnimationFinished()
         }
+    }
+
+    private fun sendEffect(effect: SendEmailResetUiEffect) {
+        _effect.trySend(effect)
     }
 
     private fun onEmailValueChanged(email: String) {
@@ -56,12 +65,8 @@ class SendEmailResetViewModel(
         }
     }
 
-    private fun onAnimationStarted() {
-        _uiState.update { it.copy(animationStarted = true) }
-    }
-
-    fun updateRequestResult(result: SimpleResult?) {
-        _uiState.update { it.copy(requestResult = result) }
+    private fun onAnimationFinished() {
+        _uiState.update { it.copy(animationFinished = true) }
     }
 
     private fun startTimer() {
@@ -83,10 +88,11 @@ class SendEmailResetViewModel(
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     startTimer()
-                    updateRequestResult(SimpleResult.OnSuccess)
+
+                    sendEffect(SendEmailResetUiEffect.SuccessfulRequest)
                     shouldSendResetPasswordEmail = true
                 } else {
-                    updateRequestResult(SimpleResult.OnFailure(task.exception))
+                    sendEffect(SendEmailResetUiEffect.FailureRequest(task.exception))
                     shouldSendResetPasswordEmail = true
                 }
             }

@@ -3,11 +3,13 @@ package com.bytecause.lenslex.ui.events
 import android.net.Uri
 
 sealed interface ModifiedImagePreviewUiEvent {
+    data class OnUpdateImage(val uri: Uri) : ModifiedImagePreviewUiEvent
+    data object OnLaunchCropLauncher : ModifiedImagePreviewUiEvent
+    data object OnProcessImageClick : ModifiedImagePreviewUiEvent
+}
 
-    sealed interface Direct : ModifiedImagePreviewUiEvent
-    sealed interface NonDirect : ModifiedImagePreviewUiEvent
-
-    data object OnLaunchCropLauncher : Direct
-    data class OnUpdateImage(val uri: Uri) : NonDirect
-    data object OnProcessImageClick : NonDirect
+sealed interface ModifiedImagePreviewUiEffect {
+    data object ImageTextless : ModifiedImagePreviewUiEffect
+    data object LaunchCropLauncher : ModifiedImagePreviewUiEffect
+    data class NavigateWithTextResult(val text: List<String>) : ModifiedImagePreviewUiEffect
 }

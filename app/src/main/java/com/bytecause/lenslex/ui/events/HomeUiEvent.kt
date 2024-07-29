@@ -5,35 +5,36 @@ import com.bytecause.lenslex.domain.models.WordsAndSentences
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
-// I defined Direct and NonDirect sealed interfaces to get rid of else statement in when expressions and make
-// it clear, where should be each event be handled (Direct = directly inside composable, NonDirect = inside viewmodel)
 sealed interface HomeUiEvent {
-
-    sealed interface Direct : HomeUiEvent
-    sealed interface NonDirect : HomeUiEvent
-
-    data class OnSpeak(val text: String, val langCode: String) : Direct
-    data class OnNavigate(val destination: Screen) : Direct
-    data object OnCameraIntentLaunch : Direct
-    data object OnMultiplePhotoPickerLaunch : Direct
-    data object OnScrollToTop : Direct
-    data object OnPermissionDialogLaunch : Direct
-
-    data class OnIconStateChange(val value: Boolean) : NonDirect
-    data class OnConfirmLanguageDialog(val value: TranslationOption) : NonDirect
-    data class OnShowLanguageDialog(val value: TranslationOption?) : NonDirect
-    data class OnDownloadLanguage(val langCode: String) : NonDirect
-    data class OnRemoveLanguage(val langCode: String) : NonDirect
-    data class OnTextRecognition(val imagePaths: List<Uri>) : NonDirect
-    data class OnItemRemoved(val word: WordsAndSentences) : NonDirect
-    data object OnItemRestored : NonDirect
-    data object OnSwitchLanguages : NonDirect
-    data object OnShowcaseCompleted : NonDirect
-    data object OnReload : NonDirect
-    data object OnShowIntroShowcaseIfNecessary : NonDirect
-    data object OnFetchItemList : NonDirect
+    data class OnSpeak(val text: String, val langCode: String) : HomeUiEvent
+    data class OnNavigate(val destination: Screen) : HomeUiEvent
+    data class OnIconStateChange(val value: Boolean) : HomeUiEvent
+    data class OnConfirmLanguageDialog(val value: TranslationOption) : HomeUiEvent
+    data class OnShowLanguageDialog(val value: TranslationOption?) : HomeUiEvent
+    data class OnDownloadLanguage(val langCode: String) : HomeUiEvent
+    data class OnRemoveLanguage(val langCode: String) : HomeUiEvent
+    data class OnTextRecognition(val imagePaths: List<Uri>) : HomeUiEvent
+    data class OnItemRemoved(val word: WordsAndSentences) : HomeUiEvent
+    data class OnEditStateChange(val value: Boolean) : HomeUiEvent
+    data class OnDeleteConfirmationDialogResult(val value: Boolean) : HomeUiEvent
+    data object OnCameraIntentLaunch : HomeUiEvent
+    data object OnMultiplePhotoPickerLaunch : HomeUiEvent
+    data object OnScrollToTop : HomeUiEvent
+    data object OnPermissionDialogLaunch : HomeUiEvent
+    data object OnItemRestored : HomeUiEvent
+    data object OnSwitchLanguages : HomeUiEvent
+    data object OnShowcaseCompleted : HomeUiEvent
+    data object OnReload : HomeUiEvent
+    data object OnShowIntroShowcaseIfNecessary : HomeUiEvent
+    data object OnFetchItemList : HomeUiEvent
 }
 
 sealed interface HomeUiEffect {
     data object ImageTextless : HomeUiEffect
+    data object CameraIntentLaunch : HomeUiEffect
+    data object ScrollToTop : HomeUiEffect
+    data object MultiplePhotoPickerLaunch : HomeUiEffect
+    data object PermissionDialogLaunch : HomeUiEffect
+    data class Speak(val text: String, val langCode: String) : HomeUiEffect
+    data class NavigateTo(val destination: Screen) : HomeUiEffect
 }

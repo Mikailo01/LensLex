@@ -40,7 +40,7 @@ fun AppLanguageRow(
         }
         if (isChecked) Image(
             imageVector = Icons.Filled.Check,
-            contentDescription = "",
+            contentDescription = null,
             modifier = Modifier.padding(10.dp)
         )
     }

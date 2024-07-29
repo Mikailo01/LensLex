@@ -4,7 +4,7 @@ import com.bytecause.lenslex.data.local.mlkit.Translator
 import kotlinx.coroutines.flow.Flow
 
 interface TranslateRepository {
-    suspend fun translate(
+    fun translate(
         text: String,
         sourceLang: String,
         targetLang: String

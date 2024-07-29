@@ -9,21 +9,22 @@ import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
 import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.ui.events.AddUiEffect
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 
 class AddViewModel(
     private val wordsRepository: WordsRepository,
@@ -41,6 +42,9 @@ class AddViewModel(
 
     private val _uiState = MutableStateFlow(AddState())
     val uiState = _uiState.asStateFlow()
+
+    private val _effect = Channel<AddUiEffect>(capacity = Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
 
     private var translateJob: Job? = null
 
@@ -73,7 +77,7 @@ class AddViewModel(
             is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
             is AddUiEvent.OnTranslate -> translateText(event.value)
             is AddUiEvent.OnTryAgainClick -> onTryAgainClick(event.value)
-            AddUiEvent.OnNavigateBack -> onNavigateBack()
+            AddUiEvent.OnNavigateBack -> sendEffect(AddUiEffect.NavigateBack)
             AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialog()
             AddUiEvent.OnSwitchLanguages -> switchLanguageOptions(
                 origin = uiState.value.selectedLanguageOptions.first,
@@ -82,22 +86,21 @@ class AddViewModel(
         }
     }
 
+    private fun sendEffect(effect: AddUiEffect) {
+        _effect.trySend(effect)
+    }
+
     private fun onTryAgainClick(text: String) {
         viewModelScope.launch {
             if (NetworkUtil.isOnline()) {
                 _uiState.update {
                     it.copy(
-                        showNetworkErrorDialog = false,
-                        showNetworkErrorMessage = false
+                        showNetworkErrorDialog = false
                     )
                 }
                 translateText(text)
             } else {
-                if (uiState.value.showNetworkErrorMessage) {
-                    _uiState.update { it.copy(showNetworkErrorMessage = false) }
-                    delay(300)
-                    _uiState.update { it.copy(showNetworkErrorMessage = true) }
-                } else _uiState.update { it.copy(showNetworkErrorMessage = true) }
+                sendEffect(AddUiEffect.ShowNetworkErrorMessage)
             }
         }
     }
@@ -130,14 +133,8 @@ class AddViewModel(
         _uiState.update { it.copy(showLanguageDialog = translationOption) }
     }
 
-    private fun onNavigateBack() {
-        _uiState.update { it.copy(shouldNavigateBack = true) }
-    }
-
     private fun translateText(text: String) {
         if (translateJob?.isActive == true) return
-
-        uiState.value.textValue
 
         translateJob = viewModelScope.launch {
             // if language models are not downloaded and the user is offline, show network error dialog
@@ -175,7 +172,7 @@ class AddViewModel(
                                 timeStamp = System.currentTimeMillis()
                             )
                         ).firstOrNull().takeIf { it == true }?.let {
-                            _uiState.update { it.copy(shouldNavigateBack = true) }
+                            sendEffect(AddUiEffect.NavigateBack)
                         }
                     }
 

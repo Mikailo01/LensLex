@@ -99,6 +99,7 @@ fun AppNavHost(
         navigation<NavGraph.TextProcessMainGraph>(startDestination = Screen.Home) {
             composable<Screen.Home> {
                 HomeScreen(
+                    isExpandedScreen = isExpandedScreen,
                     onClickNavigate = { screen ->
                         navController.navigate(screen)
                     },

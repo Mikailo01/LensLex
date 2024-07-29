@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.util.CredentialValidationResult
@@ -59,7 +60,7 @@ fun SignIn(
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(bottom = 10.dp)
-                .clickable { onEvent(LoginUiEvent.OnForgetPasswordClick) }
+                .clickable { onEvent(LoginUiEvent.OnForgetPasswordClick(Screen.SendEmailPasswordReset)) }
         )
 
         Button(

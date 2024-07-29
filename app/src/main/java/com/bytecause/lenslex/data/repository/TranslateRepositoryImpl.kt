@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 class TranslateRepositoryImpl(
     private val translator: Translator
 ) : TranslateRepository {
-    override suspend fun translate(
+    override fun translate(
         text: String,
         sourceLang: String,
         targetLang: String

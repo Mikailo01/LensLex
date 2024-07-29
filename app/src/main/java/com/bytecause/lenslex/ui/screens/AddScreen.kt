@@ -29,6 +29,7 @@ import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AddUiEffect
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
@@ -44,7 +45,6 @@ fun AddScreenContent(
     state: AddState,
     onEvent: (AddUiEvent) -> Unit
 ) {
-
     val context = LocalContext.current
 
     Scaffold(
@@ -98,7 +98,8 @@ fun AddScreenContent(
 
                             onEvent(
                                 AddUiEvent.OnTranslate(
-                                    jsonContent?.get(state.textValue.lowercase()) ?: state.textValue
+                                    (jsonContent?.get(state.textValue.lowercase())
+                                        ?: state.textValue).trimIndent()
                                 )
                             )
                         }) {
@@ -166,13 +167,15 @@ fun AddScreen(
 
     val context = LocalContext.current
 
-    LaunchedEffect(key1 = uiState.shouldNavigateBack) {
-        if (uiState.shouldNavigateBack) onNavigateBack()
-    }
+    LaunchedEffect(key1 = Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                AddUiEffect.ShowNetworkErrorMessage -> uiState.snackbarHostState.showSnackbar(
+                    context.getString(R.string.network_unavailable)
+                )
 
-    LaunchedEffect(key1 = uiState.showNetworkErrorMessage) {
-        if (uiState.showNetworkErrorMessage) {
-            uiState.snackbarHostState.showSnackbar(context.getString(R.string.network_unavailable))
+                AddUiEffect.NavigateBack -> onNavigateBack()
+            }
         }
     }
 
