@@ -10,7 +10,7 @@ import com.bytecause.lenslex.data.repository.abstraction.TextLanguageRecognition
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEffect
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
@@ -339,7 +339,7 @@ class ExtractedTextViewModel(
                         is Translator.TranslationResult.TranslationSuccess -> {
                             // Translation successful, save translated text into firestore database
                             insertWord(
-                                WordsAndSentences(
+                                Words(
                                     id = "${text.text}_${sourceLang}"
                                         .replace(" ", "_"),
                                     word = text.text,
@@ -362,7 +362,7 @@ class ExtractedTextViewModel(
         }
     }
 
-    private fun insertWord(word: WordsAndSentences): Flow<Boolean> =
+    private fun insertWord(word: Words): Flow<Boolean> =
         wordsRepository.addWord(word)
 
     private fun addWords(words: List<Word>) {

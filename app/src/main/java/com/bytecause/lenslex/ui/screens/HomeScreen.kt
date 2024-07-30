@@ -69,7 +69,7 @@ import coil.compose.AsyncImage
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.ComposeFileProvider
 import com.bytecause.lenslex.data.local.TTSManager
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.CircularFloatingActionMenu
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
@@ -445,7 +445,7 @@ fun HomeScreenContent(
 @Composable
 private fun IntroShowcaseScope.ListContent(
     state: HomeState,
-    item: WordsAndSentences,
+    item: Words,
     index: Int,
     scale: Float,
     onEvent: (HomeUiEvent) -> Unit

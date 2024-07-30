@@ -47,6 +47,7 @@ class HomeScreenTest {
             NavHost(navController = navController, startDestination = Screen.Home) {
                 composable<Screen.Home> {
                     HomeScreen(
+                        isExpandedScreen = false,
                         onClickNavigate = { navController.navigate(Screen.Add) },
                         onPhotoTaken = { uri1, uri2 -> }
                     )

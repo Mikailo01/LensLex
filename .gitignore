@@ -28,6 +28,3 @@ build/
 *.apk
 *.aar
 
-# VS Code
-.vscode/
-

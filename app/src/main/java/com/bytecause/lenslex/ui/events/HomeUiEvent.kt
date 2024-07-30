@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.ui.events
 
 import android.net.Uri
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 
@@ -14,7 +14,7 @@ sealed interface HomeUiEvent {
     data class OnDownloadLanguage(val langCode: String) : HomeUiEvent
     data class OnRemoveLanguage(val langCode: String) : HomeUiEvent
     data class OnTextRecognition(val imagePaths: List<Uri>) : HomeUiEvent
-    data class OnItemRemoved(val word: WordsAndSentences) : HomeUiEvent
+    data class OnItemRemoved(val word: Words) : HomeUiEvent
     data class OnEditStateChange(val value: Boolean) : HomeUiEvent
     data class OnDeleteConfirmationDialogResult(val value: Boolean) : HomeUiEvent
     data object OnCameraIntentLaunch : HomeUiEvent

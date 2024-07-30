@@ -2,7 +2,7 @@ package com.bytecause.lenslex.data.repository
 
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.util.BaseCollection
 import com.bytecause.lenslex.util.FIELD_LANGUAGE_CODE
 import com.bytecause.lenslex.util.FIELD_TIMESTAMP
@@ -27,7 +27,7 @@ class WordsRepositoryImpl(
     override fun getWords(
         originLangCode: String,
         targetLangCode: String
-    ): Flow<List<WordsAndSentences>> = callbackFlow {
+    ): Flow<List<Words>> = callbackFlow {
         var listener: ListenerRegistration? = null
 
         user()?.uid?.let { userId ->
@@ -42,7 +42,7 @@ class WordsRepositoryImpl(
                     }
 
                     if (snapshot != null && !snapshot.isEmpty) {
-                        val wordsList = mutableListOf<WordsAndSentences>()
+                        val wordsList = mutableListOf<Words>()
                         for (doc in snapshot.documents) {
                             val originLang = doc.getString(FIELD_LANGUAGE_CODE)
                             val targetLang = doc.get(FIELD_TRANSLATIONS) as Map<String, String>
@@ -52,7 +52,7 @@ class WordsRepositoryImpl(
                                     targetLangCode
                                 )
                             ) {
-                                wordsList.add(mapDocumentObject(doc))
+                                wordsList.add(documentToWords(doc))
                             }
                         }
 
@@ -63,19 +63,19 @@ class WordsRepositoryImpl(
         awaitClose { listener?.remove() }
     }
 
-    private fun mapDocumentObject(document: DocumentSnapshot): WordsAndSentences {
+    private fun documentToWords(document: DocumentSnapshot): Words {
         return document.data?.let { field ->
-            WordsAndSentences(
+            Words(
                 id = document.id,
                 word = field[FIELD_WORD] as String,
                 languageCode = field[FIELD_LANGUAGE_CODE] as String,
                 translations = field[FIELD_TRANSLATIONS] as Map<String, String>,
                 timeStamp = field[FIELD_TIMESTAMP] as Long
             )
-        } ?: WordsAndSentences()
+        } ?: Words()
     }
 
-    override fun addWord(word: WordsAndSentences): Flow<Boolean> = callbackFlow {
+    override fun addWord(word: Words): Flow<Boolean> = callbackFlow {
         var observer: ListenerRegistration? = null
 
         user()?.uid?.let { userId ->

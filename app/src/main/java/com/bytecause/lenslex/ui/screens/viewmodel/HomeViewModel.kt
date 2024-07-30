@@ -10,7 +10,7 @@ import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionReposito
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
@@ -170,7 +170,7 @@ class HomeViewModel(
         _uiState.update { it.copy(fabState = boolean) }
     }
 
-    private fun onItemRemoved(word: WordsAndSentences) {
+    private fun onItemRemoved(word: Words) {
         addDeletedItemToStack(word)
         deleteWord(word.id)
     }
@@ -214,7 +214,7 @@ class HomeViewModel(
 
                     // change states to make visible all needed ui elements
                     val fakeWordList = listOf(
-                        WordsAndSentences(
+                        Words(
                             id = "0",
                             word = "Intro",
                             languageCode = "",
@@ -257,7 +257,7 @@ class HomeViewModel(
         _uiState.update { it.copy(showLanguageDialog = null) }
     }
 
-    private fun insertWord(word: WordsAndSentences) {
+    private fun insertWord(word: Words) {
         viewModelScope.launch {
             wordsRepository.addWord(word).firstOrNull()
         }
@@ -267,7 +267,7 @@ class HomeViewModel(
         wordsRepository.deleteWord(documentId)
     }
 
-    private fun addDeletedItemToStack(item: WordsAndSentences) {
+    private fun addDeletedItemToStack(item: Words) {
         _uiState.update {
             it.copy(deletedItemsStack = it.deletedItemsStack + item)
         }

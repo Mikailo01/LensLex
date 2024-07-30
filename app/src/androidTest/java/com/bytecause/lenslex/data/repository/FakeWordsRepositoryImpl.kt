@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.data.repository
 
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,14 +10,14 @@ import kotlinx.coroutines.flow.update
 
 class FakeWordsRepositoryImpl : WordsRepository {
 
-    private val _wordsFlow = MutableStateFlow<List<WordsAndSentences>>(emptyList())
+    private val _wordsFlow = MutableStateFlow<List<Words>>(emptyList())
 
     override fun getWords(
         originLangCode: String,
         targetLangCode: String
-    ): Flow<List<WordsAndSentences>> = _wordsFlow.asStateFlow()
+    ): Flow<List<Words>> = _wordsFlow.asStateFlow()
 
-    override fun addWord(word: WordsAndSentences): Flow<Boolean> = flow {
+    override fun addWord(word: Words): Flow<Boolean> = flow {
         _wordsFlow.value += word
         emit(true)
     }

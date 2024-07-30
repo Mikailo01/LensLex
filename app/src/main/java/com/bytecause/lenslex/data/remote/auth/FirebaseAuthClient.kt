@@ -3,6 +3,7 @@ package com.bytecause.lenslex.data.remote.auth
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import com.bytecause.lenslex.BuildConfig
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.domain.models.UserData
 import com.bytecause.lenslex.ui.models.SignInResult
@@ -176,8 +177,9 @@ class FirebaseAuthClient : Authenticator {
         val credentialManager = CredentialManager.create(context)
         val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(context.getString(R.string.web_client_id))
+            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
             .setNonce(Util.generateNonce())
+            .setAutoSelectEnabled(true)
             .build()
 
         val request: GetCredentialRequest = GetCredentialRequest.Builder()

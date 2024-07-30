@@ -8,7 +8,7 @@ import com.bytecause.lenslex.data.repository.SupportedLanguagesRepository
 import com.bytecause.lenslex.data.repository.abstraction.TranslateRepository
 import com.bytecause.lenslex.data.repository.abstraction.UserPrefsRepository
 import com.bytecause.lenslex.data.repository.abstraction.WordsRepository
-import com.bytecause.lenslex.domain.models.WordsAndSentences
+import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.ui.events.AddUiEffect
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
@@ -163,7 +163,7 @@ class AddViewModel(
 
                     is Translator.TranslationResult.TranslationSuccess -> {
                         insertWord(
-                            WordsAndSentences(
+                            Words(
                                 id = "${uiState.value.textValue}_$sourceLang".lowercase()
                                     .replace(" ", "_"),
                                 word = uiState.value.textValue,
@@ -184,6 +184,6 @@ class AddViewModel(
         }
     }
 
-    private fun insertWord(word: WordsAndSentences): Flow<Boolean> =
+    private fun insertWord(word: Words): Flow<Boolean> =
         wordsRepository.addWord(word)
 }

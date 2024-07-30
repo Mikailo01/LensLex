@@ -3,7 +3,7 @@ package com.bytecause.lenslex.domain.models
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class WordsAndSentences(
+data class Words(
     val id: String = "",
     val word: String = "",
     val languageCode: String = "",
