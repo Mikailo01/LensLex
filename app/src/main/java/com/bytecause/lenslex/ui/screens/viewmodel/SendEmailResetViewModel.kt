@@ -45,9 +45,9 @@ class SendEmailResetViewModel(
     private fun onEmailValueChanged(email: String) {
         _uiState.update {
             it.copy(
-                email = email.trimIndent(),
+                email = email,
                 isEmailError = ValidationUtil.areCredentialsValid(
-                    Credentials.Sensitive.EmailCredential(email.trimIndent())
+                    Credentials.Sensitive.EmailCredential(email)
                 ) is CredentialValidationResult.Invalid
             )
         }

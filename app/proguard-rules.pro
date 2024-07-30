@@ -24,3 +24,19 @@
 -keep class androidx.credentials.playservices.** {
   *;
 }
+
+# keep everything in this package from being removed or renamed
+-keep class com.bytecause.lenslex.navigation.** { *; }
+
+# keep everything in this package from being renamed only
+-keepnames class com.bytecause.lenslex.navigation.** { *; }
+
+# keep everything in this package from being removed or renamed
+-keep class com.bytecause.lenslex.domain.models.** { *; }
+
+# keep everything in this package from being renamed only
+-keepnames class com.bytecause.lenslex.domain.models.** { *; }
+
+
+
+

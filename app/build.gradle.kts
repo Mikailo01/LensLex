@@ -28,6 +28,7 @@ android {
 
         // will fail on init compile build, because local.properties won't exist yet, so recompile again
         // after local.properties is generated, include your own firebase web api key and google web client id
+        // see https://www.youtube.com/watch?v=-2ckvIzs0nU
         val properties: Properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
         buildConfigField(
@@ -48,7 +49,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
