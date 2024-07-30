@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_to_lens_lex">Vítejte na LensLexu!</string>
+    <string name="lets_get_started">Začněme.</string>
+    <string name="app_name">LensLex</string>
+    <string name="camera">Fotoaparát</string>
+    <string name="gallery">Galerie</string>
+    <string name="add">Přidat</string>
+    <string name="result">Výsledek</string>
+    <string name="add_word">Přidat slovo</string>
+    <string name="download_language">Stáhnout jazyk</string>
+    <string name="delete_language">Smazat jazyk</string>
+    <string name="account">Účet</string>
+    <string name="preview">Náhled</string>
+    <string name="choose_language">Zvolte jazyk</string>
+    <string name="copy_content">Kopírovat obsah</string>
+    <string name="copy">Kopírovat</string>
+    <string name="hint">Nápověda</string>
+    <string name="share_result">Sdílet výsledek</string>
+    <string name="select_all">Vybrat vše</string>
+    <string name="unselect_all">Odznačit vše</string>
+    <string name="cancel">Zrušit</string>
+    <string name="confirm">Potvrdit</string>
+    <string name="camera_permission_needed">Vyžadováno povolení k použití fotoaparátu</string>
+    <string name="allow_camera_permission_message">Tato aplikace potřebuje k pořizování snímků povolení fotoaparátu. Povolte prosím povolení k pokračování.</string>
+    <string name="allow">Povolit</string>
+    <string name="reauthorization">Reautorizace</string>
+    <string name="word">Slovo</string>
+    <string name="app_settings">Nastavení aplikace</string>
+    <string name="enable_edit_mode">Povolit režim úprav</string>
+    <string name="exit_edit_mode">Ukončit režim úprav</string>
+    <string name="process">Zpracovat</string>
+    <string name="processing">Zpracovávání</string>
+    <string name="forget_password">Zapomenuté heslo?</string>
+    <string name="launch_camera">Spuštění fotoaparátu</string>
+    <string name="launch_gallery_image_picker">Spuštění nástroje pro výběr obrázků v galerii</string>
+    <string name="add_new_word_into_the_list">Přidání nového slova do seznamu</string>
+    <string name="floating_action_button_with_destinations">Plovoucí akční tlačítko s destinacemi</string>
+    <string name="type_word_or_sentence">Zadejte slovo nebo větu</string>
+    <string name="undo_changes">Vrátit změny</string>
+    <string name="permanent_deletion_dialog_message">Chystáte se trvale odstranit položky ze seznamu. Tuto akci nelze vrátit zpět.</string>
+    <string name="image_does_not_contain_any_text">Obrázek neobsahuje žádný text</string>
+    <string name="models_missing">Vybrané jazyky je třeba stáhnout, protože v zařízení nejsou předinstalovány a k jejich instalaci je nutný přístup k internetu.</string>
+    <string name="sentence_construction">Režim konstrukce věty aktivován.</string>
+    <string name="sentence_construction_message">Vybraná slova budou sestavena do věty.</string>
+    <string name="input_language_cannot_be_changed_message">Vstupní jazyk je rozpoznán na základě zadaného textu a nelze jej měnit.</string>
+    <string name="target_lang_option_not_selected">Cílový jazyk není zadán.</string>
+    <string name="language_cannot_be_inferred_message">Jazyk nebylo možné z poskytnutého textu automaticky určit. Vyberte prosím jazyk ručně z podporovaných možností.</string>
+    <string name="language_cannot_be_inferred_title">Výběr jazyka je nutný</string>
+    <string name="unsupported_language">Nepodporovaný jazyk</string>
+    <string name="text_to_speech_message">Klepněte na libovolný text, který chcete slyšet nahlas.</string>
+    <string name="restore_deleted_item_message">Klepnutím obnovíte smazanou položku.</string>
+    <string name="enter_edit_mode_message">Klepnutím přejdete do režimu úprav.</string>
+    <string name="swipe_left_or_right_message">Když je povolen režim úprav, přejetím vlevo nebo vpravo odeberete položku ze seznamu.</string>
+
+    <!-- Showcase messages -->
+    <string name="tap_to_navigate_into_app_settings">Klepnutím přejdete do nastavení aplikace.</string>
+    <string name="language_preferences_showcase_message">Zde nastavíte možnosti překladu. \n První možnost určuje jazyk zadaného textu a druhá možnost jazyk překladu.</string>
+    <string name="tap_to_expand_action_menu_showcase_message">Klepnutím rozbalíte nabídku akcí.</string>
+    <string name="camera_mini_fab_showcase_message">Otevřete fotoaparát a pořiďte fotografii pro extrakci textu.</string>
+    <string name="gallery_mini_fab_showcase_message">Vyberte fotografii z galerie pro extrakci textu.</string>
+    <string name="add_mini_fab_showcase_message">Přidejte vlastní slovo nebo větu do seznamu.</string>
+
+    <string name="words_layout_showcase_message">Klepnutím na požadované slovo jej zvýrazníte nebo dlouhým klepnutím na libovolné slovo aktivujete konstrukci věty a poté můžete sestavit větu z vybraných slov.</string>
+    <string name="complete_sentence_construction_showcase_message">Klepnutím dokončíte konstrukci věty; všechna vybraná slova se uloží a připraví k překladu a přidání do seznamu.</string>
+    <string name="cancel_sentence_construction_showcase_message">Klepnutím zrušíte konstrukci věty; všechna vybraná slova budou vymazána.</string>
+    <string name="sentence_preview_showcase_message">Kompletní věta se objeví zde.</string>
+    <string name="all_words_chosen_showcase_message">Po zvýraznění všech požadovaných slov nebo vět klikněte na tlačítko pro překlad a přidejte je do seznamu.</string>
+
+    <string name="sign_prompt">Nemáte účet? %1$s</string>
+    <string name="sign_in">Přihlásit</string>
+    <string name="sign_up">Zaregistrovat</string>
+    <string name="sign_out">Odhlásit</string>
+    <string name="done">Hotovo</string>
+    <string name="send">Poslat</string>
+
+    <string name="url">URL</string>
+    <string name="not_set">Nenastaveno</string>
+    <string name="email">Email</string>
+    <string name="email_unsupported_format_warning">Email neodpovídá podporovanému formátu</string>
+    <string name="password_empty_warning">Heslo nemůže být prázdné</string>
+    <string name="password">Heslo</string>
+    <string name="confirm_password">Potvrdit heslo</string>
+    <string name="password_shown">Heslo viditelné</string>
+    <string name="password_hidden">Heslo skryté</string>
+    <string name="password_mismatch">Hesla se neshodují</string>
+    <string name="password_incorrect">Nesprávné heslo</string>
+    <string name="fill_all_fields">Vyplň všechna pole!</string>
+
+    <string name="continue_with_google">Pokračovat s Google účtem</string>
+    <string name="continue_anonymously">Pokračovat anonymně</string>
+
+    <string name="language">Jazyk</string>
+
+    <string name="pick_profile_picture_from_storage">Vybrat obrázek z uložiště tohoto zařízení</string>
+    <string name="set_profile_picture_from_url">Nastavit profilový obrázek z URL odkazu</string>
+
+    <string name="modified_image_preview">Náhled upraveného obrázku</string>
+
+    <string name="edit_profile_picture">Změnit profilový obrázek</string>
+
+    <string name="checked">Zaškrtnuto</string>
+    <string name="unchecked">Nezaškrtnuto</string>
+    <string name="linked">Propojeno</string>
+    <string name="unlinked">Nepropojeno</string>
+    <string name="user_id">ID uživatele</string>
+    <string name="account_creation_date">Datum vytvoření účtu</string>
+    <string name="creation_date">Datum vytvoření</string>
+    <string name="uid">UID</string>
+    <string name="username">Uživatelské jméno</string>
+    <string name="link_account">Propojit účet</string>
+    <string name="account_info">Informace o účtu</string>
+    <string name="select_language">Vyberte jazyk</string>
+    <string name="account_settings">Nastavení účtu</string>
+    <string name="link_google_account">Propojit Google účet</string>
+    <string name="link_email_account">Propojit emailový účet</string>
+    <string name="account_email">Email účtu</string>
+    <string name="account_password">Heslo účtu</string>
+    <string name="change">Změnit</string>
+    <string name="email_and_password_cant_be_changed">Změny emailu a hesla nejsou k dispozici pro anonymní účty. Nejprve prosím propojte svůj účet.</string>
+    <string name="password_changed_message">Heslo úspěšně aktualizováno.</string>
+    <string name="email_changed_message">Email úspěšně aktualizován.</string>
+    <string name="username_changed_message">Uživatelské jméno úspěšně změněno.</string>
+    <string name="account_deleted_message">Účet úspěšně smazán.</string>
+    <string name="delete_account">Smazat účet</string>
+    <string name="account_deletion_warning_message">Po smazání účtu budou všechna vaše data trvale odstraněna. Tuto akci nelze vrátit zpět.</string>
+    <string name="are_you_sure">Opravdu chcete pokračovat?</string>
+    <string name="signed_using_anonymous_account_message">Jste přihlášeni pomocí anonymního účtu. Po odhlášení budou všechna data smazána.</string>
+    <string name="type_picture_url">Zadejte URL obrázku</string>
+    <string name="password_reset_success">Obnovení hesla bylo úspěšné.</string>
+    <string name="reset_password">Obnovit heslo</string>
+    <string name="reset_password_message">Aktualizujte své heslo pro možnost přihlášení do aplikace LensLex.</string>
+    <string name="reset_password_request">Žádost o obnovení hesla</string>
+    <string name="reset_password_request_message">Prosím, zadejte email spojený s vaším účtem pro obdržení odkazu pro obnovení hesla.</string>
+    <string name="email_sent">Email odeslán.</string>
+    <string name="reset_code_expired">Platnost kódu již vypršela.</string>
+    <string name="get_code">Získat kód</string>
+    <string name="reset_code_expired_message">Ups! Zdá se, že platnost resetovacího kódu vypršela. Vyžádejte si prosím nový.</string>
+    <string name="try_again">Zkusit znovu</string>
+    <string name="network_unavailable">Připojení k internetu není k dispozici.</string>
+    <string name="service_unavailable">Služba není dostupná.</string>
+    <string name="google_account_will_be_unlinked">Google účet bude odpojen</string>
+
+    <string-array name="password_rules">
+        <item>Heslo musí obsahovat 8 až 24 znaků</item>
+        <item>Musí obsahovat alespoň jedno malé písmeno (a-z)</item>
+        <item>Musí obsahovat alespoň jedno velké písmeno (A-Z)</item>
+        <item>Musí obsahovat alespoň jednu číslici (0–9)</item>
+    </string-array>
+
+    <string name="dummy_text">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Nullam eget nisl. Vivamus ac leo pretium faucibus. Vestibulum erat nulla, ullamcorper nec, rutrum non, nonummy ac, erat. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Nulla accumsan, elit sit amet varius semper, nulla mauris mollis quam, tempor suscipit diam nulla vel leo. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed vel lectus. Donec odio tempus molestie, porttitor ut, iaculis quis, sem. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Aliquam id dolor. Nullam faucibus mi quis velit. Nulla turpis magna, cursus sit amet, suscipit a, interdum id, felis. In enim a arcu imperdiet malesuada. Nulla pulvinar eleifend sem. Nullam lectus justo, vulputate eget mollis sed, tempor sed magna. Mauris metus. Maecenas libero. Sed convallis magna eu sem. Etiam dictum tincidunt diam. </string>
+
+</resources>

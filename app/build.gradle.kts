@@ -26,10 +26,20 @@ android {
             useSupportLibrary = true
         }
 
+        // will fail on init compile build, because local.properties won't exist yet, so recompile again
+        // after local.properties is generated, include your own firebase web api key and google web client id
         val properties: Properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
-        buildConfigField("String", "FIREBASE_WEB_API_KEY", "\"${properties.getProperty("FIREBASE_WEB_API_KEY")}\"")
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${properties.getProperty("GOOGLE_WEB_CLIENT_ID")}\"")
+        buildConfigField(
+            "String",
+            "FIREBASE_WEB_API_KEY",
+            "\"${properties.getProperty("FIREBASE_WEB_API_KEY")}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${properties.getProperty("GOOGLE_WEB_CLIENT_ID")}\""
+        )
     }
 
     androidResources {

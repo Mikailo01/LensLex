@@ -1,0 +1,152 @@
+<resources>
+    <string name="welcome_to_lens_lex">Welcome to LensLex!</string>
+    <string name="lets_get_started">Let\'s get started.</string>
+    <string name="app_name">LensLex</string>
+    <string name="camera">Camera</string>
+    <string name="gallery">Gallery</string>
+    <string name="add">Add</string>
+    <string name="download_language">Download language</string>
+    <string name="delete_language">Delete language</string>
+    <string name="result">Result</string>
+    <string name="add_word">Add word</string>
+    <string name="account">Account</string>
+    <string name="preview">Preview</string>
+    <string name="choose_language">Choose language</string>
+    <string name="copy_content">Copy content</string>
+    <string name="copy">Copy</string>
+    <string name="hint">Hint</string>
+    <string name="select_all">Select all</string>
+    <string name="unselect_all">Unselect all</string>
+    <string name="share_result">Share result</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="camera_permission_needed">Camera permission needed</string>
+    <string name="allow_camera_permission_message">This app needs camera permission to take pictures. Please allow permission to proceed.</string>
+    <string name="allow">Allow</string>
+    <string name="reauthorization">Reauthorization</string>
+    <string name="word">Word</string>
+    <string name="process">Process</string>
+    <string name="processing">Processing</string>
+    <string name="forget_password">Forget password?</string>
+    <string name="launch_camera">Launch camera</string>
+    <string name="app_settings">App settings</string>
+    <string name="enable_edit_mode">Enable edit mode</string>
+    <string name="exit_edit_mode">Exit edit mode</string>
+    <string name="launch_gallery_image_picker">Launch gallery image picker</string>
+    <string name="add_new_word_into_the_list">Add new word into the list</string>
+    <string name="floating_action_button_with_destinations">Floating action button with destinations</string>
+    <string name="type_word_or_sentence">Type word or sentence</string>
+    <string name="undo_changes">Undo changes</string>
+    <string name="permanent_deletion_dialog_message">You are about to permanently delete items from the list. This action cannot be undone.</string>
+    <string name="image_does_not_contain_any_text">Image doesn\'t contain any text</string>
+    <string name="models_missing">The selected languages must be downloaded as they are not pre-installed on the device, requiring internet access for their installation.</string>
+    <string name="sentence_construction">Sentence construction mode activated.</string>
+    <string name="sentence_construction_message">Selected words will be assembled into a sentence.</string>
+    <string name="input_language_cannot_be_changed_message">The input language is detected based on the provided text and cannot be altered.</string>
+    <string name="target_lang_option_not_selected">Target language option is not selected.</string>
+    <string name="language_cannot_be_inferred_message">The language could not be automatically determined from the provided text. Please manually select a language from the supported options.</string>
+    <string name="language_cannot_be_inferred_title">Language selection required</string>
+    <string name="unsupported_language">Unsupported language</string>
+    <string name="text_to_speech_message">Tap on any text you want to hear spoken aloud.</string>
+    <string name="restore_deleted_item_message">Tap to restore the deleted item.</string>
+    <string name="enter_edit_mode_message">Tap to enter edit mode.</string>
+    <string name="swipe_left_or_right_message">While the edit mode is enabled, swipe left or right to remove an item from the list.</string>
+
+    <!-- Showcase messages -->
+    <string name="tap_to_navigate_into_app_settings">Tap to go to the application settings.</string>
+    <string name="language_preferences_showcase_message">Set your desired language options here. The first option defines the source language of the text, and the second option specifies the target language for translation.</string>
+    <string name="tap_to_expand_action_menu_showcase_message">Tap to expand action menu.</string>
+    <string name="camera_mini_fab_showcase_message">Open the camera and capture a photo for text extraction.</string>
+    <string name="gallery_mini_fab_showcase_message">Select a photo from the gallery for text extraction.</string>
+    <string name="add_mini_fab_showcase_message">Add own word or sentence into the list.</string>
+
+    <string name="words_layout_showcase_message">Tap on a desired word to highlight it, or long tap on any word to activate sentence construction and highlight the entire sentence.</string>
+    <string name="complete_sentence_construction_showcase_message">Tap to complete sentence construction; all selected words will be saved and prepared for translation and addition to the list.</string>
+    <string name="cancel_sentence_construction_showcase_message">Tap to undo the sentence construction; all selected words will be deleted.</string>
+    <string name="sentence_preview_showcase_message">Full sentence will appear here.</string>
+    <string name="all_words_chosen_showcase_message">After highlighting all desired words or sentences, click the button to translate and add them to the list.</string>
+
+    <string name="sign_prompt">Don\'t have an account? %1$s</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_up">Sign up</string>
+    <string name="sign_out">Sign out</string>
+    <string name="done">Done</string>
+    <string name="send">Send</string>
+
+    <string name="url">URL</string>
+    <string name="email">Email</string>
+    <string name="email_unsupported_format_warning">Email doesn\'t match supported format</string>
+    <string name="password_empty_warning">Password cannot be empty</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="password_shown">Password shown</string>
+    <string name="password_hidden">Password hidden</string>
+    <string name="password_mismatch">Password mismatch</string>
+    <string name="password_incorrect">Password incorrect</string>
+    <string name="fill_all_fields">Fill all fields!</string>
+
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="continue_anonymously">Continue anonymously</string>
+
+    <string name="language">Language</string>
+
+    <string name="pick_profile_picture_from_storage">Pick picture from device\'s storage</string>
+    <string name="set_profile_picture_from_url">Set profile picture from URL</string>
+
+    <string name="modified_image_preview">Modified image preview</string>
+
+    <string name="edit_profile_picture">Edit profile picture</string>
+
+    <string name="not_set">Not set</string>
+    <string name="checked">Checked</string>
+    <string name="unchecked">Unchecked</string>
+    <string name="linked">Linked</string>
+    <string name="unlinked">Unlinked</string>
+    <string name="user_id">User\'s ID</string>
+    <string name="account_creation_date">Account creation date</string>
+    <string name="creation_date">Date of creation</string>
+    <string name="uid">UID</string>
+    <string name="username">Username</string>
+    <string name="link_account">Link account</string>
+    <string name="account_info">Account info</string>
+    <string name="select_language">Select language</string>
+    <string name="account_settings">Account settings</string>
+    <string name="link_google_account">Link Google account</string>
+    <string name="link_email_account">Link email account</string>
+    <string name="account_email">Account\'s email</string>
+    <string name="account_password">Account\'s password</string>
+    <string name="change">Change</string>
+    <string name="email_and_password_cant_be_changed">Email and password changes are not available for anonymous accounts. Please link your account first.</string>
+    <string name="password_changed_message">Password updated successfully.</string>
+    <string name="email_changed_message">Email updated successfully.</string>
+    <string name="username_changed_message">Username changed successfully.</string>
+    <string name="account_deleted_message">Account deleted successfully.</string>
+    <string name="delete_account">Delete account</string>
+    <string name="account_deletion_warning_message">After deleting your account, all of your data will be permanently removed. This action cannot be undone.</string>
+    <string name="are_you_sure">Are you sure?</string>
+    <string name="signed_using_anonymous_account_message">You are signed in using anonymous account, after log out all data will be deleted.</string>
+    <string name="type_picture_url">Type picture URL</string>
+    <string name="password_reset_success">Password reset successful.</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="reset_password_message">Update your password for LensLex to be able to login again.</string>
+    <string name="reset_password_request">Reset password request</string>
+    <string name="reset_password_request_message">Please provide the email associated with your account to receive the password reset link.</string>
+    <string name="email_sent">Email sent.</string>
+    <string name="reset_code_expired">Reset code expired.</string>
+    <string name="get_code">Get Code</string>
+    <string name="reset_code_expired_message">Oops! It seems like the reset code has expired. Please request a new one.</string>
+    <string name="try_again">Try Again</string>
+    <string name="network_unavailable">Network unavailable.</string>
+    <string name="service_unavailable">Service unavailable.</string>
+    <string name="google_account_will_be_unlinked">Google account unlink</string>
+
+    <string-array name="password_rules">
+        <item>Password length must be between 8 and 24 characters</item>
+        <item>Include at least one lowercase letter (a-z)</item>
+        <item>Include at least one uppercase letter (A-Z)</item>
+        <item>Include at least one number (0–9)</item>
+    </string-array>
+
+    <string name="dummy_text">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Nullam eget nisl. Vivamus ac leo pretium faucibus. Vestibulum erat nulla, ullamcorper nec, rutrum non, nonummy ac, erat. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Nulla accumsan, elit sit amet varius semper, nulla mauris mollis quam, tempor suscipit diam nulla vel leo. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed vel lectus. Donec odio tempus molestie, porttitor ut, iaculis quis, sem. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Aliquam id dolor. Nullam faucibus mi quis velit. Nulla turpis magna, cursus sit amet, suscipit a, interdum id, felis. In enim a arcu imperdiet malesuada. Nulla pulvinar eleifend sem. Nullam lectus justo, vulputate eget mollis sed, tempor sed magna. Mauris metus. Maecenas libero. Sed convallis magna eu sem. Etiam dictum tincidunt diam. </string>
+
+</resources>
