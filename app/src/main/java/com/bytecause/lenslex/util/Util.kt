@@ -1,6 +1,9 @@
 package com.bytecause.lenslex.util
 
+import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
+import android.util.Log
 import org.json.JSONObject
 import java.io.IOException
 import java.security.MessageDigest
@@ -34,6 +37,25 @@ object Util {
         } catch (e: IOException) {
             e.printStackTrace()
             null
+        }
+    }
+
+    private fun forceOrientation(context: Context, activityInfo: Int) {
+        (context as? Activity)?.requestedOrientation = activityInfo
+    }
+
+    // When Credential Manager is displayed, the device orientation is locked to prevent the coroutine
+    // from being cancelled when the orientation is changed.
+    // I couldn't think of a better way to solve this problem, because viewModel
+    // should not hold an instance of the activity context.
+    suspend fun withOrientationLocked(context: Context, block: suspend () -> Unit) {
+        try {
+            forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
+            block()
+        } catch (e: Exception) {
+            Log.e("LockedOrientationScope", "Error: ${e.message}")
+        } finally {
+            forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
         }
     }
 }

@@ -16,6 +16,7 @@ data class LoginState(
     val isLoading: Boolean = false,
     val animationFinished: Boolean = false,
     val credentialManagerShown: Boolean = false,
+    val shouldShowCredentialManager: Boolean = true,
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val credentialValidationResult: CredentialValidationResult? = null
 )

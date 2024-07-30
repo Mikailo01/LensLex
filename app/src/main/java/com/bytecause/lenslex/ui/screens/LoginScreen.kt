@@ -53,10 +53,12 @@ import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.LoginUiEffect
 import com.bytecause.lenslex.ui.events.LoginUiEvent
+import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.ui.screens.uistate.LoginState
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.util.TestTags
+import com.bytecause.lenslex.util.Util.withOrientationLocked
 import com.bytecause.lenslex.util.shadowCustom
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
@@ -242,29 +244,31 @@ fun LoginScreen(
         mutableStateOf(Animatable(if (!uiState.animationFinished) 1050f else 0f))
     }
 
-    // TODO("Uncomment after testing")
-    // Prevention from multiple Credential Manager calls.
-    /* if (!uiState.credentialManagerShown) {
-         LaunchedEffect(Unit) {
-             try {
-                 val passwordCredential =
-                     getCredential(credentialManager = credentialManager, context = context)
-                         ?: return@LaunchedEffect
+    if (uiState.shouldShowCredentialManager) {
+        LaunchedEffect(Unit) {
+            // Prevention from multiple Credential Manager calls.
+            if (uiState.credentialManagerShown) return@LaunchedEffect
 
-                 viewModel.uiEventHandler(
-                     LoginUiEvent.OnSignInUsingEmailAndPassword(
-                         Credentials.Sensitive.SignInCredentials(
-                             email = passwordCredential.id,
-                             password = passwordCredential.password
-                         )
-                     )
-                 )
-             } catch (e: Exception) {
-                 Log.e("CredentialTest", "Error getting credential", e)
-             }
-             viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerShown)
-         }
-     }*/
+            withOrientationLocked(context) {
+                viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerShown)
+                val passwordCredential =
+                    getCredential(credentialManager = credentialManager, context = context)
+                        ?: run {
+                            viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerDismiss)
+                            return@withOrientationLocked
+                        }
+
+                viewModel.uiEventHandler(
+                    LoginUiEvent.OnSignInUsingEmailAndPassword(
+                        Credentials.Sensitive.SignInCredentials(
+                            email = passwordCredential.id,
+                            password = passwordCredential.password
+                        )
+                    )
+                )
+            }
+        }
+    }
 
     LaunchedEffect(key1 = uiState.signInState) {
         when {
@@ -297,10 +301,12 @@ fun LoginScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 LoginUiEffect.SignInUsingGoogleIntent -> {
-                    FirebaseAuthClient().signInUsingGoogleCredential(context).firstOrNull()
-                        ?.let { result ->
-                            viewModel.uiEventHandler(LoginUiEvent.OnUpdateSignInResult(result))
-                        }
+                    withOrientationLocked(context) {
+                        FirebaseAuthClient().signInUsingGoogleCredential(context).firstOrNull()
+                            ?.let { result ->
+                                viewModel.uiEventHandler(LoginUiEvent.OnUpdateSignInResult(result))
+                            }
+                    }
                 }
 
                 is LoginUiEffect.NavigateTo -> {

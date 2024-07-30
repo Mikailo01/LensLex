@@ -20,6 +20,7 @@ sealed interface LoginUiEvent {
     data object OnSignInAnonymously : LoginUiEvent
     data object OnAnimationFinished : LoginUiEvent
     data object OnCredentialManagerShown : LoginUiEvent
+    data object OnCredentialManagerDismiss : LoginUiEvent
 }
 
 sealed interface LoginUiEffect {

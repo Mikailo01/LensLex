@@ -47,7 +47,9 @@ class FirebaseAuthClient : Authenticator {
                 }
 
         } catch (e: Exception) {
-            SignInResult(data = null, errorMessage = e.message)
+            trySend(
+                SignInResult(data = null, errorMessage = e.message)
+            )
         }
         awaitClose()
     }

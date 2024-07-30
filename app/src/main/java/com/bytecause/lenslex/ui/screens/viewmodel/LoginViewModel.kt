@@ -47,11 +47,18 @@ class LoginViewModel(
             LoginUiEvent.OnSignInUsingGoogle -> sendEffect(LoginUiEffect.SignInUsingGoogleIntent)
             LoginUiEvent.OnAnimationFinished -> onAnimationFinished()
             LoginUiEvent.OnCredentialManagerShown -> onCredentialManagerShown()
+            LoginUiEvent.OnCredentialManagerDismiss -> onCredentialManagerDismiss()
         }
     }
 
     private fun sendEffect(effect: LoginUiEffect) {
         _effect.trySend(effect)
+    }
+
+    private fun onCredentialManagerDismiss() {
+        _uiState.update {
+            it.copy(shouldShowCredentialManager = false)
+        }
     }
 
     private fun onAnimationFinished() {

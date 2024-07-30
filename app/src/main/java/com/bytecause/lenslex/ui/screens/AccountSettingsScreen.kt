@@ -1,9 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.app.Activity
-import android.content.Context
-import android.content.pm.ActivityInfo
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,6 +65,7 @@ import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
 import com.bytecause.lenslex.util.PasswordValidationResult
+import com.bytecause.lenslex.util.Util.withOrientationLocked
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -574,8 +571,7 @@ fun AccountSettingsScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 AccountSettingsUiEffect.LinkGoogleProvider -> {
-                    try {
-                        forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
+                    withOrientationLocked(context) {
                         val authClient = FirebaseAuthClient()
                         val authCredential = authClient.getGoogleCredential(context)
 
@@ -584,15 +580,11 @@ fun AccountSettingsScreen(
                                 authCredential
                             )
                         )
-                    } catch (e: Exception) {
-                        Log.e("AccountSettingsLinkGoogleIntent", e.message.toString())
                     }
-                    forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
                 }
 
                 AccountSettingsUiEffect.ReauthenticateWithGoogleProvider -> {
-                    try {
-                        forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
+                    withOrientationLocked(context) {
                         val authClient = FirebaseAuthClient()
                         val authCredential = authClient.getGoogleCredential(context)
 
@@ -601,14 +593,7 @@ fun AccountSettingsScreen(
                                 authCredential
                             )
                         )
-
-                    } catch (e: Exception) {
-                        Log.e(
-                            "AccountSettingsReauthenticationGoogleIntent",
-                            e.message.toString()
-                        )
                     }
-                    forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
                 }
 
                 AccountSettingsUiEffect.NavigateBack -> onNavigateBack()
@@ -692,14 +677,6 @@ fun AccountSettingsScreen(
         state = uiState,
         onEvent = viewModel::uiEventHandler
     )
-}
-
-// When Credential Manager is displayed, the device orientation is locked to prevent the coroutine
-// from being cancelled when the orientation is changed.
-// I couldn't think of a better way to solve this problem, because viewModel
-// should not hold an instance of the activity context.
-fun forceOrientation(context: Context, activityInfo: Int) {
-    (context as? Activity)?.requestedOrientation = activityInfo
 }
 
 @Composable
