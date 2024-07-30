@@ -178,8 +178,8 @@ class FirebaseAuthClient : Authenticator {
         val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
-            .setNonce(Util.generateNonce())
             .setAutoSelectEnabled(true)
+            .setNonce(Util.generateNonce())
             .build()
 
         val request: GetCredentialRequest = GetCredentialRequest.Builder()
