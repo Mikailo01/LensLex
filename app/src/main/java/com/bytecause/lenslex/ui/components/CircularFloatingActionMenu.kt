@@ -229,7 +229,7 @@ fun IntroShowcaseScope.CircularFloatingActionMenu(
                 Icon(
                     imageVector =
                     if (!iconState) Icons.Default.Add else Icons.Default.Close,
-                    contentDescription = "Floating action button with actions.",
+                    contentDescription = stringResource(id = R.string.floating_action_button_with_options),
                     modifier = Modifier.graphicsLayer(
                         rotationZ = rotationAnimation.value
                     ),

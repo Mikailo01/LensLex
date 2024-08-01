@@ -1,7 +1,5 @@
 package com.bytecause.lenslex.ui.screens
 
-import android.content.Context
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
@@ -31,19 +29,10 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.credentials.CreatePasswordRequest
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetPasswordOption
-import androidx.credentials.PasswordCredential
-import androidx.credentials.exceptions.CreateCredentialCancellationException
-import androidx.credentials.exceptions.CreateCredentialException
-import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.credentials.exceptions.GetCredentialException
-import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
+import com.bytecause.lenslex.data.remote.auth.abstraction.CredentialManager
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.ImageResource
 import com.bytecause.lenslex.ui.components.LoginOptionRow
@@ -64,6 +53,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.getKoin
 
 
 @Composable
@@ -233,9 +223,8 @@ fun LoginScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val credentialManager = remember {
-        CredentialManager.create(context)
-    }
+    val credentialManager: CredentialManager =
+        getKoin().get()
 
     val xTextOffset by remember {
         mutableStateOf(Animatable(if (!uiState.animationFinished) -1050f else 0f))
@@ -251,12 +240,10 @@ fun LoginScreen(
 
             withOrientationLocked(context) {
                 viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerShown)
-                val passwordCredential =
-                    getCredential(credentialManager = credentialManager, context = context)
-                        ?: run {
-                            viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerDismiss)
-                            return@withOrientationLocked
-                        }
+                val passwordCredential = credentialManager.getCredential(context) ?: run {
+                    viewModel.uiEventHandler(LoginUiEvent.OnCredentialManagerDismiss)
+                    return@withOrientationLocked
+                }
 
                 viewModel.uiEventHandler(
                     LoginUiEvent.OnSignInUsingEmailAndPassword(
@@ -274,8 +261,9 @@ fun LoginScreen(
         when {
             uiState.signInState.isSignInSuccessful -> {
                 keyboardController?.hide()
+                // Show save password prompt after successful registration
                 if (!uiState.signIn) {
-                    saveCredential(credentialManager, context, uiState.email, uiState.password)
+                    credentialManager.saveCredential(context, uiState.email, uiState.password)
                 }
                 onUserLoggedIn()
             }
@@ -348,53 +336,6 @@ fun LoginScreen(
         xText2offset = xText2offset,
         onEvent = viewModel::uiEventHandler
     )
-}
-
-private suspend fun saveCredential(
-    credentialManager: CredentialManager,
-    context: Context,
-    username: String,
-    password: String
-) {
-    try {
-        // Ask the user for permission to add the credentials to their store
-        credentialManager.createCredential(
-            context = context,
-            request = CreatePasswordRequest(username, password)
-        )
-    } catch (e: CreateCredentialCancellationException) {
-        // do nothing, the user chose not to save the credential
-    } catch (e: CreateCredentialException) {
-        Log.v("CredentialTest", "Credential save error", e)
-    }
-}
-
-private suspend fun getCredential(
-    credentialManager: CredentialManager,
-    context: Context
-): PasswordCredential? {
-    try {
-        // GetPasswordOption() tell the credential library that we're only interested in password credentials
-        // Show the user a dialog allowing them to pick a saved credential
-        val credentialResponse = credentialManager.getCredential(
-            request = GetCredentialRequest(
-                listOf(GetPasswordOption())
-            ),
-            context = context
-        )
-
-        // Return the selected credential (as long as it's a username/password)
-        return credentialResponse.credential as? PasswordCredential
-    } catch (e: GetCredentialCancellationException) {
-        // User cancelled the request. Return nothing
-        return null
-    } catch (e: NoCredentialException) {
-        // We don't have a matching credential
-        return null
-    } catch (e: GetCredentialException) {
-        Log.e("CredentialTest", "Error getting credential", e)
-        throw e
-    }
 }
 
 @Composable

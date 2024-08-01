@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.bytecause.lenslex.BuildConfig
+import com.bytecause.lenslex.data.remote.auth.abstraction.Authenticator
 import com.bytecause.lenslex.domain.models.UserData
 import com.bytecause.lenslex.ui.models.SignInResult
 import com.bytecause.lenslex.util.Util

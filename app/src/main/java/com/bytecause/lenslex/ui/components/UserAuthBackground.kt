@@ -12,23 +12,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.bytecause.lenslex.R
 import com.bytecause.lenslex.util.gradientBackground
 
 @Composable
 fun UserAuthBackground(
     modifier: Modifier = Modifier,
     snackBarHostState: SnackbarHostState,
+    showNavigateBackButton: Boolean = false,
     backgroundContent: @Composable () -> Unit = {},
     foregroundContent: @Composable () -> Unit = {},
+    onNavigateBack: () -> Unit = {}
 ) {
-
     // Background
     Box(
         modifier = Modifier
@@ -42,6 +49,15 @@ fun UserAuthBackground(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             backgroundContent()
+        }
+        if (showNavigateBackButton) {
+            IconButton(onClick = onNavigateBack, modifier = Modifier.align(Alignment.TopStart)) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                    contentDescription = stringResource(id = R.string.navigate_back),
+                    tint = MaterialTheme.colorScheme.surface
+                )
+            }
         }
     }
 

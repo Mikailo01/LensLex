@@ -62,7 +62,9 @@ fun AppNavHost(
             }
 
             composable<Screen.SendEmailPasswordReset> {
-                SendEmailResetScreen(isExpandedScreen = isExpandedScreen)
+                SendEmailResetScreen(
+                    isExpandedScreen = isExpandedScreen,
+                    onNavigateBack = { navController.popBackStackOnce() })
             }
 
             composable<Screen.ResetPassword>(

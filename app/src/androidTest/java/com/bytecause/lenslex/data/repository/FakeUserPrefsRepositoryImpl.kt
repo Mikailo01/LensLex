@@ -8,6 +8,8 @@ class FakeUserPrefsRepositoryImpl : UserPrefsRepository {
     private var originLangOption = ""
     private var targetLangOption = ""
 
+    private var visitedFeatures: List<String> = listOf(UserPrefsRepositoryImpl.HOME_FEATURE)
+
     override suspend fun saveOriginTranslationOption(langCode: String) {
         originLangOption = langCode
     }
@@ -20,10 +22,9 @@ class FakeUserPrefsRepositoryImpl : UserPrefsRepository {
     override fun loadTargetTranslationOption(): Flow<String?> = flow { emit(targetLangOption) }
 
     override suspend fun setFeatureVisited(featureName: String) {
-        TODO("Not yet implemented")
+        visitedFeatures = visitedFeatures + featureName
     }
 
-    override fun isFeatureVisited(featureName: String): Flow<Boolean> {
-        TODO("Not yet implemented")
-    }
+    override fun isFeatureVisited(featureName: String): Flow<Boolean> =
+        flow { emit(visitedFeatures.contains(featureName)) }
 }

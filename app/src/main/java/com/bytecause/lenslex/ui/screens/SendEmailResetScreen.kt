@@ -53,6 +53,7 @@ fun SendEmailResetScreenContent(
 ) {
     if (isExpandedScreen) {
         UserAuthBackgroundExpanded(
+            showNavigateBackButton = true,
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
@@ -111,10 +112,12 @@ fun SendEmailResetScreenContent(
                         } else Text(text = stringResource(id = R.string.send))
                     }
                 }
-            }
+            },
+            onNavigateBack = { onEvent(SendEmailResetUiEvent.OnNavigateBack) }
         )
     } else {
         UserAuthBackground(
+            showNavigateBackButton = true,
             snackBarHostState = state.snackbarHostState,
             backgroundContent = {
                 Text(
@@ -174,7 +177,8 @@ fun SendEmailResetScreenContent(
                         } else Text(text = stringResource(id = R.string.send))
                     }
                 }
-            }
+            },
+            onNavigateBack = { onEvent(SendEmailResetUiEvent.OnNavigateBack) }
         )
     }
 }
@@ -182,7 +186,8 @@ fun SendEmailResetScreenContent(
 @Composable
 fun SendEmailResetScreen(
     viewModel: SendEmailResetViewModel = koinViewModel(),
-    isExpandedScreen: Boolean
+    isExpandedScreen: Boolean,
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -194,6 +199,7 @@ fun SendEmailResetScreen(
     LaunchedEffect(key1 = Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
+                SendEmailResetUiEffect.NavigateBack -> onNavigateBack()
                 SendEmailResetUiEffect.SuccessfulRequest -> {
                     uiState.snackbarHostState.showSnackbar(context.resources.getString(R.string.email_sent))
                 }

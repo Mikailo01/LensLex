@@ -1,7 +1,7 @@
 package com.bytecause.lenslex.data.repository
 
 import android.content.Context
-import com.bytecause.lenslex.data.remote.auth.Authenticator
+import com.bytecause.lenslex.data.remote.auth.abstraction.Authenticator
 import com.bytecause.lenslex.ui.models.SignInResult
 import kotlinx.coroutines.flow.Flow
 

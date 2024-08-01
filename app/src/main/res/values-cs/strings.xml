@@ -31,11 +31,12 @@
     <string name="exit_edit_mode">Ukončit režim úprav</string>
     <string name="process">Zpracovat</string>
     <string name="processing">Zpracovávání</string>
+    <string name="navigate_back">Přejít zpět</string>
     <string name="forget_password">Zapomenuté heslo?</string>
     <string name="launch_camera">Spuštění fotoaparátu</string>
     <string name="launch_gallery_image_picker">Spuštění nástroje pro výběr obrázků v galerii</string>
     <string name="add_new_word_into_the_list">Přidání nového slova do seznamu</string>
-    <string name="floating_action_button_with_destinations">Plovoucí akční tlačítko s destinacemi</string>
+    <string name="floating_action_button_with_options">Plovoucí akční tlačítko s možnostmi</string>
     <string name="type_word_or_sentence">Zadejte slovo nebo větu</string>
     <string name="undo_changes">Vrátit změny</string>
     <string name="permanent_deletion_dialog_message">Chystáte se trvale odstranit položky ze seznamu. Tuto akci nelze vrátit zpět.</string>

@@ -6,6 +6,8 @@ import com.bytecause.lenslex.data.local.mlkit.TextRecognizer
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
 import com.bytecause.lenslex.data.local.mlkit.Translator
 import com.bytecause.lenslex.data.remote.FirebaseCloudStorage
+import com.bytecause.lenslex.data.remote.auth.abstraction.CredentialManager
+import com.bytecause.lenslex.data.remote.auth.CredentialManagerImpl
 import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiBuilder
 import com.bytecause.lenslex.data.remote.retrofit.VerifyOobCodeRestApiService
@@ -21,10 +23,10 @@ import com.bytecause.lenslex.data.repository.WordsRepositoryImpl
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
+import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
-import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -51,6 +53,10 @@ val appModule = module {
 
             firestoreSettings = settings
         }
+    }
+
+    single<CredentialManager> {
+        CredentialManagerImpl()
     }
 
     single<FirebaseAuthClient> {

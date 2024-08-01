@@ -60,7 +60,7 @@ class PasswordFieldTest {
             .assertIsDisplayed()
 
         // Assert initial state
-        composeTestRule.onNodeWithText("Password")
+        composeTestRule.onNodeWithText(res.getString(R.string.password))
             .assertExists()
             .assertIsDisplayed()
             .assertIsEnabled()

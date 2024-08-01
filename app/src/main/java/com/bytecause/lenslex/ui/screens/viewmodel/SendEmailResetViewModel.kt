@@ -35,6 +35,7 @@ class SendEmailResetViewModel(
             is SendEmailResetUiEvent.OnEmailValueChanged -> onEmailValueChanged(event.value)
             SendEmailResetUiEvent.OnSendEmailClick -> onSendEmailClick()
             SendEmailResetUiEvent.OnAnimationFinished -> onAnimationFinished()
+            SendEmailResetUiEvent.OnNavigateBack -> sendEffect(SendEmailResetUiEffect.NavigateBack)
         }
     }
 

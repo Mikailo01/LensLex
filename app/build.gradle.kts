@@ -92,7 +92,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.coil)
     implementation(libs.blurry)
-
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mlkit.translate)
     implementation(libs.mlkit.language.id)

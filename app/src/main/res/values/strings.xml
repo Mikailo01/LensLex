@@ -27,6 +27,7 @@
     <string name="word">Word</string>
     <string name="process">Process</string>
     <string name="processing">Processing</string>
+    <string name="navigate_back">Navigate back</string>
     <string name="forget_password">Forget password?</string>
     <string name="launch_camera">Launch camera</string>
     <string name="app_settings">App settings</string>
@@ -34,7 +35,7 @@
     <string name="exit_edit_mode">Exit edit mode</string>
     <string name="launch_gallery_image_picker">Launch gallery image picker</string>
     <string name="add_new_word_into_the_list">Add new word into the list</string>
-    <string name="floating_action_button_with_destinations">Floating action button with destinations</string>
+    <string name="floating_action_button_with_options">Floating action button with options</string>
     <string name="type_word_or_sentence">Type word or sentence</string>
     <string name="undo_changes">Undo changes</string>
     <string name="permanent_deletion_dialog_message">You are about to permanently delete items from the list. This action cannot be undone.</string>

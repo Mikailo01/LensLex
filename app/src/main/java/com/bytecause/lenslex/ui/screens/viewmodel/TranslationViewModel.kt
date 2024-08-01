@@ -58,7 +58,6 @@ abstract class TranslationViewModel(
                     }
                 }
             } ?: initialOption
-
         }
 
     fun saveTranslationOptions(languageOptions: Pair<TranslationOption.Origin?, TranslationOption.Target?>) {

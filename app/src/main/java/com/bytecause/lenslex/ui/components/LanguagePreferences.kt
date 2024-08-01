@@ -47,7 +47,7 @@ fun LanguagePreferences(
         verticalAlignment = Alignment.CenterVertically
     ) {
         RoundedText(
-            modifier = Modifier.padding(start = 5.dp, end = 5.dp),
+            modifier = Modifier.padding(start = 5.dp, end = 5.dp).testTag(TestTags.SELECT_ORIGIN_LANG_OPTION),
             text = originLangName,
             containerColor = MaterialTheme.colorScheme.onSurfaceVariant,
             contentColor = MaterialTheme.colorScheme.inversePrimary,
@@ -80,7 +80,7 @@ fun LanguagePreferences(
         RoundedText(
             modifier = Modifier
                 .padding(start = 5.dp, end = 5.dp)
-                .testTag(TestTags.SELECT_LANG_OPTION),
+                .testTag(TestTags.SELECT_TARGET_LANG_OPTION),
             text = targetLangName,
             containerColor = MaterialTheme.colorScheme.onSurfaceVariant,
             contentColor = MaterialTheme.colorScheme.inversePrimary,

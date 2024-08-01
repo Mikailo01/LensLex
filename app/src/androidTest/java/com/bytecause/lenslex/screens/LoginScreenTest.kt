@@ -2,6 +2,7 @@ package com.bytecause.lenslex.screens
 
 import android.content.res.Resources
 import androidx.activity.compose.setContent
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -16,14 +17,21 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.test.platform.app.InstrumentationRegistry
 import com.bytecause.lenslex.MainActivity
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.navigation.Screen
+import com.bytecause.lenslex.navigation.navhost.popBackStackOnce
 import com.bytecause.lenslex.ui.screens.LoginScreen
+import com.bytecause.lenslex.ui.screens.SendEmailResetScreen
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// TODO("Add more tests")
 class LoginScreenTest {
 
     @get: Rule
@@ -35,18 +43,24 @@ class LoginScreenTest {
     @Before
     fun setUp() {
         composeTestRule.activity.setContent {
-            LoginScreen(isExpandedScreen = false, onNavigate = {}, onUserLoggedIn = {})
-            /*val navController = rememberNavController()
-            AppTheme {
-                NavHost(
-                    navController = navController,
-                    startDestination = NavigationItem.Login.route
-                ) {
-                    composable(NavigationItem.Login.route) {
-                        LoginScreen(isExpandedScreen = false, onNavigate = {}, onUserLoggedIn = {})
-                    }
+            val navController = rememberNavController()
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Login
+            ) {
+                composable<Screen.Login> {
+                    LoginScreen(
+                        isExpandedScreen = false,
+                        onNavigate = { navController.navigate(it) },
+                        onUserLoggedIn = {})
                 }
-            }*/
+
+                composable<Screen.SendEmailPasswordReset> {
+                    SendEmailResetScreen(
+                        isExpandedScreen = false,
+                        onNavigateBack = { navController.popBackStackOnce() })
+                }
+            }
         }
     }
 
@@ -171,6 +185,40 @@ class LoginScreenTest {
 
         // Check if button text changed
         composeTestRule.onNode(hasClickAction() and hasText(res.getString(R.string.sign_in)))
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun forgot_password_click_test() {
+        // Navigate to request new password screen
+        composeTestRule.onNodeWithText(res.getString(R.string.forget_password))
+            .assertExists()
+            .assertIsDisplayed()
+            .performClick()
+
+        // Assert that the text is correct
+        composeTestRule.onNodeWithText(res.getString(R.string.reset_password_request))
+            .assertExists()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(res.getString(R.string.reset_password_request_message))
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Assert that Email field is in composition
+        composeTestRule.onNodeWithText(res.getString(R.string.email))
+            .assert(hasClickAction())
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Navigate back
+        composeTestRule.onNodeWithContentDescription(res.getString(R.string.navigate_back))
+            .assertExists()
+            .assertIsDisplayed()
+            .performClick()
+
+        // Assert that we are back on Login screen
+        composeTestRule.onNodeWithText(res.getString(R.string.welcome_to_lens_lex))
             .assertExists()
             .assertIsDisplayed()
     }
