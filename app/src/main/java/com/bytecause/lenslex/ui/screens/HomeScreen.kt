@@ -2,6 +2,7 @@ package com.bytecause.lenslex.ui.screens
 
 import android.Manifest
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -100,6 +101,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -526,7 +528,6 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val textResult by viewModel.textResultChannel.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val ttsManager = remember { TTSManager(context) }
 
@@ -598,12 +599,16 @@ fun HomeScreen(
         viewModel.uiEventHandler(HomeUiEvent.OnFetchItemList)
     }
 
-    LaunchedEffect(key1 = uiState.isLoading) {
-        // Show intro showcase if necessary only if isLoading == false to avoid intro showcase recompositions
-        if (!uiState.isLoading) viewModel.uiEventHandler(HomeUiEvent.OnShowIntroShowcaseIfNecessary)
-    }
-
     LaunchedEffect(key1 = Unit) {
+        // Launch another coroutine to avoid blocking entire LaunchedEffect block
+        launch {
+            // Wait until isLoading == false to avoid unnecessary intro showcase recompositions
+            while (uiState.isLoading) {
+                delay(500)
+            }
+            viewModel.uiEventHandler(HomeUiEvent.OnShowIntroShowcaseIfNecessary)
+        }
+
         viewModel.uiEventHandler(HomeUiEvent.OnReload)
 
         viewModel.effect.collect { effect ->
@@ -646,19 +651,15 @@ fun HomeScreen(
                         }
                     }
                 }
+
+                is HomeUiEffect.TextResult -> onClickNavigate(Screen.TextResult(effect.text))
             }
         }
     }
 
-    LaunchedEffect(key1 = textResult) {
-        if (textResult.isNotEmpty()) onClickNavigate(Screen.TextResult(textResult))
-    }
-
     // Scroll to top of the lazy list if wordList changes
     LaunchedEffect(key1 = uiState.wordList) {
-        if (uiState.wordList.isNotEmpty()) {
-            uiState.lazyListState.scrollToItem(0)
-        }
+        uiState.lazyListState.scrollToItem(0)
     }
 
     HomeScreenContent(

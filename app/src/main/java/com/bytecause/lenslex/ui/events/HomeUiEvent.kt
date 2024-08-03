@@ -35,6 +35,7 @@ sealed interface HomeUiEffect {
     data object ScrollToTop : HomeUiEffect
     data object MultiplePhotoPickerLaunch : HomeUiEffect
     data object PermissionDialogLaunch : HomeUiEffect
+    data class TextResult(val text: List<String>) : HomeUiEffect
     data class Speak(val text: String, val langCode: String) : HomeUiEffect
     data class NavigateTo(val destination: Screen) : HomeUiEffect
 }

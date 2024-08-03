@@ -42,6 +42,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" />
+                <!-- Handle deep link requests from this site -->
                 <data android:host="lens-lex.firebaseapp.com" />
             </intent-filter>
 

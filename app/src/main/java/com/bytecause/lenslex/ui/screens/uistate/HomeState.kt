@@ -12,7 +12,7 @@ import com.bytecause.lenslex.ui.interfaces.TranslationOption
 data class HomeState(
     val wordList: List<Words> = emptyList(),
     val profilePictureUrl: String = "",
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val fabState: Boolean = false,
     val isEditEnabled: Boolean = false,
     val showIntroShowcase: Boolean = false,

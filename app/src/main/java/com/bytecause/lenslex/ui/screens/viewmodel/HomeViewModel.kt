@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -16,6 +17,7 @@ import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,9 +48,6 @@ class HomeViewModel(
 
     private val _effect = Channel<HomeUiEffect>(capacity = Channel.CONFLATED)
     val effect = _effect.receiveAsFlow()
-
-    private val _textResultChannel = Channel<List<String>>()
-    val textResultChannel = _textResultChannel.receiveAsFlow()
 
     init {
         combine(
@@ -187,13 +186,12 @@ class HomeViewModel(
 
         viewModelScope.launch {
             runTextRecognition(uris).firstOrNull()?.let { result ->
-                _uiState.update { state ->
-                    if (result.isEmpty()) sendEffect(HomeUiEffect.ImageTextless)
-                    state.copy(showProgressBar = false)
-                }
-                if (result.isNotEmpty()) {
-                    _textResultChannel.trySend(result)
-                }
+                if (result.isEmpty()) {
+                    sendEffect(HomeUiEffect.ImageTextless)
+                    _uiState.update { state ->
+                        state.copy(showProgressBar = false)
+                    }
+                } else sendEffect(HomeUiEffect.TextResult(result))
             }
         }
     }

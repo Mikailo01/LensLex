@@ -24,6 +24,7 @@ import com.bytecause.lenslex.ui.screens.LoginScreen
 import com.bytecause.lenslex.ui.screens.ModifiedImagePreviewScreen
 import com.bytecause.lenslex.ui.screens.ExtractedTextScreen
 import com.bytecause.lenslex.ui.screens.SendEmailResetScreen
+import com.bytecause.lenslex.ui.screens.SplashScreen
 import com.bytecause.lenslex.ui.screens.UpdatePasswordScreen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -39,10 +40,18 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = if (currentUser != null) NavGraph.TextProcessMainGraph
-        else NavGraph.UserAuthGraph,
+        startDestination = Screen.SplashScreen,
         modifier = modifier
     ) {
+
+        composable<Screen.SplashScreen> {
+            SplashScreen {
+                navController.navigate(
+                    if (currentUser != null) NavGraph.TextProcessMainGraph
+                    else NavGraph.UserAuthGraph
+                )
+            }
+        }
 
         // Nested NavGraph
         navigation<NavGraph.UserAuthGraph>(startDestination = Screen.Login) {

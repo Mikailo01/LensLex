@@ -3,6 +3,10 @@ package com.bytecause.lenslex.navigation
 import kotlinx.serialization.Serializable
 
 sealed interface Screen {
+
+    @Serializable
+    data object SplashScreen: Screen
+
     @Serializable
     data object Login : Screen
 

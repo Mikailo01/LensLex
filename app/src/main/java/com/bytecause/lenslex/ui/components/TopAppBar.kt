@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.ui.theme.LensLexTypography
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,7 @@ fun TopAppBar(
     onNavigationIconClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
-        title = { Text(text = stringResource(id = titleRes)) },
+        title = { Text(text = stringResource(id = titleRes), style = LensLexTypography.titleMedium) },
         colors = colors,
         modifier = modifier,
         navigationIcon = {

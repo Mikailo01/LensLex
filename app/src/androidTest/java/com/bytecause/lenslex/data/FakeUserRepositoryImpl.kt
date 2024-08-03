@@ -7,7 +7,8 @@ import com.bytecause.lenslex.ui.interfaces.Provider
 import kotlinx.coroutines.flow.Flow
 
 class FakeUserRepositoryImpl: UserRepository {
-    override fun getUserData(): UserAccountDetails =UserAccountDetails(
+    override fun getUserData(): UserAccountDetails = UserAccountDetails(
+        // Dummy values
         uid = "laudem",
         creationTimeStamp = null,
         userName = null,
