@@ -8,6 +8,7 @@ import com.bytecause.lenslex.ui.interfaces.TranslationOption
 @Immutable
 data class AddState(
     val textValue: String = "",
+    val languageFilterText: String = "",
     val supportedLanguages: List<SupportedLanguage> = emptyList(),
     val isLoading: Boolean = false,
     val showNetworkErrorDialog: Boolean = false,

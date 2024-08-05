@@ -81,6 +81,7 @@ class HomeViewModel(
 
             is HomeUiEvent.OnNavigate -> sendEffect(HomeUiEffect.NavigateTo(event.destination))
             is HomeUiEvent.OnSpeak -> sendEffect(HomeUiEffect.Speak(event.text, event.langCode))
+            is HomeUiEvent.OnLanguageFilterTextChange -> onFilterTextChange(event.text)
 
             HomeUiEvent.OnItemRestored -> onItemRestored()
             HomeUiEvent.OnSwitchLanguages -> switchLanguageOptions(
@@ -116,6 +117,20 @@ class HomeViewModel(
             }
             // save flag to preferences datastore
             userPrefsRepository.setFeatureVisited(UserPrefsRepositoryImpl.HOME_FEATURE)
+        }
+    }
+
+    private fun onFilterTextChange(text: String) {
+        _uiState.update {
+            it.copy(
+                languageFilterText = text,
+                supportedLanguages = if (text.isBlank()) supportedLanguages.value else supportedLanguages.value.filter { lang ->
+                    lang.langName.startsWith(
+                        text,
+                        ignoreCase = true
+                    )
+                }
+            )
         }
     }
 
@@ -162,7 +177,7 @@ class HomeViewModel(
     }
 
     private fun onShowLanguageDialog(option: TranslationOption?) {
-        _uiState.update { it.copy(showLanguageDialog = option) }
+        _uiState.update { it.copy(showLanguageDialog = option, languageFilterText = "") }
     }
 
     private fun onIconStateChange(boolean: Boolean) {
@@ -252,7 +267,7 @@ class HomeViewModel(
                 )
             }
         }
-        _uiState.update { it.copy(showLanguageDialog = null) }
+        _uiState.update { it.copy(showLanguageDialog = null, languageFilterText = "") }
     }
 
     private fun insertWord(word: Words) {

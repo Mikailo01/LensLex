@@ -49,7 +49,11 @@ fun AppNavHost(
                 navController.navigate(
                     if (currentUser != null) NavGraph.TextProcessMainGraph
                     else NavGraph.UserAuthGraph
-                )
+                ) {
+                    popUpTo(Screen.SplashScreen) {
+                        inclusive = true
+                    }
+                }
             }
         }
 

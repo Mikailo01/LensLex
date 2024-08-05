@@ -81,6 +81,7 @@ import com.bytecause.lenslex.ui.components.NoteItem
 import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
+import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
@@ -419,10 +420,12 @@ fun HomeScreenContent(
                     LanguageDialog(
                         lazyListContent = state.supportedLanguages,
                         translationOption = state.showLanguageDialog,
+                        filterText = state.languageFilterText,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(500.dp)
                             .padding(16.dp),
+                        onFilterTextChange = { onEvent(HomeUiEvent.OnLanguageFilterTextChange(it)) },
                         onDismiss = { onEvent(HomeUiEvent.OnShowLanguageDialog(null)) },
                         onConfirm = { language ->
                             onEvent(HomeUiEvent.OnConfirmLanguageDialog(language))

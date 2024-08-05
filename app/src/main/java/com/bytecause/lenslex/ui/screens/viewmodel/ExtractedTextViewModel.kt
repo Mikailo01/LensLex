@@ -94,6 +94,7 @@ class ExtractedTextViewModel(
             is ExtractedTextUiEvent.OnDownloadLanguage -> downloadModel(event.langCode)
             is ExtractedTextUiEvent.OnRemoveLanguage -> removeModel(event.langCode)
             is ExtractedTextUiEvent.OnAddWords -> onAddWords(event.words)
+            is ExtractedTextUiEvent.OnLanguageFilterTextChange -> onFilterTextChange(event.text)
         }
     }
 
@@ -112,6 +113,20 @@ class ExtractedTextViewModel(
             )
         }
         sendEffect(ExtractedTextUiEffect.ResetIntroShowcaseState)
+    }
+
+    private fun onFilterTextChange(text: String) {
+        _uiState.update {
+            it.copy(
+                languageFilterText = text,
+                supportedLanguages = if (text.isBlank()) supportedLanguages.value else supportedLanguages.value.filter { lang ->
+                    lang.langName.startsWith(
+                        text,
+                        ignoreCase = true
+                    )
+                }
+            )
+        }
     }
 
     private fun onShowcaseCompleted() {
@@ -252,7 +267,7 @@ class ExtractedTextViewModel(
 
     private fun onShowLanguageDialog(option: TranslationOption?) {
         _uiState.update {
-            it.copy(showLanguageDialog = option)
+            it.copy(showLanguageDialog = option, languageFilterText = "")
         }
     }
 
@@ -266,7 +281,7 @@ class ExtractedTextViewModel(
                 saveTranslationOptions(Pair(first = null, second = translationOption))
             }
         }
-        _uiState.update { it.copy(showLanguageDialog = null) }
+        _uiState.update { it.copy(showLanguageDialog = null, languageFilterText = "") }
     }
 
     private fun onAddWords(words: List<Word>) {

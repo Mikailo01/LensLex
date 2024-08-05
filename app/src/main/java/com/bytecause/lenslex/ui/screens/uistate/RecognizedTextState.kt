@@ -13,6 +13,7 @@ data class RecognizedTextState(
     val sentence: List<Word> = emptyList(),
     val words: List<Word> = emptyList(),
     val selectedWords: Set<Word> = emptySet(),
+    val languageFilterText: String = "",
     val supportedLanguages: List<SupportedLanguage> = emptyList(),
     val selectedLanguageOptions: Pair<TranslationOption.Origin, TranslationOption.Target> = TranslationOption.Origin(
         SupportedLanguage()

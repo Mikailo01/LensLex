@@ -11,6 +11,7 @@ sealed interface ExtractedTextUiEvent {
     data class OnDownloadLanguage(val langCode: String) : ExtractedTextUiEvent
     data class OnRemoveLanguage(val langCode: String) : ExtractedTextUiEvent
     data class OnAddWords(val words: List<Word>) : ExtractedTextUiEvent
+    data class OnLanguageFilterTextChange(val text: String) : ExtractedTextUiEvent
     data object OnSentenceDone : ExtractedTextUiEvent
     data object OnSentenceCancelled : ExtractedTextUiEvent
     data object OnSelectAllWords : ExtractedTextUiEvent

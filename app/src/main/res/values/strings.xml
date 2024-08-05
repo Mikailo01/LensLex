@@ -28,6 +28,8 @@
     <string name="process">Process</string>
     <string name="processing">Processing</string>
     <string name="navigate_back">Navigate back</string>
+    <string name="clear_text">Clear text</string>
+    <string name="filter_language">Filter language</string>
     <string name="forget_password">Forget password?</string>
     <string name="launch_camera">Launch camera</string>
     <string name="app_settings">App settings</string>

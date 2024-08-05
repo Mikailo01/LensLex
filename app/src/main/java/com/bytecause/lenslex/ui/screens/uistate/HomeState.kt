@@ -17,6 +17,7 @@ data class HomeState(
     val isEditEnabled: Boolean = false,
     val showIntroShowcase: Boolean = false,
     val showProgressBar: Boolean = false,
+    val languageFilterText: String = "",
     val supportedLanguages: List<SupportedLanguage> = emptyList(),
     val selectedLanguageOptions: Pair<TranslationOption.Origin, TranslationOption.Target> = TranslationOption.Origin(
         SupportedLanguage()

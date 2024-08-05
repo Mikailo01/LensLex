@@ -17,6 +17,7 @@ sealed interface HomeUiEvent {
     data class OnItemRemoved(val word: Words) : HomeUiEvent
     data class OnEditStateChange(val value: Boolean) : HomeUiEvent
     data class OnDeleteConfirmationDialogResult(val value: Boolean) : HomeUiEvent
+    data class OnLanguageFilterTextChange(val text: String) : HomeUiEvent
     data object OnCameraIntentLaunch : HomeUiEvent
     data object OnMultiplePhotoPickerLaunch : HomeUiEvent
     data object OnScrollToTop : HomeUiEvent

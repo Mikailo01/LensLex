@@ -77,6 +77,7 @@ import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
+import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEffect
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.mappers.textListToWordList
@@ -220,10 +221,18 @@ private fun ExtractedTextScreenContent(
                         LanguageDialog(
                             lazyListContent = state.supportedLanguages,
                             translationOption = state.showLanguageDialog,
+                            filterText = state.languageFilterText,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(500.dp)
                                 .padding(16.dp),
+                            onFilterTextChange = {
+                                onEvent(
+                                    ExtractedTextUiEvent.OnLanguageFilterTextChange(
+                                        it
+                                    )
+                                )
+                            },
                             onDismiss = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(null)) },
                             onConfirm = {
                                 onEvent(ExtractedTextUiEvent.OnConfirmLanguageDialog(it))
@@ -387,10 +396,18 @@ private fun ExtractedTextScreenContent(
                         LanguageDialog(
                             lazyListContent = state.supportedLanguages,
                             translationOption = state.showLanguageDialog,
+                            filterText = state.languageFilterText,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(500.dp)
                                 .padding(16.dp),
+                            onFilterTextChange = {
+                                onEvent(
+                                    ExtractedTextUiEvent.OnLanguageFilterTextChange(
+                                        it
+                                    )
+                                )
+                            },
                             onDismiss = { onEvent(ExtractedTextUiEvent.OnShowLanguageDialog(null)) },
                             onConfirm = {
                                 onEvent(ExtractedTextUiEvent.OnConfirmLanguageDialog(it))

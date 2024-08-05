@@ -32,6 +32,8 @@
     <string name="process">Zpracovat</string>
     <string name="processing">Zpracovávání</string>
     <string name="navigate_back">Přejít zpět</string>
+    <string name="filter_language">Filtrování jazyka</string>
+    <string name="clear_text">Smazání textu</string>
     <string name="forget_password">Zapomenuté heslo?</string>
     <string name="launch_camera">Spuštění fotoaparátu</string>
     <string name="launch_gallery_image_picker">Spuštění nástroje pro výběr obrázků v galerii</string>

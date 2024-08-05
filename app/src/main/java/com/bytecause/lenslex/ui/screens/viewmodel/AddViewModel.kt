@@ -54,15 +54,19 @@ class AddViewModel(
             supportedLanguages
         ) { selectedLang, supportedLanguages ->
 
-            if (_uiState.value.selectedLanguageOptions != selectedLang) _uiState.update {
-                it.copy(
-                    selectedLanguageOptions = selectedLang
-                )
+            if (_uiState.value.selectedLanguageOptions != selectedLang) {
+                _uiState.update {
+                    it.copy(
+                        selectedLanguageOptions = selectedLang
+                    )
+                }
             }
-            if (_uiState.value.supportedLanguages != supportedLanguages) _uiState.update {
-                it.copy(
-                    supportedLanguages = supportedLanguages
-                )
+            if (_uiState.value.supportedLanguages != supportedLanguages) {
+                _uiState.update {
+                    it.copy(
+                        supportedLanguages = supportedLanguages
+                    )
+                }
             }
 
         }.launchIn(viewModelScope)
@@ -77,12 +81,14 @@ class AddViewModel(
             is AddUiEvent.OnShowLanguageDialog -> onShowLanguageDialog(event.value)
             is AddUiEvent.OnTranslate -> translateText(event.value)
             is AddUiEvent.OnTryAgainClick -> onTryAgainClick(event.value)
+            is AddUiEvent.OnLanguageFilterTextChange -> onFilterTextChange(event.text)
             AddUiEvent.OnNavigateBack -> sendEffect(AddUiEffect.NavigateBack)
             AddUiEvent.OnDismissNetworkErrorDialog -> onDismissNetworkErrorDialog()
             AddUiEvent.OnSwitchLanguages -> switchLanguageOptions(
                 origin = uiState.value.selectedLanguageOptions.first,
                 target = uiState.value.selectedLanguageOptions.second
             )
+
         }
     }
 
@@ -102,6 +108,20 @@ class AddViewModel(
             } else {
                 sendEffect(AddUiEffect.ShowNetworkErrorMessage)
             }
+        }
+    }
+
+    private fun onFilterTextChange(text: String) {
+        _uiState.update {
+            it.copy(
+                languageFilterText = text,
+                supportedLanguages = if (text.isBlank()) supportedLanguages.value else supportedLanguages.value.filter { lang ->
+                    lang.langName.startsWith(
+                        text,
+                        ignoreCase = true
+                    )
+                }
+            )
         }
     }
 
@@ -126,11 +146,11 @@ class AddViewModel(
                 )
             )
         }
-        _uiState.update { it.copy(showLanguageDialog = null) }
+        _uiState.update { it.copy(showLanguageDialog = null, languageFilterText = "") }
     }
 
     private fun onShowLanguageDialog(translationOption: TranslationOption?) {
-        _uiState.update { it.copy(showLanguageDialog = translationOption) }
+        _uiState.update { it.copy(showLanguageDialog = translationOption, languageFilterText = "") }
     }
 
     private fun translateText(text: String) {

@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
+import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
@@ -140,10 +141,12 @@ fun AddScreenContent(
         LanguageDialog(
             lazyListContent = state.supportedLanguages,
             translationOption = state.showLanguageDialog,
+            filterText = state.languageFilterText,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(500.dp)
                 .padding(16.dp),
+            onFilterTextChange = { onEvent(AddUiEvent.OnLanguageFilterTextChange(it)) },
             onDismiss = { onEvent(AddUiEvent.OnShowLanguageDialog(null)) },
             onConfirm = {
                 onEvent(AddUiEvent.OnConfirmLanguageDialog(it))
