@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -49,7 +50,8 @@ fun Dialog(
                         text = title,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
                 HorizontalDivider(thickness = 1.5.dp, color = MaterialTheme.colorScheme.primary)
@@ -64,5 +66,13 @@ fun Dialog(
 
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun DialogPreview() {
+    Dialog(title = "Title Preview", onDismiss = {}) {
+        Text(text = "Preview content", modifier = Modifier.padding(20.dp))
     }
 }

@@ -1,7 +1,6 @@
 package com.bytecause.lenslex.ui.screens.viewmodel
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.local.TranslationOptionsDataSource
 import com.bytecause.lenslex.data.local.mlkit.TranslationModelManager
@@ -17,7 +16,6 @@ import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +52,7 @@ class HomeViewModel(
             languageOptionFlow,
             supportedLanguages,
         ) { selectedLang, supportedLanguages ->
+
             _uiState.update { state ->
                 state.copy(
                     selectedLanguageOptions = selectedLang.takeIf { it != state.selectedLanguageOptions }
@@ -97,6 +96,7 @@ class HomeViewModel(
             HomeUiEvent.OnMultiplePhotoPickerLaunch -> sendEffect(HomeUiEffect.MultiplePhotoPickerLaunch)
             HomeUiEvent.OnPermissionDialogLaunch -> sendEffect(HomeUiEffect.PermissionDialogLaunch)
             HomeUiEvent.OnScrollToTop -> sendEffect(HomeUiEffect.ScrollToTop)
+            HomeUiEvent.OnUpdateSupportedLanguages -> updateSupportedLanguages()
         }
     }
 

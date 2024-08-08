@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -21,7 +22,7 @@ abstract class TranslationViewModel(
     private val userPrefsRepository: UserPrefsRepository,
     private val translationModelManager: TranslationModelManager,
     private val translationOptionsDataSource: TranslationOptionsDataSource,
-    supportedLanguagesRepository: SupportedLanguagesRepository
+    private val supportedLanguagesRepository: SupportedLanguagesRepository
 ) : ViewModel() {
 
     private val translationDataStoreOriginLangOption: Flow<String?> =
@@ -76,7 +77,7 @@ abstract class TranslationViewModel(
             }
 
             languageOptions.second?.let { option ->
-                // If first lang is the same as second, switch them
+                // If second lang is the same as first, switch them
                 if (option.lang.langCode == translationOptionsDataSource.translationLangOption.value.first.lang.langCode) {
                     translationOptionsDataSource.updateOption(
                         TranslationOption.Origin(translationOptionsDataSource.translationLangOption.value.second.lang)
@@ -163,8 +164,25 @@ abstract class TranslationViewModel(
         }
     }
 
+    // call this function when app's language has been changed, so language options name will be updated as well
+    fun updateSupportedLanguages() {
+        // update supported languages list
+        _supportedLanguages.update { supportedLanguagesRepository.supportedLanguageCodes() }
+
+        // update selected lang options to the newly changed language
+        translationOptionsDataSource.translationLangOption.value.run {
+            translationOptionsDataSource.updateOption(
+                first.copy(lang = supportedLanguages.value.find { it.langCode == first.lang.langCode }
+                    ?: return)
+                        to
+                        second.copy(lang = supportedLanguages.value.find { it.langCode == second.lang.langCode }
+                            ?: return)
+            )
+        }
+    }
+
     private val _supportedLanguages: MutableStateFlow<List<SupportedLanguage>> = MutableStateFlow(
-        supportedLanguagesRepository.supportedLanguageCodes
+        supportedLanguagesRepository.supportedLanguageCodes()
     )
         .also { getDownloadedModels() }
 

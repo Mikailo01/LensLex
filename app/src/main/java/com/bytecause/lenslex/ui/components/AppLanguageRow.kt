@@ -36,6 +36,7 @@ fun AppLanguageRow(
                 text = Locale(langCode).displayLanguage.capital(),
                 fontStyle = FontStyle.Italic,
                 style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp)

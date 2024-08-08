@@ -340,7 +340,8 @@ fun AccountScreenContent(
         ) {
             Text(
                 text = stringResource(id = R.string.signed_using_anonymous_account_message),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }

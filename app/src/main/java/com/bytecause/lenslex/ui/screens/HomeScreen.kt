@@ -2,7 +2,6 @@ package com.bytecause.lenslex.ui.screens
 
 import android.Manifest
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -81,7 +80,6 @@ import com.bytecause.lenslex.ui.components.NoteItem
 import com.bytecause.lenslex.ui.components.ScrollToTop
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
-import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.screens.uistate.HomeState
@@ -105,6 +103,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import java.util.Locale
 
 enum class FabNavigation { CAMERA, GALLERY, ADD }
 
@@ -603,6 +602,12 @@ fun HomeScreen(
     }
 
     LaunchedEffect(key1 = Unit) {
+        if (uiState.supportedLanguages.isNotEmpty()) {
+            if (uiState.supportedLanguages.first().langName != Locale(uiState.supportedLanguages.first().langCode).displayName) {
+                viewModel.uiEventHandler(HomeUiEvent.OnUpdateSupportedLanguages)
+            }
+        }
+
         // Launch another coroutine to avoid blocking entire LaunchedEffect block
         launch {
             // Wait until isLoading == false to avoid unnecessary intro showcase recompositions

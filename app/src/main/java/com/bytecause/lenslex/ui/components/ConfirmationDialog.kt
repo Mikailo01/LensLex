@@ -1,6 +1,7 @@
 package com.bytecause.lenslex.ui.components
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +35,10 @@ fun ConfirmationDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = { onDismiss() }) {
         Card(
             modifier = modifier,
+            colors = CardDefaults.cardColors()
+                .copy(containerColor = MaterialTheme.colorScheme.primaryContainer),
             shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
         ) {
             Column(
                 modifier = Modifier
@@ -46,7 +51,8 @@ fun ConfirmationDialog(
                     text = stringResource(id = title.takeIf { it != -1 } ?: R.string.are_you_sure),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 10.dp),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
 
                 content()
