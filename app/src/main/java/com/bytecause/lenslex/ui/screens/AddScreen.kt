@@ -25,14 +25,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bytecause.lenslex.R
-import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AddUiEffect
 import com.bytecause.lenslex.ui.events.AddUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.AddState
+import com.bytecause.lenslex.ui.screens.model.AddState
 import com.bytecause.lenslex.ui.screens.viewmodel.AddViewModel
 import com.bytecause.lenslex.util.Util.readJsonAsMapFromAssets
 import com.ehsanmsz.mszprogressindicator.progressindicator.BallGridPulseProgressIndicator

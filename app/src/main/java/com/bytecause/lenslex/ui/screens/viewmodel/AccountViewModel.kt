@@ -9,7 +9,7 @@ import com.bytecause.lenslex.data.repository.abstraction.UserRepository
 import com.bytecause.lenslex.domain.models.UserData
 import com.bytecause.lenslex.ui.events.AccountUiEffect
 import com.bytecause.lenslex.ui.events.AccountUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.AccountState
+import com.bytecause.lenslex.ui.screens.model.AccountState
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

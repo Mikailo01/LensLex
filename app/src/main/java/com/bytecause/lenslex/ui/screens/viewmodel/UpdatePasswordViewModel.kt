@@ -7,7 +7,7 @@ import com.bytecause.lenslex.data.repository.abstraction.VerifyOobRepository
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEffect
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
+import com.bytecause.lenslex.ui.screens.model.UpdatePasswordState
 import com.bytecause.lenslex.util.ApiResult
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.NetworkUtil

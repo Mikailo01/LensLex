@@ -11,7 +11,7 @@ import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
 import com.bytecause.lenslex.ui.screens.AccountSettingsMessage
-import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
+import com.bytecause.lenslex.ui.screens.model.AccountSettingsState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import com.google.firebase.auth.AuthCredential
@@ -57,7 +57,7 @@ class AccountSettingsViewModel(
     fun uiEventHandler(event: AccountSettingsUiEvent) {
         when (event) {
             AccountSettingsUiEvent.OnDeleteAccountButtonClick -> onDeleteAccountClick()
-            AccountSettingsUiEvent.OnConfirmConfirmationDialog -> onConfirmConfirmationDialog()
+            AccountSettingsUiEvent.OnConfirmDeleteConfirmationDialog -> onConfirmDeleteConfirmationDialog()
             AccountSettingsUiEvent.OnDismissConfirmationDialog -> onDismissConfirmationDialog()
             AccountSettingsUiEvent.OnLaunchReauthenticationGoogleIntent -> sendEffect(
                 AccountSettingsUiEffect.ReauthenticateWithGoogleProvider
@@ -73,7 +73,7 @@ class AccountSettingsViewModel(
             is AccountSettingsUiEvent.OnReauthenticateWithGoogle -> reauthenticateWithGoogle(event.value)
             is AccountSettingsUiEvent.OnShowCredentialDialog -> onShowCredentialDialog(event.value)
             is AccountSettingsUiEvent.OnLinkButtonClick -> onLinkButtonClick(event.value)
-            is AccountSettingsUiEvent.OnEnteredCredential -> onEnteredCredential(event.value)
+            is AccountSettingsUiEvent.OnEnteredCredential -> onEnteredCredential(event.credentials)
             is AccountSettingsUiEvent.OnCredentialsDialogDismiss -> onCredentialsDialogDismiss()
 
             is AccountSettingsUiEvent.OnDialogCredentialChanged -> onDialogCredentialChanged(
@@ -81,6 +81,13 @@ class AccountSettingsViewModel(
             )
 
             is AccountSettingsUiEvent.OnLinkGoogleProvider -> linkGoogleProvider(event.value)
+            is AccountSettingsUiEvent.OnShowReauthorizationDialog -> onShowReauthorizationDialog(
+                event.boolean
+            )
+
+            is AccountSettingsUiEvent.OnReauthorizationDialogDoneClick -> onReauthorizationDialogDoneClick(
+                event.credentials
+            )
         }
     }
 
@@ -95,13 +102,19 @@ class AccountSettingsViewModel(
         _effect.trySend(effect)
     }
 
+    private fun onShowReauthorizationDialog(boolean: Boolean) {
+        _uiState.update {
+            it.copy(showReauthorizationDialog = boolean)
+        }
+    }
+
     private fun onDeleteAccountClick() {
         _uiState.update {
             it.copy(showConfirmationDialog = true)
         }
     }
 
-    private fun onConfirmConfirmationDialog() {
+    private fun onConfirmDeleteConfirmationDialog() {
         deleteAccount()
         _uiState.update {
             it.copy(showConfirmationDialog = false)
@@ -125,32 +138,39 @@ class AccountSettingsViewModel(
     private fun onLinkButtonClick(provider: Provider) {
         when (provider) {
             Provider.Email -> {
-                if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
+                if (uiState.value.linkedProviders.contains(provider)) unlinkProvider(
                     provider
                 )
                 else _uiState.update { it.copy(showCredentialUpdateDialog = CredentialType.AccountLink) }
             }
 
             Provider.Google ->
-                if (_uiState.value.linkedProviders.contains(provider)) unlinkProvider(
+                if (uiState.value.linkedProviders.contains(provider)) unlinkProvider(
                     provider
                 )
                 else sendEffect(AccountSettingsUiEffect.LinkGoogleProvider)
         }
     }
 
+    private fun onReauthorizationDialogDoneClick(credentials: Credentials) {
+        val validationResult = uiState.value.credentialValidationResult
+
+        if (validationResult is CredentialValidationResult.Valid) {
+            val signInCredentials =
+                credentials as Credentials.Sensitive.SignInCredentials
+            reauthenticateUsingEmailAndPassword(signInCredentials)
+        }
+    }
+
     private fun onEnteredCredential(credentials: Credentials) {
-        val validationResult = _uiState.value.credentialValidationResult
+        if (uiState.value.shouldReauthenticate) {
+            onShowReauthorizationDialog(true)
+            return
+        }
+
+        val validationResult = uiState.value.credentialValidationResult
 
         when (_uiState.value.showCredentialUpdateDialog) {
-            is CredentialType.Reauthorization -> {
-                if (validationResult is CredentialValidationResult.Valid) {
-                    val signInCredentials =
-                        credentials as Credentials.Sensitive.SignInCredentials
-                    reauthenticateUsingEmailAndPassword(signInCredentials)
-                }
-            }
-
             is CredentialType.AccountLink -> {
                 if (validationResult is CredentialValidationResult.Valid) {
                     linkEmailProvider(
@@ -201,15 +221,15 @@ class AccountSettingsViewModel(
         authCredential: AuthCredential
     ) {
         viewModelScope.launch {
-            auth.reauthenticateWithGoogle(authCredential).firstOrNull()?.let { result ->
-                result.onFailure { exception ->
+            auth.reauthenticateWithGoogle(authCredential).firstOrNull()
+                ?.onSuccess { _uiState.update { it.copy(shouldReauthenticate = false) } }
+                ?.onFailure { exception ->
                     sendEffect(
                         AccountSettingsUiEffect.AccountActionResult(
                             AccountActionResult.Failure.Error(exception)
                         )
                     )
                 }
-            }
         }
     }
 
@@ -274,6 +294,7 @@ class AccountSettingsViewModel(
                                     AccountActionResult.Failure.ReauthorizationRequired
                                 )
                             )
+                            _uiState.update { it.copy(shouldReauthenticate = true) }
                             return@let
                         }
 
@@ -310,6 +331,7 @@ class AccountSettingsViewModel(
                                     AccountActionResult.Failure.ReauthorizationRequired
                                 )
                             )
+                            _uiState.update { it.copy(shouldReauthenticate = true) }
                             return@let
                         }
 
@@ -371,15 +393,19 @@ class AccountSettingsViewModel(
             auth.reauthenticateWithEmailAndPassword(
                 email = credentials.email,
                 password = credentials.password
-            ).firstOrNull()?.let { result ->
-                result.onFailure { exception ->
+            ).firstOrNull()
+                ?.onSuccess {
+                    // hide dialog
+                    onShowReauthorizationDialog(false)
+                    _uiState.update { it.copy(shouldReauthenticate = false) }
+                }
+                ?.onFailure { exception ->
                     sendEffect(
                         AccountSettingsUiEffect.AccountActionResult(
                             AccountActionResult.Failure.Error(exception)
                         )
                     )
                 }
-            }
         }
     }
 
@@ -405,6 +431,7 @@ class AccountSettingsViewModel(
                                     AccountActionResult.Failure.ReauthorizationRequired
                                 )
                             )
+                            _uiState.update { it.copy(shouldReauthenticate = true) }
                             return@let
                         }
 
@@ -436,6 +463,7 @@ class AccountSettingsViewModel(
                                     AccountActionResult.Failure.ReauthorizationRequired
                                 )
                             )
+                            _uiState.update { it.copy(shouldReauthenticate = true) }
                             return@let
                         }
 
@@ -469,6 +497,7 @@ class AccountSettingsViewModel(
                                     AccountActionResult.Failure.ReauthorizationRequired
                                 )
                             )
+                            _uiState.update { it.copy(shouldReauthenticate = true) }
                             return@let
                         }
 

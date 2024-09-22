@@ -44,7 +44,7 @@ import com.bytecause.lenslex.ui.events.LoginUiEffect
 import com.bytecause.lenslex.ui.events.LoginUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.models.SignInResult
-import com.bytecause.lenslex.ui.screens.uistate.LoginState
+import com.bytecause.lenslex.ui.screens.model.LoginState
 import com.bytecause.lenslex.ui.screens.viewmodel.LoginViewModel
 import com.bytecause.lenslex.util.TestTags
 import com.bytecause.lenslex.util.Util.withOrientationLocked

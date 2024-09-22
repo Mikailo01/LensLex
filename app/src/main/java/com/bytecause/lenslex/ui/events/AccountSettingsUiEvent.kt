@@ -8,7 +8,7 @@ import com.google.firebase.auth.AuthCredential
 sealed interface AccountSettingsUiEvent {
     data object OnNavigateBack : AccountSettingsUiEvent
     data object OnDeleteAccountButtonClick : AccountSettingsUiEvent
-    data object OnConfirmConfirmationDialog : AccountSettingsUiEvent
+    data object OnConfirmDeleteConfirmationDialog : AccountSettingsUiEvent
     data object OnDismissConfirmationDialog : AccountSettingsUiEvent
     data object OnLaunchReauthenticationGoogleIntent : AccountSettingsUiEvent
     data object OnCredentialsDialogDismiss : AccountSettingsUiEvent
@@ -16,8 +16,10 @@ sealed interface AccountSettingsUiEvent {
     data class OnLinkGoogleProvider(val value: AuthCredential) : AccountSettingsUiEvent
     data class OnReauthenticateWithGoogle(val value: AuthCredential) : AccountSettingsUiEvent
     data class OnShowCredentialDialog(val value: CredentialType) : AccountSettingsUiEvent
+    data class OnShowReauthorizationDialog(val boolean: Boolean) : AccountSettingsUiEvent
+    data class OnReauthorizationDialogDoneClick(val credentials: Credentials) : AccountSettingsUiEvent
     data class OnLinkButtonClick(val value: Provider) : AccountSettingsUiEvent
-    data class OnEnteredCredential(val value: Credentials) : AccountSettingsUiEvent
+    data class OnEnteredCredential(val credentials: Credentials) : AccountSettingsUiEvent
     data class OnDialogCredentialChanged(val value: Credentials.Sensitive) : AccountSettingsUiEvent
 }
 

@@ -40,7 +40,7 @@ object Util {
         }
     }
 
-    private fun forceOrientation(context: Context, activityInfo: Int) {
+    fun forceOrientation(context: Context, activityInfo: Int) {
         (context as? Activity)?.requestedOrientation = activityInfo
     }
 
@@ -48,7 +48,7 @@ object Util {
     // from being cancelled when the orientation is changed.
     // I couldn't think of a better way to solve this problem, because viewModel
     // should not hold an instance of the activity context.
-    suspend fun withOrientationLocked(context: Context, block: suspend () -> Unit) {
+    inline fun withOrientationLocked(context: Context, block: () -> Unit) {
         try {
             forceOrientation(context, ActivityInfo.SCREEN_ORIENTATION_LOCKED)
             block()

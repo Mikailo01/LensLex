@@ -12,7 +12,7 @@ import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.ui.events.AddUiEffect
 import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
-import com.bytecause.lenslex.ui.screens.uistate.AddState
+import com.bytecause.lenslex.ui.screens.model.AddState
 import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel

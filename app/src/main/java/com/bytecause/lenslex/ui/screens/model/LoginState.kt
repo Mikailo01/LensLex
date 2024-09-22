@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.ui.screens.uistate
+package com.bytecause.lenslex.ui.screens.model
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable

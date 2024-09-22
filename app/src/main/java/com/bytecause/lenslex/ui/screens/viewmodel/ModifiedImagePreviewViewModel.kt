@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.bytecause.lenslex.data.repository.abstraction.TextRecognitionRepository
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEffect
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
+import com.bytecause.lenslex.ui.screens.model.ModifiedImagePreviewState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

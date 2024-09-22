@@ -43,7 +43,7 @@ import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEffect
 import com.bytecause.lenslex.ui.events.UpdatePasswordUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.UpdatePasswordState
+import com.bytecause.lenslex.ui.screens.model.UpdatePasswordState
 import com.bytecause.lenslex.ui.screens.viewmodel.UpdatePasswordViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordValidationResult

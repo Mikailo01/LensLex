@@ -11,15 +11,15 @@ plugins {
 
 android {
     namespace = "com.bytecause.lenslex"
-    compileSdk = 34
+    compileSdk = 35
     android.buildFeatures.buildConfig = true
 
     defaultConfig {
         applicationId = "com.bytecause.lenslex"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0-rc1"
 
         testInstrumentationRunner = "com.bytecause.lenslex.InstrumentationTestRunner"
         vectorDrawables {

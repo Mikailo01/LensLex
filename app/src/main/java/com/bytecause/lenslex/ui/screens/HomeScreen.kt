@@ -82,7 +82,7 @@ import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.components.launchPermissionRationaleDialog
 import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.HomeState
+import com.bytecause.lenslex.ui.screens.model.HomeState
 import com.bytecause.lenslex.ui.screens.viewmodel.HomeViewModel
 import com.bytecause.lenslex.util.PulsingAnimation
 import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
@@ -203,6 +203,8 @@ fun HomeScreenContent(
                                 ?: R.drawable.default_account_image,
                             contentDescription = stringResource(id = R.string.app_settings),
                             contentScale = ContentScale.Crop,
+                            colorFilter = if (state.profilePictureUrl != "null") null
+                            else ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
                             modifier = Modifier
                                 .padding(end = 10.dp)
                                 .size(42.dp)

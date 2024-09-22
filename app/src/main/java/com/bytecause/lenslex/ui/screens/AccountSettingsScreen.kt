@@ -32,12 +32,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +51,7 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.ui.components.AccountInfoItem
 import com.bytecause.lenslex.ui.components.AccountInfoType
 import com.bytecause.lenslex.ui.components.ConfirmationDialog
+import com.bytecause.lenslex.ui.components.Dialog
 import com.bytecause.lenslex.ui.components.EmailField
 import com.bytecause.lenslex.ui.components.LinkAccountItem
 import com.bytecause.lenslex.ui.components.PasswordField
@@ -60,7 +63,7 @@ import com.bytecause.lenslex.ui.interfaces.AccountActionResult
 import com.bytecause.lenslex.ui.interfaces.CredentialType
 import com.bytecause.lenslex.ui.interfaces.Credentials
 import com.bytecause.lenslex.ui.interfaces.Provider
-import com.bytecause.lenslex.ui.screens.uistate.AccountSettingsState
+import com.bytecause.lenslex.ui.screens.model.AccountSettingsState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountSettingsViewModel
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordErrorType
@@ -89,6 +92,7 @@ fun AccountSettingsScreenContent(
     onEvent: (AccountSettingsUiEvent) -> Unit
 ) {
     val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Scaffold(
         topBar = {
@@ -509,7 +513,7 @@ fun AccountSettingsScreenContent(
             }
 
             state.showCredentialUpdateDialog?.let {
-                CredentialsDialog(
+                StatefulCredentialsDialog(
                     credentialValidationResult = state.credentialValidationResult,
                     credentialType = it,
                     onEvent = { event -> onEvent(event) }
@@ -523,7 +527,7 @@ fun AccountSettingsScreenContent(
                         .wrapContentSize(),
                     onDismiss = { onEvent(AccountSettingsUiEvent.OnDismissConfirmationDialog) },
                     onConfirm = {
-                        onEvent(AccountSettingsUiEvent.OnConfirmConfirmationDialog)
+                        onEvent(AccountSettingsUiEvent.OnConfirmDeleteConfirmationDialog)
                     }
                 ) {
                     Row {
@@ -541,6 +545,13 @@ fun AccountSettingsScreenContent(
                         )
                     }
                 }
+            }
+
+            if (state.showReauthorizationDialog) {
+                StatefulReauthorizationDialog(
+                    credentialValidationResult = state.credentialValidationResult,
+                    onEvent = { onEvent(it) }
+                )
             }
 
             SnackbarHost(
@@ -656,9 +667,7 @@ fun AccountSettingsScreen(
                             } else {
                                 // Shows dialog with email and password inputs for reauthorization
                                 viewModel.uiEventHandler(
-                                    AccountSettingsUiEvent.OnShowCredentialDialog(
-                                        CredentialType.Reauthorization
-                                    )
+                                    AccountSettingsUiEvent.OnShowReauthorizationDialog(true)
                                 )
                             }
                         }
@@ -680,17 +689,7 @@ fun AccountSettingsScreen(
 }
 
 @Composable
-@Preview
-fun AccountSettingsScreenPreview() {
-    AccountSettingsScreenContent(
-        isExpandedScreen = false,
-        state = AccountSettingsState(),
-        onEvent = {}
-    )
-}
-
-@Composable
-fun CredentialsDialog(
+fun StatefulCredentialsDialog(
     credentialValidationResult: CredentialValidationResult?,
     modifier: Modifier = Modifier,
     credentialType: CredentialType,
@@ -773,48 +772,6 @@ fun CredentialsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 when (credentialType) {
-                    is CredentialType.Reauthorization -> {
-                        Text(text = stringResource(id = R.string.reauthorization))
-
-                        EmailField(
-                            emailValue = email,
-                            isEmailError = isEmailError,
-                            onEmailValueChanged = {
-                                email = it
-                                onEvent(
-                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
-                                        Credentials.Sensitive.SignInCredentials(
-                                            email,
-                                            password
-                                        )
-                                    )
-                                )
-                            }
-                        )
-
-                        PasswordField(
-                            password = password,
-                            passwordErrors = isPasswordError,
-                            isPasswordEnabled = !isEmailError,
-                            isPasswordVisible = isPasswordVisible,
-                            onPasswordVisibilityClick = { isPasswordVisible = it },
-                            onPasswordValueChange = {
-                                password = it
-                            },
-                            onCredentialChanged = {
-                                onEvent(
-                                    AccountSettingsUiEvent.OnDialogCredentialChanged(
-                                        Credentials.Sensitive.SignInCredentials(
-                                            email,
-                                            password
-                                        )
-                                    )
-                                )
-                            }
-                        )
-
-                    }
-
                     is CredentialType.AccountLink -> {
                         EmailField(
                             emailValue = email,
@@ -858,7 +815,7 @@ fun CredentialsDialog(
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.baseline_perm_identity_24),
-                                    contentDescription = "Enter new username"
+                                    contentDescription = null
                                 )
                             },
                             label = {
@@ -912,10 +869,6 @@ fun CredentialsDialog(
                     onEvent(
                         AccountSettingsUiEvent.OnEnteredCredential(
                             when (credentialType) {
-                                is CredentialType.Reauthorization -> {
-                                    Credentials.Sensitive.SignInCredentials(email, password)
-                                }
-
                                 is CredentialType.AccountLink -> {
                                     Credentials.Sensitive.SignInCredentials(email, password)
                                 }
@@ -954,9 +907,155 @@ fun CredentialsDialog(
 }
 
 @Composable
+fun StatefulReauthorizationDialog(
+    credentialValidationResult: CredentialValidationResult?,
+    onEvent: (AccountSettingsUiEvent) -> Unit
+) {
+
+    var email by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var isEmailError by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var password by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var isPasswordVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var isPasswordError by rememberSaveable {
+        mutableStateOf<List<PasswordErrorType>>(emptyList())
+    }
+
+    // we can't use keyboard controller directly, because EditText is in different composable
+    // so we have to update the state of this variable and after recomposition, soft keyboard
+    // will be hidden directly inside the corresponding composable
+    var shouldHideSoftKeyboard by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(key1 = credentialValidationResult) {
+        isEmailError = when (credentialValidationResult) {
+            is CredentialValidationResult.Invalid -> {
+                credentialValidationResult.isEmailValid != true
+            }
+
+            else -> false
+        }
+    }
+
+    LaunchedEffect(key1 = password) {
+        when (credentialValidationResult) {
+            is CredentialValidationResult.Invalid -> {
+                isPasswordError =
+                    when (val passwordError = credentialValidationResult.passwordError) {
+                        is PasswordValidationResult.Invalid -> {
+                            passwordError.cause
+                        }
+
+                        else -> emptyList()
+                    }
+            }
+
+            else -> {
+                isPasswordError = emptyList()
+            }
+        }
+    }
+
+    // hide keyboard is fire and forget event, so it's state has to be cleared after each change
+    LaunchedEffect(shouldHideSoftKeyboard) {
+        if (shouldHideSoftKeyboard) shouldHideSoftKeyboard = false
+    }
+
+    Dialog(
+        title = stringResource(R.string.reauthorization),
+        onDismiss = { onEvent(AccountSettingsUiEvent.OnShowReauthorizationDialog(false)) }) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            EmailField(
+                emailValue = email,
+                isEmailError = isEmailError,
+                shouldHideSoftKeyboard = shouldHideSoftKeyboard,
+                onEmailValueChanged = {
+                    email = it
+                    onEvent(
+                        AccountSettingsUiEvent.OnDialogCredentialChanged(
+                            Credentials.Sensitive.SignInCredentials(
+                                email,
+                                password
+                            )
+                        )
+                    )
+                }
+            )
+
+            PasswordField(
+                password = password,
+                passwordErrors = isPasswordError,
+                isPasswordEnabled = !isEmailError,
+                isPasswordVisible = isPasswordVisible,
+                onPasswordVisibilityClick = { isPasswordVisible = it },
+                onPasswordValueChange = { password = it },
+                onCredentialChanged = {
+                    onEvent(
+                        AccountSettingsUiEvent.OnDialogCredentialChanged(
+                            Credentials.Sensitive.SignInCredentials(
+                                email,
+                                password
+                            )
+                        )
+                    )
+                }
+            )
+
+            OutlinedButton(onClick = {
+                if (email.isBlank() || password.isBlank()) {
+                    if (email.isBlank()) isEmailError = true
+                    if (password.isBlank()) isPasswordError =
+                        listOf(PasswordErrorType.PASSWORD_EMPTY)
+                    return@OutlinedButton
+                }
+
+                shouldHideSoftKeyboard = true
+
+                onEvent(
+                    AccountSettingsUiEvent.OnReauthorizationDialogDoneClick(
+                        Credentials.Sensitive.SignInCredentials(email, password)
+                    )
+                )
+            }) {
+                Text(text = stringResource(id = R.string.done))
+            }
+        }
+    }
+}
+
+@Composable
+@Preview
+fun AccountSettingsScreenPreview() {
+    AccountSettingsScreenContent(
+        isExpandedScreen = false,
+        state = AccountSettingsState(),
+        onEvent = {}
+    )
+}
+
+@Composable
 @Preview(showBackground = true)
 fun CredentialsEmailDialogPreview() {
-    CredentialsDialog(
+    StatefulCredentialsDialog(
         credentialValidationResult = null,
         credentialType = CredentialType.Email,
         onEvent = {}
@@ -966,7 +1065,7 @@ fun CredentialsEmailDialogPreview() {
 @Composable
 @Preview(showBackground = true)
 fun CredentialsPasswordDialogPreview() {
-    CredentialsDialog(
+    StatefulCredentialsDialog(
         credentialValidationResult = null,
         credentialType = CredentialType.Password,
         onEvent = {}
@@ -976,7 +1075,7 @@ fun CredentialsPasswordDialogPreview() {
 @Composable
 @Preview(showBackground = true)
 fun CredentialsUsernameDialogPreview() {
-    CredentialsDialog(
+    StatefulCredentialsDialog(
         credentialValidationResult = null,
         credentialType = CredentialType.Username,
         onEvent = {}
@@ -986,9 +1085,8 @@ fun CredentialsUsernameDialogPreview() {
 @Composable
 @Preview(showBackground = true)
 fun CredentialsReauthorizationDialogPreview() {
-    CredentialsDialog(
+    StatefulReauthorizationDialog(
         credentialValidationResult = null,
-        credentialType = CredentialType.Reauthorization,
         onEvent = {}
     )
 }
@@ -996,7 +1094,7 @@ fun CredentialsReauthorizationDialogPreview() {
 @Composable
 @Preview(showBackground = true)
 fun CredentialsAccountLinkDialogPreview() {
-    CredentialsDialog(
+    StatefulCredentialsDialog(
         credentialValidationResult = null,
         credentialType = CredentialType.AccountLink,
         onEvent = {}

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.bytecause.lenslex.R
 import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.events.LoginUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.LoginState
+import com.bytecause.lenslex.ui.screens.model.LoginState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.PasswordValidationResult
 import com.bytecause.lenslex.util.TestTags

@@ -15,7 +15,7 @@ import com.bytecause.lenslex.ui.events.ExtractedTextUiEffect
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
 import com.bytecause.lenslex.ui.models.Word
-import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
+import com.bytecause.lenslex.ui.screens.model.RecognizedTextState
 import com.bytecause.lenslex.util.NetworkUtil
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay

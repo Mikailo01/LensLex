@@ -6,7 +6,7 @@ import com.bytecause.lenslex.data.remote.auth.FirebaseAuthClient
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEffect
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
 import com.bytecause.lenslex.ui.interfaces.Credentials
-import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
+import com.bytecause.lenslex.ui.screens.model.SendEmailResetState
 import com.bytecause.lenslex.util.CredentialValidationResult
 import com.bytecause.lenslex.util.ValidationUtil
 import kotlinx.coroutines.Dispatchers

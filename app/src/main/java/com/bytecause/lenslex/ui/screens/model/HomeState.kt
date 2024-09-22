@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.ui.screens.uistate
+package com.bytecause.lenslex.ui.screens.model
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState

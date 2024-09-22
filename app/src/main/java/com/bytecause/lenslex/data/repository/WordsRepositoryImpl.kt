@@ -24,6 +24,7 @@ class WordsRepositoryImpl(
 
     private fun user(): FirebaseUser? = auth.getAuth().currentUser
 
+    @Suppress("UNCHECKED_CAST")
     override fun getWords(
         originLangCode: String,
         targetLangCode: String
@@ -63,6 +64,7 @@ class WordsRepositoryImpl(
         awaitClose { listener?.remove() }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun documentToWords(document: DocumentSnapshot): Words {
         return document.data?.let { field ->
             Words(

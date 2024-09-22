@@ -37,7 +37,7 @@ import com.bytecause.lenslex.ui.components.UserAuthBackground
 import com.bytecause.lenslex.ui.components.UserAuthBackgroundExpanded
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEffect
 import com.bytecause.lenslex.ui.events.SendEmailResetUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.SendEmailResetState
+import com.bytecause.lenslex.ui.screens.model.SendEmailResetState
 import com.bytecause.lenslex.ui.screens.viewmodel.SendEmailResetViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch

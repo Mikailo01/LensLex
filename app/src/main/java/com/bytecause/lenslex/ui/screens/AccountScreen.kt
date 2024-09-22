@@ -61,7 +61,7 @@ import com.bytecause.lenslex.ui.components.RowItem
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.AccountUiEffect
 import com.bytecause.lenslex.ui.events.AccountUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.AccountState
+import com.bytecause.lenslex.ui.screens.model.AccountState
 import com.bytecause.lenslex.ui.screens.viewmodel.AccountViewModel
 import com.bytecause.lenslex.util.BlurTransformation
 import com.bytecause.lenslex.util.compressImage

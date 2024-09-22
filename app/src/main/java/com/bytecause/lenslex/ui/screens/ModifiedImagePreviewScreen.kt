@@ -34,7 +34,7 @@ import com.bytecause.lenslex.navigation.Screen
 import com.bytecause.lenslex.ui.components.TopAppBar
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEffect
 import com.bytecause.lenslex.ui.events.ModifiedImagePreviewUiEvent
-import com.bytecause.lenslex.ui.screens.uistate.ModifiedImagePreviewState
+import com.bytecause.lenslex.ui.screens.model.ModifiedImagePreviewState
 import com.bytecause.lenslex.ui.screens.viewmodel.ModifiedImagePreviewViewModel
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions

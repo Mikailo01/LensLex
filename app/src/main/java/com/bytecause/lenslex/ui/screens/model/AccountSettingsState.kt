@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.ui.screens.uistate
+package com.bytecause.lenslex.ui.screens.model
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
@@ -13,6 +13,8 @@ data class AccountSettingsState(
     val linkedProviders: List<Provider> = emptyList(),
     val credentialValidationResult: CredentialValidationResult? = null,
     val showCredentialUpdateDialog: CredentialType? = null,
+    val showReauthorizationDialog: Boolean = false,
     val showConfirmationDialog: Boolean = false,
+    val shouldReauthenticate: Boolean = false,
     val snackbarHostState: SnackbarHostState = SnackbarHostState()
 )

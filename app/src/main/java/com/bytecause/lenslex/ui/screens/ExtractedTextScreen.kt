@@ -77,12 +77,11 @@ import com.bytecause.lenslex.ui.components.LanguageDialog
 import com.bytecause.lenslex.ui.components.LanguagePreferences
 import com.bytecause.lenslex.ui.components.NetworkUnavailableDialog
 import com.bytecause.lenslex.ui.components.TopAppBar
-import com.bytecause.lenslex.ui.events.AddUiEvent
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEffect
 import com.bytecause.lenslex.ui.events.ExtractedTextUiEvent
 import com.bytecause.lenslex.ui.mappers.textListToWordList
 import com.bytecause.lenslex.ui.models.Word
-import com.bytecause.lenslex.ui.screens.uistate.RecognizedTextState
+import com.bytecause.lenslex.ui.screens.model.RecognizedTextState
 import com.bytecause.lenslex.ui.screens.viewmodel.ExtractedTextViewModel
 import com.bytecause.lenslex.util.introShowcaseBackgroundAlpha
 import com.bytecause.lenslex.util.then
@@ -261,22 +260,9 @@ private fun ExtractedTextScreenContent(
                     }
 
                     if (state.showLanguageInferenceErrorDialog) {
-                        Dialog(
-                            title = stringResource(id = R.string.language_cannot_be_inferred_title),
-                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.failed),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Text(
-                                text = stringResource(id = R.string.language_cannot_be_inferred_message),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontStyle = FontStyle.Italic
-                            )
-                        }
+                        LanguageSelectionRequiredDialog(
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }
+                        )
                     }
 
                     if (state.isLoading) {
@@ -436,22 +422,9 @@ private fun ExtractedTextScreenContent(
                     }
 
                     if (state.showLanguageInferenceErrorDialog) {
-                        Dialog(
-                            title = stringResource(id = R.string.language_cannot_be_inferred_title),
-                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.failed),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Text(
-                                text = stringResource(id = R.string.language_cannot_be_inferred_message),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontStyle = FontStyle.Italic
-                            )
-                        }
+                        LanguageSelectionRequiredDialog(
+                            onDismiss = { onEvent(ExtractedTextUiEvent.OnDismissLanguageInferenceErrorDialog) }
+                        )
                     }
 
                     if (state.isLoading) {
@@ -664,6 +637,35 @@ fun ExtractedTextScreen(
         isExpandedScreen = isExpandedScreen,
         onEvent = viewModel::uiEventHandler
     )
+}
+
+@Composable
+fun LanguageSelectionRequiredDialog(onDismiss: () -> Unit) {
+    Dialog(
+        title = stringResource(id = R.string.language_cannot_be_inferred_title),
+        onDismiss = onDismiss,
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.failed),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(80.dp)
+                )
+                Text(
+                    text = stringResource(id = R.string.language_cannot_be_inferred_message),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -905,4 +907,10 @@ private fun ExtractedTextScreenPreview() {
         isExpandedScreen = false,
         onEvent = {}
     )
+}
+
+@Composable
+@Preview
+private fun LanguageSelectionRequiredDialogPreview() {
+    LanguageSelectionRequiredDialog(onDismiss = {})
 }

@@ -1,4 +1,4 @@
-package com.bytecause.lenslex.ui.screens.uistate
+package com.bytecause.lenslex.ui.screens.model
 
 import androidx.compose.runtime.Immutable
 import com.bytecause.lenslex.domain.models.UserData

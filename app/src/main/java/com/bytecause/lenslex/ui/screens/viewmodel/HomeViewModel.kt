@@ -14,7 +14,7 @@ import com.bytecause.lenslex.domain.models.Words
 import com.bytecause.lenslex.ui.events.HomeUiEffect
 import com.bytecause.lenslex.ui.events.HomeUiEvent
 import com.bytecause.lenslex.ui.interfaces.TranslationOption
-import com.bytecause.lenslex.ui.screens.uistate.HomeState
+import com.bytecause.lenslex.ui.screens.model.HomeState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
